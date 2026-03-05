@@ -4,13 +4,16 @@ export const dynamic = "force-dynamic";
 
 import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { motion, AnimatePresence } from "framer-motion";
+import { Eye, EyeOff, AlertCircle, Mail, Lock, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { GradientMesh } from "@/components/animations/gradient-mesh";
+import { FloatingParticles } from "@/components/animations/floating-particles";
+import { FloatingGeometric } from "@/components/animations/floating-geometric";
+import { GlassCard } from "@/components/ui/glass-card";
+import { NeonButton } from "@/components/ui/neon-button";
+import { AnimatedInput } from "@/components/ui/animated-input";
+import { fadeInUp, staggerContainer, fadeIn, formError } from "@/lib/animations";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -30,7 +33,6 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
 
-    // Client-side validation
     if (!validateEmail(email)) {
       setError("E-mail inválido");
       return;
@@ -65,7 +67,6 @@ function LoginForm() {
         return;
       }
 
-      // Redirect to dashboard
       router.push("/app/central");
       router.refresh();
 
@@ -76,90 +77,159 @@ function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
-        <CardDescription className="text-center">
-          Entre com suas credenciais para acessar o sistema
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+      className="relative z-10 w-full max-w-md px-4"
+    >
+      <GlassCard className="p-8" hover={false} glow="cyan">
+        {/* Header */}
+        <motion.div variants={fadeInUp} className="text-center mb-8">
+          <motion.div
+            className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl"
+            style={{
+              background: "linear-gradient(135deg, rgba(0,240,255,0.2), rgba(139,92,246,0.2))",
+              border: "1px solid rgba(0,240,255,0.3)",
+            }}
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Sparkles className="w-8 h-8 text-cyan-400" />
+          </motion.div>
           
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
-            <Input
-              id="email"
+          <h1 className="text-3xl font-bold mb-2">
+            <span className="gradient-text">LIDIA</span>
+            <span className="text-white"> 2.0</span>
+          </h1>
+          <p className="text-slate-400 text-sm">
+            Entre com suas credenciais para acessar o sistema
+          </p>
+        </motion.div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div
+                variants={formError}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+              >
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.div variants={fadeInUp}>
+            <AnimatedInput
+              label="E-mail"
               type="email"
               placeholder="seu@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
-              required
+              icon={<Mail className="w-5 h-5" />}
             />
+          </motion.div>
+
+          <motion.div variants={fadeInUp}>
+            <AnimatedInput
+              label="Senha"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              icon={<Lock className="w-5 h-5" />}
+              iconRight={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-slate-400 hover:text-cyan-400 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              }
+            />
+          </motion.div>
+
+          <motion.div variants={fadeInUp} className="pt-2">
+            <NeonButton
+              type="submit"
+              variant="cyan"
+              size="lg"
+              loading={isLoading}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? "Entrando..." : "Entrar no Sistema"}
+            </NeonButton>
+          </motion.div>
+        </form>
+
+        {/* Footer */}
+        <motion.div 
+          variants={fadeIn}
+          className="mt-8 pt-6 border-t border-white/10 text-center"
+        >
+          <p className="text-xs text-slate-500">
+            CRM Inteligente para Gestão de Relacionamentos
+          </p>
+          <div className="flex justify-center gap-2 mt-3">
+            <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" style={{ animationDelay: "0.2s" }} />
+            <span className="w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse" style={{ animationDelay: "0.4s" }} />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                required
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-        
-        <CardFooter className="flex flex-col space-y-4">
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-          >
-            {isLoading ? "Entrando..." : "Entrar"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+        </motion.div>
+      </GlassCard>
+    </motion.div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#020617]">
+      {/* Animated Background */}
+      <GradientMesh />
+      
+      {/* Floating Particles */}
+      <FloatingParticles count={25} />
+      
+      {/* Geometric Elements */}
+      <FloatingGeometric />
+      
+      {/* Grid Overlay */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(0, 240, 255, 0.5) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 240, 255, 0.5) 1px, transparent 1px)
+          `,
+          backgroundSize: "60px 60px",
+        }}
+      />
+
+      {/* Main Content */}
       <Suspense fallback={
-        <Card className="w-full max-w-md p-8">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-        </Card>
+        <div className="flex items-center justify-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full"
+          />
+        </div>
       }>
         <LoginForm />
       </Suspense>
+
+      {/* Corner Glows */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />
     </div>
   );
 }
