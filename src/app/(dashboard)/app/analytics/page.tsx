@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
       <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <GlowBadge variant="violet">Analytics</GlowBadge>
+            <GlowBadge variant="green">Analytics</GlowBadge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white">
             Dashboard de Analytics
@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
             <Calendar className="w-4 h-4 mr-2" />
             Últimos 30 dias
           </NeonButton>
-          <NeonButton variant="cyan" size="sm">
+          <NeonButton variant="green" size="sm">
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </NeonButton>
@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
           const Icon = stat.icon;
           return (
             <motion.div key={stat.label} variants={fadeInUp} custom={index}>
-              <GlassCard className="p-6" glow={index % 2 === 0 ? "cyan" : "violet"}>
+              <GlassCard className="p-6" glow="green">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
                     <p className="text-emerald-400 text-sm mt-1">{stat.change}</p>
                   </div>
                   <div className="p-2 rounded-lg bg-white/5">
-                    <Icon className="w-5 h-5 text-cyan-400" />
+                    <Icon className="w-5 h-5 text-emerald-400" />
                   </div>
                 </div>
               </GlassCard>
@@ -147,10 +147,10 @@ export default function AnalyticsPage() {
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-cyan-400" />
+                <BarChart3 className="w-5 h-5 text-emerald-400" />
                 Atendimentos vs Convertidos
               </h3>
-              <GlowBadge variant="cyan">Esta Semana</GlowBadge>
+              <GlowBadge variant="green">Esta Semana</GlowBadge>
             </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -159,8 +159,8 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
                   <YAxis stroke="#64748b" fontSize={12} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="atendimentos" name="Atendimentos" fill="#00f0ff" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="convertidos" name="Convertidos" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="atendimentos" name="Atendimentos" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="convertidos" name="Convertidos" fill="#059669" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -171,31 +171,31 @@ export default function AnalyticsPage() {
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-violet-400" />
+                <TrendingUp className="w-5 h-5 text-emerald-400" />
                 Evolução de Receita
               </h3>
-              <GlowBadge variant="violet">6 Meses</GlowBadge>
+              <GlowBadge variant="green">6 Meses</GlowBadge>
             </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueData}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
                   <YAxis stroke="#64748b" fontSize={12} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#8b5cf6" 
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#10b981"
                     strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorRevenue)" 
+                    fillOpacity={1}
+                    fill="url(#colorRevenue)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -210,7 +210,7 @@ export default function AnalyticsPage() {
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-fuchsia-400" />
+                <MessageSquare className="w-5 h-5 text-emerald-400" />
                 Canais de Comunicação
               </h3>
             </div>
@@ -262,10 +262,10 @@ export default function AnalyticsPage() {
             </div>
             <div className="space-y-4">
               {[
-                { label: "Conversão de Leads", value: 68, color: "from-cyan-500 to-cyan-600" },
-                { label: "Taxa de Resposta", value: 84, color: "from-violet-500 to-violet-600" },
-                { label: "Satisfação do Cliente", value: 92, color: "from-fuchsia-500 to-fuchsia-600" },
-                { label: "Retenção", value: 76, color: "from-emerald-500 to-emerald-600" },
+                { label: "Conversão de Leads", value: 68, color: "from-emerald-500 to-emerald-600" },
+                { label: "Taxa de Resposta", value: 84, color: "from-emerald-600 to-green-600" },
+                { label: "Satisfação do Cliente", value: 92, color: "from-green-500 to-emerald-500" },
+                { label: "Retenção", value: 76, color: "from-emerald-400 to-green-500" },
               ].map((metric) => (
                 <div key={metric.label}>
                   <div className="flex justify-between text-sm mb-2">

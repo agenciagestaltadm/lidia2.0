@@ -80,7 +80,7 @@ const initialNotifications = [
 ];
 
 const typeConfig = {
-  info: { color: "cyan", bgColor: "bg-cyan-500/10", iconColor: "text-cyan-400" },
+  info: { color: "emerald", bgColor: "bg-emerald-500/10", iconColor: "text-emerald-400" },
   success: { color: "emerald", bgColor: "bg-emerald-500/10", iconColor: "text-emerald-400" },
   warning: { color: "amber", bgColor: "bg-amber-500/10", iconColor: "text-amber-400" },
   error: { color: "red", bgColor: "bg-red-500/10", iconColor: "text-red-400" },
@@ -125,7 +125,7 @@ export default function NotificationsPage() {
       <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <GlowBadge variant="fuchsia" pulse={unreadCount > 0}>
+            <GlowBadge variant="green" pulse={unreadCount > 0}>
               {unreadCount} não lidas
             </GlowBadge>
           </div>
@@ -141,7 +141,7 @@ export default function NotificationsPage() {
             <CheckCheck className="w-4 h-4 mr-2" />
             Marcar todas como lidas
           </NeonButton>
-          <NeonButton variant="fuchsia" size="sm" onClick={clearAll}>
+          <NeonButton variant="green" size="sm" onClick={clearAll}>
             <Trash2 className="w-4 h-4 mr-2" />
             Limpar
           </NeonButton>
@@ -157,7 +157,7 @@ export default function NotificationsPage() {
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1",
                 filter === "all"
-                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                   : "bg-transparent text-slate-400 hover:bg-white/5"
               )}
             >
@@ -168,7 +168,7 @@ export default function NotificationsPage() {
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1",
                 filter === "unread"
-                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                   : "bg-transparent text-slate-400 hover:bg-white/5"
               )}
             >
@@ -198,7 +198,7 @@ export default function NotificationsPage() {
                       transition={{ delay: index * 0.05 }}
                       className={cn(
                         "p-4 hover:bg-white/[0.02] transition-colors group",
-                        !notification.read && "bg-cyan-500/5"
+                        !notification.read && "bg-emerald-500/5"
                       )}
                     >
                       <div className="flex items-start gap-4">
@@ -232,10 +232,10 @@ export default function NotificationsPage() {
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               {!notification.read && (
                                 <button
-                                  onClick={() => markAsRead(notification.id)}
-                                  className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-cyan-400 transition-colors"
-                                  title="Marcar como lida"
-                                >
+                                    onClick={() => markAsRead(notification.id)}
+                                    className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors"
+                                    title="Marcar como lida"
+                                  >
                                   <Check className="w-4 h-4" />
                                 </button>
                               )}
@@ -252,7 +252,7 @@ export default function NotificationsPage() {
 
                         {/* Unread indicator */}
                         {!notification.read && (
-                          <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0 mt-2" />
+                          <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 mt-2" />
                         )}
                       </div>
                     </motion.div>

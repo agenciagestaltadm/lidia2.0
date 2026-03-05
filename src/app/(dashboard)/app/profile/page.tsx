@@ -52,7 +52,7 @@ export default function ProfilePage() {
       <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <GlowBadge variant="cyan">Perfil</GlowBadge>
+            <GlowBadge variant="green">Perfil</GlowBadge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white">
             Meu Perfil
@@ -62,7 +62,7 @@ export default function ProfilePage() {
           </p>
         </div>
         <NeonButton 
-          variant={saved ? "fuchsia" : isEditing ? "cyan" : "ghost"} 
+          variant={saved ? "green" : isEditing ? "green" : "ghost"}
           onClick={() => isEditing ? handleSave() : setIsEditing(true)}
         >
           {saved ? (
@@ -87,19 +87,19 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Profile Card */}
         <motion.div variants={fadeInUp} className="lg:col-span-1">
-          <GlassCard className="p-6 text-center" glow="violet">
+          <GlassCard className="p-6 text-center" glow="green">
             {/* Avatar */}
             <div className="relative inline-block mb-4">
               <div 
                 className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold text-white mx-auto"
                 style={{
-                  background: "linear-gradient(135deg, #00f0ff, #8b5cf6)",
+                  background: "linear-gradient(135deg, #10b981, #059669)",
                 }}
               >
                 AS
               </div>
               {isEditing && (
-                <button className="absolute bottom-0 right-0 p-2 rounded-full bg-cyan-500 text-white hover:bg-cyan-600 transition-colors">
+                <button className="absolute bottom-0 right-0 p-2 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition-colors">
                   <Camera className="w-4 h-4" />
                 </button>
               )}
@@ -109,7 +109,7 @@ export default function ProfilePage() {
             <p className="text-slate-400">ana.silva@empresa.com</p>
             
             <div className="flex items-center justify-center gap-2 mt-3">
-              <GlowBadge variant="cyan">Admin</GlowBadge>
+              <GlowBadge variant="green">Admin</GlowBadge>
               <GlowBadge variant="emerald">Ativo</GlowBadge>
             </div>
 
@@ -118,7 +118,7 @@ export default function ProfilePage() {
                 const Icon = stat.icon;
                 return (
                   <div key={stat.label}>
-                    <Icon className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
+                    <Icon className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
                     <p className="text-lg font-bold text-white">{stat.value}</p>
                     <p className="text-xs text-slate-400">{stat.label}</p>
                   </div>
@@ -128,9 +128,9 @@ export default function ProfilePage() {
           </GlassCard>
 
           {/* Security Card */}
-          <GlassCard className="p-5 mt-4" glow="cyan">
+          <GlassCard className="p-5 mt-4" glow="green">
             <div className="flex items-center gap-3 mb-4">
-              <Shield className="w-5 h-5 text-cyan-400" />
+              <Shield className="w-5 h-5 text-emerald-400" />
               <h3 className="font-semibold text-white">Segurança</h3>
             </div>
             <div className="space-y-3">
@@ -150,7 +150,7 @@ export default function ProfilePage() {
         <motion.div variants={fadeInUp} className="lg:col-span-2 space-y-4">
           <GlassCard className="p-6" hover={false}>
             <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-              <User className="w-5 h-5 text-cyan-400" />
+              <User className="w-5 h-5 text-emerald-400" />
               Informações Pessoais
             </h3>
             
@@ -184,7 +184,7 @@ export default function ProfilePage() {
 
           <GlassCard className="p-6" hover={false}>
             <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-violet-400" />
+              <Briefcase className="w-5 h-5 text-emerald-400" />
               Informações Profissionais
             </h3>
             
@@ -214,7 +214,7 @@ export default function ProfilePage() {
 
           <GlassCard className="p-6" hover={false}>
             <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-              <Award className="w-5 h-5 text-fuchsia-400" />
+              <Award className="w-5 h-5 text-emerald-400" />
               Preferências
             </h3>
             
@@ -226,7 +226,7 @@ export default function ProfilePage() {
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" defaultChecked className="sr-only peer" disabled={!isEditing} />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                 </label>
               </div>
               <div className="flex items-center justify-between py-3 border-b border-white/5">

@@ -32,7 +32,7 @@ const stats = [
     change: "+12%", 
     trend: "up",
     icon: MessageSquare,
-    glow: "cyan" as const,
+    glow: "emerald" as const,
   },
   { 
     label: "Aguardando Resposta", 
@@ -40,7 +40,7 @@ const stats = [
     change: "-5%", 
     trend: "down",
     icon: Clock,
-    glow: "violet" as const,
+    glow: "emerald" as const,
   },
   { 
     label: "Fechados Hoje", 
@@ -48,7 +48,7 @@ const stats = [
     change: "+23%", 
     trend: "up",
     icon: CheckCircle,
-    glow: "fuchsia" as const,
+    glow: "emerald" as const,
   },
   { 
     label: "Taxa de Conversão", 
@@ -56,7 +56,7 @@ const stats = [
     change: "+8%", 
     trend: "up",
     icon: TrendingUp,
-    glow: "cyan" as const,
+    glow: "emerald" as const,
   },
 ];
 
@@ -65,28 +65,28 @@ const quickActions = [
     label: "Novo Contato", 
     href: "/app/contacts/new", 
     icon: Plus,
-    color: "from-cyan-500 to-cyan-600",
+    color: "from-emerald-500 to-emerald-600",
     description: "Adicionar cliente"
   },
   { 
     label: "Novo Negócio", 
     href: "/app/funnel/new", 
     icon: Filter,
-    color: "from-violet-500 to-violet-600",
+    color: "from-emerald-600 to-green-600",
     description: "Criar oportunidade"
   },
   { 
     label: "Disparo Bulk", 
     href: "/app/bulk/new", 
     icon: Send,
-    color: "from-fuchsia-500 to-fuchsia-600",
+    color: "from-green-500 to-emerald-500",
     description: "Enviar mensagens"
   },
   { 
     label: "Relatórios", 
     href: "/app/analytics", 
     icon: BarChart3,
-    color: "from-emerald-500 to-emerald-600",
+    color: "from-emerald-400 to-green-500",
     description: "Ver métricas"
   },
 ];
@@ -109,7 +109,7 @@ function StatCard({ stat, index }: { stat: typeof stats[0]; index: number }) {
       whileHover="hover"
       initial="rest"
     >
-      <GlassCard glow={stat.glow} className="p-6 h-full">
+      <GlassCard glow="green" className="p-6 h-full">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
@@ -129,11 +129,11 @@ function StatCard({ stat, index }: { stat: typeof stats[0]; index: number }) {
           <div 
             className={`p-3 rounded-xl`}
             style={{
-              background: `linear-gradient(135deg, ${stat.glow === "cyan" ? "rgba(0,240,255,0.2)" : stat.glow === "violet" ? "rgba(139,92,246,0.2)" : "rgba(217,70,239,0.2)"}, transparent)`,
-              border: `1px solid ${stat.glow === "cyan" ? "rgba(0,240,255,0.3)" : stat.glow === "violet" ? "rgba(139,92,246,0.3)" : "rgba(217,70,239,0.3)"}`,
+              background: `linear-gradient(135deg, rgba(16,185,129,0.2), transparent)`,
+              border: `1px solid rgba(16,185,129,0.3)`,
             }}
           >
-            <Icon className={`w-5 h-5 ${stat.glow === "cyan" ? "text-cyan-400" : stat.glow === "violet" ? "text-violet-400" : "text-fuchsia-400"}`} />
+            <Icon className="w-5 h-5 text-emerald-400" />
           </div>
         </div>
       </GlassCard>
@@ -150,7 +150,7 @@ function QuickActionCard({ action, index }: { action: typeof quickActions[0]; in
       custom={index}
     >
       <Link href={action.href}>
-        <GlassCard className="p-5 h-full group cursor-pointer" glow="cyan">
+        <GlassCard className="p-5 h-full group cursor-pointer" glow="green">
           <div className="flex flex-col h-full">
             <div 
               className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
@@ -178,7 +178,7 @@ export default function CentralPage() {
       <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <GlowBadge variant="cyan" pulse>
+            <GlowBadge variant="green" pulse>
               <Sparkles className="w-3 h-3 mr-1" />
               Sistema Ativo
             </GlowBadge>
@@ -217,7 +217,7 @@ export default function CentralPage() {
         {/* Quick Actions - Takes up 2 columns */}
         <motion.div variants={fadeInUp} className="lg:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Plus className="w-5 h-5 text-cyan-400" />
+            <Plus className="w-5 h-5 text-emerald-400" />
             Ações Rápidas
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -228,15 +228,15 @@ export default function CentralPage() {
 
           {/* Management Cards */}
           <h2 className="text-lg font-semibold text-white flex items-center gap-2 mt-8">
-            <Building className="w-5 h-5 text-violet-400" />
+            <Building className="w-5 h-5 text-emerald-400" />
             Gerenciamento
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link href="/app/companies">
-              <GlassCard className="p-6 group cursor-pointer" glow="violet">
+              <GlassCard className="p-6 group cursor-pointer" glow="green">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Building className="w-7 h-7 text-violet-400" />
+                  <div className="w-14 h-14 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Building className="w-7 h-7 text-emerald-400" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white">Empresas</h3>
@@ -246,10 +246,10 @@ export default function CentralPage() {
               </GlassCard>
             </Link>
             <Link href="/app/users">
-              <GlassCard className="p-6 group cursor-pointer" glow="cyan">
+              <GlassCard className="p-6 group cursor-pointer" glow="green">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="w-7 h-7 text-cyan-400" />
+                  <div className="w-14 h-14 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Users className="w-7 h-7 text-emerald-400" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white">Usuários</h3>
@@ -264,7 +264,7 @@ export default function CentralPage() {
         {/* Activity Feed - Takes up 1 column */}
         <motion.div variants={fadeInUp} className="space-y-4">
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Clock className="w-5 h-5 text-fuchsia-400" />
+            <Clock className="w-5 h-5 text-emerald-400" />
             Atividade Recente
           </h2>
           <GlassCard className="p-0 overflow-hidden" hover={false}>
@@ -283,7 +283,7 @@ export default function CentralPage() {
                   <div className="flex items-start gap-3">
                     <div 
                       className={`w-2 h-2 rounded-full mt-2 ${
-                        activity.type === "success" ? "bg-emerald-400" : "bg-cyan-400"
+                        activity.type === "success" ? "bg-emerald-400" : "bg-emerald-500"
                       }`}
                     />
                     <div className="flex-1 min-w-0">
@@ -297,7 +297,7 @@ export default function CentralPage() {
             <div className="p-3 border-t border-white/10">
               <Link 
                 href="/app/notifications"
-                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center justify-center gap-1"
+                className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors flex items-center justify-center gap-1"
               >
                 Ver todas as atividades
                 <ArrowUpRight className="w-4 h-4" />
@@ -306,8 +306,8 @@ export default function CentralPage() {
           </GlassCard>
 
           {/* Tips Card */}
-          <GlassCard className="p-5" glow="violet">
-            <h3 className="text-sm font-semibold text-violet-400 mb-2 flex items-center gap-2">
+          <GlassCard className="p-5" glow="green">
+            <h3 className="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Dica do Dia
             </h3>

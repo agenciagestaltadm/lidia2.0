@@ -62,7 +62,7 @@ export default function UsersPage() {
       <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <GlowBadge variant="cyan">Gestão</GlowBadge>
+            <GlowBadge variant="green">Gestão</GlowBadge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white">
             Gerenciamento de Usuários
@@ -71,7 +71,7 @@ export default function UsersPage() {
             Gerencie permissões e acessos da equipe
           </p>
         </div>
-        <NeonButton variant="cyan">
+        <NeonButton variant="green">
           <Plus className="w-4 h-4 mr-2" />
           Novo Usuário
         </NeonButton>
@@ -91,10 +91,10 @@ export default function UsersPage() {
           const Icon = stat.icon;
           return (
             <motion.div key={stat.label} variants={fadeInUp} custom={index}>
-              <GlassCard className="p-4" glow={index % 2 === 0 ? "cyan" : "violet"}>
+              <GlassCard className="p-4" glow="green">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-white/5">
-                    <Icon className="w-5 h-5 text-cyan-400" />
+                    <Icon className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
                     <p className="text-slate-400 text-xs">{stat.label}</p>
@@ -127,7 +127,7 @@ export default function UsersPage() {
                   className={cn(
                     "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                     selectedRole === role
-                      ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                       : "bg-white/5 text-slate-400 hover:bg-white/10"
                   )}
                 >
@@ -164,10 +164,10 @@ export default function UsersPage() {
                   >
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium text-white"
                           style={{
-                            background: "linear-gradient(135deg, #00f0ff, #8b5cf6)",
+                            background: "linear-gradient(135deg, #10b981, #059669)",
                           }}
                         >
                           {user.avatar}
@@ -196,7 +196,7 @@ export default function UsersPage() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-cyan-400 transition-colors">
+                        <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-red-400 transition-colors">

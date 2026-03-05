@@ -18,8 +18,23 @@ export async function middleware(request: NextRequest) {
 
   // If user is logged in and trying to access login page
   if (user && isPublicRoute) {
-    // Simple redirect to dashboard
-    return NextResponse.redirect(new URL("/app/central", request.url));
+    // Get user role from user metadata
+    const userRole = user.user_metadata?.role || 'agent';
+    
+    // Redirect based on user role
+    if (userRole === 'super_user') {
+      return NextResponse.redirect(new URL("/super/plans", request.url));
+    } else {
+      return NextResponse.redirect(new URL("/app/central", request.url));
+    }
+  }
+  
+  // Role-based access control for super user routes
+  if (pathname.startsWith("/super")) {
+    const userRole = user?.user_metadata?.role;
+    if (userRole !== 'super_user') {
+      return NextResponse.redirect(new URL("/app/central", request.url));
+    }
   }
 
   return supabaseResponse;

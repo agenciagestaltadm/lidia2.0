@@ -54,7 +54,7 @@ export default function SettingsPage() {
       <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <GlowBadge variant="violet">Configurações</GlowBadge>
+            <GlowBadge variant="green">Configurações</GlowBadge>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white">
             Configurações do Sistema
@@ -64,7 +64,7 @@ export default function SettingsPage() {
           </p>
         </div>
         <NeonButton 
-          variant={saved ? "fuchsia" : "cyan"} 
+          variant={saved ? "green" : "green"}
           onClick={handleSave}
           disabled={saved}
         >
@@ -96,7 +96,7 @@ export default function SettingsPage() {
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all",
                       activeSection === section.id
-                        ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                         : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                     )}
                   >
@@ -160,7 +160,7 @@ export default function SettingsPage() {
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input type="checkbox" defaultChecked={item.defaultChecked} className="sr-only peer" />
-                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                         </label>
                       </div>
                     ))}
@@ -192,7 +192,7 @@ export default function SettingsPage() {
                     <div className="pt-4">
                       <p className="text-white font-medium mb-3">Autenticação de Dois Fatores</p>
                       <div className="flex items-center gap-4 p-4 rounded-lg bg-white/5">
-                        <Shield className="w-8 h-8 text-cyan-400" />
+                        <Shield className="w-8 h-8 text-emerald-400" />
                         <div className="flex-1">
                           <p className="text-white font-medium">2FA Desativado</p>
                           <p className="text-sm text-slate-400">Adicione uma camada extra de segurança</p>
@@ -215,8 +215,8 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-white font-medium mb-3">Tema</p>
                       <div className="grid grid-cols-3 gap-4">
-                        <button className="p-4 rounded-lg bg-cyan-500/20 border-2 border-cyan-500 text-center">
-                          <Moon className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
+                        <button className="p-4 rounded-lg bg-emerald-500/20 border-2 border-emerald-500 text-center">
+                          <Moon className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
                           <span className="text-sm text-white">Escuro</span>
                         </button>
                         <button className="p-4 rounded-lg bg-white/5 border border-white/10 text-center opacity-50">
@@ -305,7 +305,7 @@ export default function SettingsPage() {
                     <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                       <p className="text-red-400 font-medium mb-2">Zona de Perigo</p>
                       <p className="text-sm text-slate-400 mb-4">Ações irreversíveis para sua conta</p>
-                      <NeonButton variant="fuchsia" size="sm">Excluir Conta</NeonButton>
+                      <NeonButton variant="green" size="sm">Excluir Conta</NeonButton>
                     </div>
                   </div>
                 </div>
