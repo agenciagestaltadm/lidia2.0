@@ -2,9 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useState, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,34 +16,11 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [captchaValue, setCaptchaValue] = useState("");
-  const [captchaQuestion, setCaptchaQuestion] = useState({ question: "", answer: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
-
-  // Generate simple math captcha
-  useEffect(() => {
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
-    setCaptchaQuestion({
-      question: `Quanto é ${num1} + ${num2}?`,
-      answer: String(num1 + num2),
-    });
-  }, []);
-
-  // Check for error in URL
-  useEffect(() => {
-    const errorParam = searchParams.get("error");
-    if (errorParam === "no_company") {
-      setError("Você não tem empresa vinculada. Contate o administrador.");
-    } else if (errorParam === "profile_fetch_failed") {
-      setError("Erro ao carregar dados do usuário. Tente novamente em alguns instantes.");
-    }
-  }, [searchParams]);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -62,24 +38,6 @@ function LoginForm() {
 
     if (!password) {
       setError("Senha obrigatória");
-      return;
-    }
-
-    if (!captchaValue) {
-      setError("Por favor, responda o verificador humano");
-      return;
-    }
-
-    if (captchaValue !== captchaQuestion.answer) {
-      setError("Resposta do verificador humano incorreta");
-      // Generate new captcha
-      const num1 = Math.floor(Math.random() * 10) + 1;
-      const num2 = Math.floor(Math.random() * 10) + 1;
-      setCaptchaQuestion({
-        question: `Quanto é ${num1} + ${num2}?`,
-        answer: String(num1 + num2),
-      });
-      setCaptchaValue("");
       return;
     }
 
@@ -107,41 +65,11 @@ function LoginForm() {
         return;
       }
 
-      // Get user profile to determine redirect
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, is_active, company_id")
-        .eq("user_id", data.user.id)
-        .single();
-
-      if (!profile) {
-        setError("Perfil não encontrado");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!profile.is_active) {
-        setError("Usuário desativado");
-        await supabase.auth.signOut();
-        setIsLoading(false);
-        return;
-      }
-
-      // Redirect based on role
-      if (profile.role === "SUPER_USER") {
-        router.push("/super/central");
-      } else {
-        if (!profile.company_id) {
-          setError("Você não tem empresa vinculada");
-          await supabase.auth.signOut();
-          setIsLoading(false);
-          return;
-        }
-        router.push("/app/central");
-      }
-
+      // Redirect to dashboard
+      router.push("/app/central");
       router.refresh();
-    } catch {
+
+    } catch (err) {
       setError("Erro ao fazer login. Tente novamente.");
       setIsLoading(false);
     }
@@ -149,19 +77,14 @@ function LoginForm() {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1 text-center">
-        <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-3xl">L</span>
-          </div>
-        </div>
-        <CardTitle className="text-2xl font-bold">LIDIA 2.0</CardTitle>
-        <CardDescription>
-          Entre com suas credenciais para acessar o CRM
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+        <CardDescription className="text-center">
+          Entre com suas credenciais para acessar o sistema
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -181,7 +104,7 @@ function LoginForm() {
               required
             />
           </div>
-
+          
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
             <div className="relative">
@@ -202,63 +125,37 @@ function LoginForm() {
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  <EyeOff className="h-4 w-4" />
                 ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <Eye className="h-4 w-4" />
                 )}
               </Button>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="captcha">Verificador humano: {captchaQuestion.question}</Label>
-            <Input
-              id="captcha"
-              type="text"
-              placeholder="Digite a resposta"
-              value={captchaValue}
-              onChange={(e) => setCaptchaValue(e.target.value)}
-              disabled={isLoading}
-              required
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
+        </CardContent>
+        
+        <CardFooter className="flex flex-col space-y-4">
+          <Button 
+            type="submit" 
+            className="w-full" 
             disabled={isLoading}
           >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Entrando...
-              </div>
-            ) : (
-              "Entrar"
-            )}
+            {isLoading ? "Entrando..." : "Entrar"}
           </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <Link
-          href="/forgot-password"
-          className="text-sm text-primary hover:underline"
-        >
-          Esqueceu a senha?
-        </Link>
-      </CardFooter>
+        </CardFooter>
+      </form>
     </Card>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Suspense fallback={
-        <Card className="w-full max-w-md">
-          <CardContent className="flex items-center justify-center py-8">
+        <Card className="w-full max-w-md p-8">
+          <div className="flex items-center justify-center">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-          </CardContent>
+          </div>
         </Card>
       }>
         <LoginForm />
