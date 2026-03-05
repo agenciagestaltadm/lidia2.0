@@ -2,11 +2,13 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
-import { MessageSquare, Clock, CheckCircle, Plus, Send, Filter } from "lucide-react";
+import { useCallback } from "react";
+import { MessageSquare, Clock, CheckCircle, Plus, Send, Filter, AlertCircle, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createClient } from "@/lib/supabase/client";
+import { useSupabaseQuery } from "@/hooks/use-supabase-query";
 
 interface DashboardStats {
   openAttendances: number;
@@ -15,53 +17,71 @@ interface DashboardStats {
 }
 
 export default function ClientCentralPage() {
-  const [stats, setStats] = useState<DashboardStats>({
-    openAttendances: 0,
-    waitingResponse: 0,
-    closedToday: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const today = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const today = new Date().toISOString().split("T")[0];
+  const fetchStats = useCallback(async (supabase: ReturnType<typeof createClient>) => {
+    const today = new Date().toISOString().split("T")[0];
 
-      // Fetch open attendances
-      const { count: openCount } = await supabase
+    const [openResult, pendingResult, closedResult] = await Promise.allSettled([
+      supabase
         .from("tickets")
         .select("*", { count: "exact", head: true })
-        .eq("status", "OPEN");
-
-      // Fetch waiting response
-      const { count: waitingCount } = await supabase
+        .eq("status", "OPEN"),
+      supabase
         .from("tickets")
         .select("*", { count: "exact", head: true })
-        .eq("status", "PENDING");
-
-      // Fetch closed today
-      const { count: closedCount } = await supabase
+        .eq("status", "PENDING"),
+      supabase
         .from("tickets")
         .select("*", { count: "exact", head: true })
         .eq("status", "CLOSED")
-        .gte("updated_at", today);
+        .gte("updated_at", today),
+    ]);
 
-      setStats({
-        openAttendances: openCount || 0,
-        waitingResponse: waitingCount || 0,
-        closedToday: closedCount || 0,
-      });
+    const openCount = openResult.status === "fulfilled" ? openResult.value.count : 0;
+    const waitingCount = pendingResult.status === "fulfilled" ? pendingResult.value.count : 0;
+    const closedCount = closedResult.status === "fulfilled" ? closedResult.value.count : 0;
 
-      setLoading(false);
+    return {
+      openAttendances: openCount || 0,
+      waitingResponse: waitingCount || 0,
+      closedToday: closedCount || 0,
     };
+  }, []);
 
-    fetchStats();
-  }, [supabase]);
+  const { data: stats, loading, error, refetch } = useSupabaseQuery<DashboardStats>(
+    fetchStats,
+    [today],
+    { timeout: 15000, retries: 3 }
+  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Central</h1>
+          <p className="text-muted-foreground">
+            Resumo do dia e atalhos rápidos
+          </p>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>Erro ao carregar dados: {error.message}</span>
+            <Button variant="outline" size="sm" onClick={refetch}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Tentar novamente
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -85,7 +105,7 @@ export default function ClientCentralPage() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.openAttendances}</div>
+            <div className="text-2xl font-bold">{stats?.openAttendances ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               aguardando atendimento
             </p>
@@ -100,7 +120,7 @@ export default function ClientCentralPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.waitingResponse}</div>
+            <div className="text-2xl font-bold">{stats?.waitingResponse ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               pendentes de retorno
             </p>
@@ -115,7 +135,7 @@ export default function ClientCentralPage() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.closedToday}</div>
+            <div className="text-2xl font-bold">{stats?.closedToday ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               atendimentos concluídos
             </p>

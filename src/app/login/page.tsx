@@ -41,6 +41,8 @@ function LoginForm() {
     const errorParam = searchParams.get("error");
     if (errorParam === "no_company") {
       setError("Você não tem empresa vinculada. Contate o administrador.");
+    } else if (errorParam === "profile_fetch_failed") {
+      setError("Erro ao carregar dados do usuário. Tente novamente em alguns instantes.");
     }
   }, [searchParams]);
 
