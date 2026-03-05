@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { User, UserRole } from "@/types";
@@ -11,6 +11,19 @@ interface AuthState {
   error: string | null;
 }
 
+// Lazy client creation to avoid build-time errors
+let clientInstance: ReturnType<typeof createClient> | null = null;
+const getClient = () => {
+  if (!clientInstance && typeof window !== "undefined") {
+    try {
+      clientInstance = createClient();
+    } catch (e) {
+      console.warn("Supabase client creation failed:", e);
+    }
+  }
+  return clientInstance;
+};
+
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -18,10 +31,13 @@ export function useAuth() {
     error: null,
   });
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(getClient());
 
   // Fetch user profile with role
   const fetchUserProfile = useCallback(async (userId: string) => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return null;
+    
     try {
       // First check if user is a super user
       const { data: superUser, error: superError } = await supabase
@@ -67,10 +83,20 @@ export function useAuth() {
       console.error("Error fetching user profile:", error);
       return null;
     }
-  }, [supabase]);
+  }, []);
 
   // Initialize auth state
   useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) {
+      setState({
+        user: null,
+        isLoading: false,
+        error: "Auth not available",
+      });
+      return;
+    }
+
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -102,7 +128,7 @@ export function useAuth() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: string, session: { user: { id: string } } | null) => {
         if (session?.user) {
           const profile = await fetchUserProfile(session.user.id);
           setState({
@@ -123,10 +149,15 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, fetchUserProfile]);
+  }, [fetchUserProfile]);
 
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
+    const supabase = supabaseRef.current;
+    if (!supabase) {
+      return { success: false, error: "Auth not available" };
+    }
+
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -160,6 +191,9 @@ export function useAuth() {
 
   // Sign out
   const signOut = async () => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+
     try {
       await supabase.auth.signOut();
       setState({

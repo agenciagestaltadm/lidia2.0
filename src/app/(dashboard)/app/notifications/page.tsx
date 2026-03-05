@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { GlowBadge } from "@/components/ui/glow-badge";
-import { NeonButton } from "@/components/ui/neon-button";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 
@@ -137,14 +136,20 @@ export default function NotificationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <NeonButton variant="ghost" size="sm" onClick={markAllAsRead}>
-            <CheckCheck className="w-4 h-4 mr-2" />
+          <button
+            onClick={markAllAsRead}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm"
+          >
+            <CheckCheck className="w-4 h-4" />
             Marcar todas como lidas
-          </NeonButton>
-          <NeonButton variant="green" size="sm" onClick={clearAll}>
-            <Trash2 className="w-4 h-4 mr-2" />
+          </button>
+          <button
+            onClick={clearAll}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors text-sm"
+          >
+            <Trash2 className="w-4 h-4" />
             Limpar
-          </NeonButton>
+          </button>
         </div>
       </motion.div>
 

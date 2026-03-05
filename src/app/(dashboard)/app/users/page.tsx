@@ -34,9 +34,9 @@ const users = [
 ];
 
 const roleColors: Record<string, string> = {
-  Admin: "cyan",
-  Manager: "violet",
-  Agent: "fuchsia",
+  Admin: "green",
+  Manager: "emerald",
+  Agent: "default",
   Viewer: "default",
 };
 

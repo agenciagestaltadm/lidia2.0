@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { GlowBadge } from "@/components/ui/glow-badge";
-import { NeonButton } from "@/components/ui/neon-button";
 import { AnimatedInput } from "@/components/ui/animated-input";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 
@@ -61,27 +60,31 @@ export default function ProfilePage() {
             Gerencie suas informações pessoais
           </p>
         </div>
-        <NeonButton 
-          variant={saved ? "green" : isEditing ? "green" : "ghost"}
+        <button
           onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            saved || isEditing
+              ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+              : 'bg-white/10 text-white hover:bg-white/20'
+          }`}
         >
           {saved ? (
             <>
-              <Check className="w-4 h-4 mr-2" />
+              <Check className="w-4 h-4" />
               Salvo!
             </>
           ) : isEditing ? (
             <>
-              <Save className="w-4 h-4 mr-2" />
+              <Save className="w-4 h-4" />
               Salvar Alterações
             </>
           ) : (
             <>
-              <User className="w-4 h-4 mr-2" />
+              <User className="w-4 h-4" />
               Editar Perfil
             </>
           )}
-        </NeonButton>
+        </button>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

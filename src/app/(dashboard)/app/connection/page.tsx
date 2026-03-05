@@ -77,10 +77,13 @@ export default function ConnectionPage() {
             Configure e monitore seus canais de comunicação
           </p>
         </div>
-        <NeonButton variant="green" onClick={() => setShowQRModal(true)}>
-          <QrCode className="w-4 h-4 mr-2" />
+        <button 
+          onClick={() => setShowQRModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+        >
+          <QrCode className="w-4 h-4" />
           Nova Conexão
-        </NeonButton>
+        </button>
       </motion.div>
 
       {/* Stats */}
@@ -168,12 +171,12 @@ export default function ConnectionPage() {
                 
                 <div className="mt-4 pt-4 border-t border-white/10">
                   {connection.status === "connected" ? (
-                    <NeonButton variant="ghost" size="sm" className="w-full">
+                    <NeonButton variant="ghost" size="sm">
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Sincronizar
                     </NeonButton>
                   ) : (
-                    <NeonButton variant="green" size="sm" className="w-full">
+                    <NeonButton variant="green" size="sm">
                       <Plug className="w-4 h-4 mr-2" />
                       Conectar
                     </NeonButton>
@@ -198,13 +201,12 @@ export default function ConnectionPage() {
             <p className="text-sm text-slate-400 text-center mb-4">
               Escaneie o QR code com seu WhatsApp para conectar
             </p>
-            <NeonButton 
-              variant="ghost" 
-              className="w-full"
+            <button 
               onClick={() => setShowQRModal(false)}
+              className="w-full px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
             >
               Fechar
-            </NeonButton>
+            </button>
           </GlassCard>
         </div>
       )}

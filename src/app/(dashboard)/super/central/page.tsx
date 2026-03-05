@@ -30,9 +30,10 @@ export default function SuperCentralPage() {
   });
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
+    
     const fetchStats = async () => {
       // Fetch companies count
       const { count: companiesCount } = await supabase
@@ -73,7 +74,7 @@ export default function SuperCentralPage() {
     };
 
     fetchStats();
-  }, [supabase]);
+  }, []);
 
   if (loading) {
     return (

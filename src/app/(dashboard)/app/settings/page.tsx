@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { GlowBadge } from "@/components/ui/glow-badge";
-import { NeonButton } from "@/components/ui/neon-button";
 import { AnimatedInput } from "@/components/ui/animated-input";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
@@ -63,23 +62,27 @@ export default function SettingsPage() {
             Personalize suas preferências e configurações
           </p>
         </div>
-        <NeonButton 
-          variant={saved ? "green" : "green"}
+        <button
           onClick={handleSave}
           disabled={saved}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            saved
+              ? 'bg-emerald-600 text-white cursor-not-allowed'
+              : 'bg-emerald-500 text-white hover:bg-emerald-600'
+          }`}
         >
           {saved ? (
             <>
-              <Check className="w-4 h-4 mr-2" />
+              <Check className="w-4 h-4" />
               Salvo!
             </>
           ) : (
             <>
-              <Save className="w-4 h-4 mr-2" />
+              <Save className="w-4 h-4" />
               Salvar Alterações
             </>
           )}
-        </NeonButton>
+        </button>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -197,9 +200,9 @@ export default function SettingsPage() {
                           <p className="text-white font-medium">2FA Desativado</p>
                           <p className="text-sm text-slate-400">Adicione uma camada extra de segurança</p>
                         </div>
-                        <NeonButton variant="ghost" size="sm">
+                        <button className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm">
                           Ativar
-                        </NeonButton>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -298,14 +301,14 @@ export default function SettingsPage() {
                       <p className="text-white font-medium mb-2">Exportar Dados</p>
                       <p className="text-sm text-slate-400 mb-4">Faça download de todos os seus dados</p>
                       <div className="flex gap-3">
-                        <NeonButton variant="ghost" size="sm">Exportar CSV</NeonButton>
-                        <NeonButton variant="ghost" size="sm">Exportar JSON</NeonButton>
+                        <button className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm">Exportar CSV</button>
+                        <button className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm">Exportar JSON</button>
                       </div>
                     </div>
                     <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                       <p className="text-red-400 font-medium mb-2">Zona de Perigo</p>
                       <p className="text-sm text-slate-400 mb-4">Ações irreversíveis para sua conta</p>
-                      <NeonButton variant="green" size="sm">Excluir Conta</NeonButton>
+                      <button className="px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors text-sm">Excluir Conta</button>
                     </div>
                   </div>
                 </div>

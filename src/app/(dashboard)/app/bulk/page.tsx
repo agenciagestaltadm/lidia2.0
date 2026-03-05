@@ -157,7 +157,7 @@ export default function BulkPage() {
               </div>
               
               <div className="flex gap-3 pt-4">
-                <NeonButton variant="green" className="flex-1">
+                <NeonButton variant="green">
                   <Play className="w-4 h-4 mr-2" />
                   Iniciar Agora
                 </NeonButton>
