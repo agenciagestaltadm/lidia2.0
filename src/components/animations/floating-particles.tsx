@@ -21,10 +21,10 @@ interface FloatingParticlesProps {
 export function FloatingParticles({ count = 20, className }: FloatingParticlesProps) {
   const particles = useMemo<Particle[]>(() => {
     const colors = [
-      "rgba(0, 240, 255, 0.6)",   // Cyan
-      "rgba(139, 92, 246, 0.5)",  // Violet
-      "rgba(217, 70, 239, 0.4)",  // Fuchsia
-      "rgba(16, 185, 129, 0.4)",  // Emerald
+      "rgba(16, 185, 129, 0.6)",   // Emerald
+      "rgba(5, 150, 105, 0.5)",    // Dark Green
+      "rgba(52, 211, 153, 0.4)",   // Light Green
+      "rgba(4, 120, 87, 0.4)",     // Deep Green
     ];
     
     return Array.from({ length: count }, (_, i) => ({

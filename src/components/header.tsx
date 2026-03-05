@@ -20,16 +20,10 @@ export function Header({ onMenuClick }: HeaderProps) {
       central: "Central",
       attendances: "Atendimentos",
       contacts: "Contatos",
-      bulk: "Disparo em Bulk",
-      campaigns: "Campanhas",
-      templates: "Templates",
+      bulk: "Disparo Bulk",
       kanban: "Kanban",
-      funnel: "Funil",
-      analytics: "Analytics",
-      companies: "Empresas",
+      connection: "Canal de Conexão",
       users: "Usuários",
-      notifications: "Notificações",
-      profile: "Perfil",
       settings: "Configurações",
     };
     return titles[path] || path.charAt(0).toUpperCase() + path.slice(1);
@@ -58,7 +52,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             <div 
               className="w-8 h-8 rounded-lg flex items-center justify-center lg:hidden"
               style={{
-                background: "linear-gradient(135deg, rgba(0,240,255,0.3), rgba(139,92,246,0.3))",
+                background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
               }}
             >
               <Sparkles className="w-4 h-4 text-white" />
@@ -83,34 +77,34 @@ export function Header({ onMenuClick }: HeaderProps) {
               <input
                 type="text"
                 placeholder="Buscar..."
-                className="w-64 bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
+                className="w-64 bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
               />
             </div>
           </div>
 
           {/* Notifications */}
           <Link
-            href="/app/notifications"
+            href="/app/attendances"
             className={cn(
               "relative p-2 rounded-lg transition-colors",
-              pathname === "/app/notifications"
-                ? "bg-cyan-500/10 text-cyan-400"
+              pathname === "/app/attendances"
+                ? "bg-emerald-500/10 text-emerald-400"
                 : "text-slate-400 hover:text-white hover:bg-white/5"
             )}
           >
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
           </Link>
 
           {/* User Avatar */}
           <Link
-            href="/app/profile"
+            href="/app/settings"
             className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
           >
             <div 
               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
               style={{
-                background: "linear-gradient(135deg, #00f0ff, #8b5cf6)",
+                background: "linear-gradient(135deg, #10b981, #059669)",
               }}
             >
               U

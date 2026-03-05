@@ -6,7 +6,7 @@ import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, AlertCircle, Mail, Lock, Sparkles } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { GradientMesh } from "@/components/animations/gradient-mesh";
 import { FloatingParticles } from "@/components/animations/floating-particles";
 import { FloatingGeometric } from "@/components/animations/floating-geometric";
@@ -19,11 +19,8 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, redirectBasedOnRole, isLoading, error: authError } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  
-  const router = useRouter();
-  const supabase = createClient();
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -43,36 +40,13 @@ function LoginForm() {
       return;
     }
 
-    setIsLoading(true);
+    const result = await signIn(email, password);
 
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        if (authError.message.includes("Invalid login")) {
-          setError("Credenciais incorretas");
-        } else {
-          setError(authError.message);
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      if (!data.user) {
-        setError("Erro ao autenticar");
-        setIsLoading(false);
-        return;
-      }
-
-      router.push("/app/central");
-      router.refresh();
-
-    } catch (err) {
-      setError("Erro ao fazer login. Tente novamente.");
-      setIsLoading(false);
+    if (result.success && result.user) {
+      // Redirect based on user role
+      redirectBasedOnRole(result.user);
+    } else if (result.error) {
+      setError(result.error);
     }
   };
 
@@ -83,19 +57,19 @@ function LoginForm() {
       variants={staggerContainer}
       className="relative z-10 w-full max-w-md px-4"
     >
-      <GlassCard className="p-8" hover={false} glow="cyan">
+      <GlassCard className="p-8" hover={false} glow="green">
         {/* Header */}
         <motion.div variants={fadeInUp} className="text-center mb-8">
           <motion.div
             className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl"
             style={{
-              background: "linear-gradient(135deg, rgba(0,240,255,0.2), rgba(139,92,246,0.2))",
-              border: "1px solid rgba(0,240,255,0.3)",
+              background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.2))",
+              border: "1px solid rgba(16,185,129,0.3)",
             }}
             whileHover={{ scale: 1.05, rotate: 5 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Sparkles className="w-8 h-8 text-cyan-400" />
+            <Sparkles className="w-8 h-8 text-emerald-400" />
           </motion.div>
           
           <h1 className="text-3xl font-bold mb-2">
@@ -110,7 +84,7 @@ function LoginForm() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <AnimatePresence mode="wait">
-            {error && (
+            {(error || authError) && (
               <motion.div
                 variants={formError}
                 initial="hidden"
@@ -119,7 +93,7 @@ function LoginForm() {
                 className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span>{error}</span>
+                <span>{error || authError}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -149,7 +123,7 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-slate-400 hover:text-cyan-400 transition-colors"
+                  className="text-slate-400 hover:text-emerald-400 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -160,7 +134,7 @@ function LoginForm() {
           <motion.div variants={fadeInUp} className="pt-2">
             <NeonButton
               type="submit"
-              variant="cyan"
+              variant="green"
               size="lg"
               loading={isLoading}
               disabled={isLoading}
@@ -180,9 +154,9 @@ function LoginForm() {
             CRM Inteligente para Gestão de Relacionamentos
           </p>
           <div className="flex justify-center gap-2 mt-3">
-            <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-            <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" style={{ animationDelay: "0.2s" }} />
-            <span className="w-2 h-2 rounded-full bg-fuchsia-500 animate-pulse" style={{ animationDelay: "0.4s" }} />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: "0.2s" }} />
+            <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" style={{ animationDelay: "0.4s" }} />
           </div>
         </motion.div>
       </GlassCard>
@@ -192,7 +166,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#020617]">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-black">
       {/* Animated Background */}
       <GradientMesh />
       
@@ -207,8 +181,8 @@ export default function LoginPage() {
         className="absolute inset-0 opacity-[0.02] pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(0, 240, 255, 0.5) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 240, 255, 0.5) 1px, transparent 1px)
+            linear-gradient(rgba(16, 185, 129, 0.5) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(16, 185, 129, 0.5) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
         }}
@@ -220,7 +194,7 @@ export default function LoginPage() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full"
+            className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full"
           />
         </div>
       }>
@@ -228,8 +202,8 @@ export default function LoginPage() {
       </Suspense>
 
       {/* Corner Glows */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
     </div>
   );
 }

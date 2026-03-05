@@ -7,19 +7,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  Building2,
+  MessageSquare,
+  Contact,
+  Send,
+  Kanban,
+  Plug,
   Users,
   Settings,
   Menu,
   X,
-  Contact,
-  MessageSquare,
-  Send,
-  Kanban,
-  Filter,
-  BarChart3,
-  Bell,
-  User,
   ChevronDown,
   LogOut,
 } from "lucide-react";
@@ -44,43 +40,18 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
+// Client/Agent navigation items as requested
 const navItems: NavItem[] = [
-  { href: "/app/central", label: "Central", icon: LayoutDashboard },
-  {
-    label: "Atendimentos",
-    icon: MessageSquare,
-    children: [
-      { href: "/app/attendances", label: "Todos os Atendimentos" },
-      { href: "/app/attendances/active", label: "Em Andamento" },
-      { href: "/app/attendances/pending", label: "Pendentes" },
-    ],
-  },
+  { href: "/app/central", label: "Página Central", icon: LayoutDashboard },
+  { href: "/app/attendances", label: "Atendimentos", icon: MessageSquare },
   { href: "/app/contacts", label: "Contatos", icon: Contact },
-  {
-    label: "Comunicação",
-    icon: Send,
-    children: [
-      { href: "/app/bulk", label: "Disparo em Bulk" },
-      { href: "/app/campaigns", label: "Campanhas" },
-      { href: "/app/templates", label: "Templates" },
-    ],
-  },
-  {
-    label: "Pipeline",
-    icon: Kanban,
-    children: [
-      { href: "/app/kanban", label: "Kanban" },
-      { href: "/app/funnel", label: "Funil" },
-    ],
-  },
-  { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/app/companies", label: "Empresas", icon: Building2 },
+  { href: "/app/bulk", label: "Disparo Bulk", icon: Send },
+  { href: "/app/kanban", label: "Kanban", icon: Kanban },
+  { href: "/app/connection", label: "Canal de Conexão", icon: Plug },
   { href: "/app/users", label: "Usuários", icon: Users },
-  { href: "/app/notifications", label: "Notificações", icon: Bell },
 ];
 
 const bottomNavItems: NavItem[] = [
-  { href: "/app/profile", label: "Perfil", icon: User },
   { href: "/app/settings", label: "Configurações", icon: Settings },
 ];
 
@@ -101,68 +72,51 @@ function NavItemComponent({
 
   if (item.children) {
     return (
-      <div>
-        <motion.button
+      <div className="relative">
+        <button
           onClick={() => setIsExpanded(!isExpanded)}
           className={cn(
-            "w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-            (shouldExpand || isActive)
-              ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-              : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            "flex items-center w-full gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 group",
+            hasActiveChild
+              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+              : "text-slate-400 hover:bg-white/5 hover:text-emerald-300"
           )}
-          whileTap={{ scale: 0.98 }}
         >
-          <div className="flex items-center gap-3">
-            <Icon className="h-4 w-4" />
-            <span>{item.label}</span>
-          </div>
+          <Icon className="w-5 h-5 flex-shrink-0" />
+          <span className="flex-1 text-sm font-medium text-left">{item.label}</span>
           <motion.div
             animate={{ rotate: shouldExpand ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="w-4 h-4" />
           </motion.div>
-        </motion.button>
+        </button>
 
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {shouldExpand && (
             <motion.div
-              variants={sidebarSubmenu}
               initial="hidden"
               animate="visible"
-              exit="hidden"
+              exit="exit"
+              variants={sidebarSubmenu}
               className="overflow-hidden"
             >
-              <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-4">
-                {item.children.map((child, index) => {
+              <div className="mt-1 ml-4 pl-4 border-l border-emerald-500/20 space-y-1">
+                {item.children.map((child) => {
                   const isChildActive = pathname === child.href;
                   return (
-                    <motion.div
+                    <Link
                       key={child.href}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                      href={child.href}
+                      className={cn(
+                        "block px-3 py-2 text-sm rounded-lg transition-all duration-200",
+                        isChildActive
+                          ? "text-emerald-400 bg-emerald-500/10"
+                          : "text-slate-500 hover:text-emerald-300 hover:bg-white/5"
+                      )}
                     >
-                      <Link
-                        href={child.href}
-                        className={cn(
-                          "block rounded-lg px-3 py-2 text-sm transition-all duration-200",
-                          isChildActive
-                            ? "bg-cyan-500/20 text-cyan-400 font-medium"
-                            : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                        )}
-                      >
-                        <span className="relative">
-                          {child.label}
-                          {isChildActive && (
-                            <motion.span
-                              layoutId="activeIndicator"
-                              className="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-cyan-400"
-                            />
-                          )}
-                        </span>
-                      </Link>
-                    </motion.div>
+                      {child.label}
+                    </Link>
                   );
                 })}
               </div>
@@ -177,21 +131,22 @@ function NavItemComponent({
     <Link
       href={item.href!}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 group relative overflow-hidden",
         isActive
-          ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-          : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+          : "text-slate-400 hover:bg-white/5 hover:text-emerald-300"
       )}
     >
-      <Icon className="h-4 w-4" />
-      <span>{item.label}</span>
+      {/* Active indicator */}
       {isActive && (
         <motion.div
-          layoutId="sidebarGlow"
-          className="absolute inset-0 rounded-lg bg-cyan-500/5 -z-10"
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          layoutId="activeIndicator"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-400 rounded-r-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+          transition={{ type: "spring", stiffness: 380, damping: 30 }}
         />
       )}
+      <Icon className="w-5 h-5 flex-shrink-0" />
+      <span className="text-sm font-medium">{item.label}</span>
     </Link>
   );
 }
@@ -204,132 +159,118 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
-    router.refresh();
   };
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-black/60 backdrop-blur-xl border-r border-white/5">
+      {/* Logo */}
+      <div className="flex items-center justify-between p-4 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <span className="text-black font-bold text-xl">L</span>
+            </div>
+            <div className="absolute inset-0 rounded-xl bg-emerald-400/20 blur-md -z-10" />
+          </div>
+          <div>
+            <h1 className="text-white font-bold text-lg tracking-tight">LIDIA</h1>
+            <p className="text-xs text-emerald-400/80 font-medium">CRM</p>
+          </div>
+        </div>
+        <button
+          onClick={onToggle}
+          className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Main Navigation */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <div className="mb-4 px-3">
+          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+            Menu
+          </p>
+        </div>
+        {navItems.map((item) => (
+          <motion.div key={item.label} variants={sidebarItem}>
+            <NavItemComponent
+              item={item}
+              isActive={pathname === item.href}
+            />
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="p-3 border-t border-white/5 space-y-1">
+        {bottomNavItems.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href!}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+              pathname === item.href
+                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                : "text-slate-400 hover:bg-white/5 hover:text-emerald-300"
+            )}
+          >
+            <item.icon className="w-5 h-5" />
+            <span className="text-sm font-medium">{item.label}</span>
+          </Link>
+        ))}
+        
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="text-sm font-medium">Sair</span>
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile Toggle */}
+      <button
+        onClick={onToggle}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-black/80 backdrop-blur-sm border border-white/10 text-slate-400 hover:text-white transition-colors"
+      >
+        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block fixed left-0 top-0 h-screen w-64 z-40">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Sidebar */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            variants={overlayFade}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-            onClick={onToggle}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Mobile toggle button */}
-      <motion.button
-        onClick={onToggle}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-slate-800/80 border border-white/10 text-slate-200"
-        whileTap={{ scale: 0.95 }}
-      >
-        <Menu className="h-5 w-5" />
-      </motion.button>
-
-      {/* Sidebar */}
-      <motion.aside
-        variants={drawerSlide}
-        initial={false}
-        animate={isOpen ? "visible" : "hidden"}
-        className="fixed left-0 top-0 z-50 h-screen w-72 border-r border-white/10 bg-slate-950/80 backdrop-blur-xl lg:translate-x-0"
-      >
-        <div className="flex h-full flex-col">
-          {/* Header */}
-          <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
-            <Link href="/app/central" className="flex items-center gap-3">
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(135deg, rgba(0,240,255,0.3), rgba(139,92,246,0.3))",
-                }}
-              >
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <span className="text-xl font-bold gradient-text">LIDIA</span>
-            </Link>
-            <button
-              onClick={onToggle}
-              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 overflow-auto py-4 px-3">
-            <motion.ul 
-              className="space-y-1"
+          <>
+            <motion.div
               initial="hidden"
               animate="visible"
-              variants={{
-                visible: { transition: { staggerChildren: 0.05 } }
-              }}
+              exit="exit"
+              variants={overlayFade}
+              onClick={onToggle}
+              className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+            />
+            <motion.aside
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={drawerSlide}
+              className="lg:hidden fixed left-0 top-0 h-screen w-72 z-50"
             >
-              {navItems.map((item) => {
-                const isActive = item.href 
-                  ? pathname === item.href || pathname?.startsWith(`${item.href}/`)
-                  : item.children?.some(child => pathname === child.href);
-
-                return (
-                  <motion.li 
-                    key={item.label} 
-                    variants={sidebarItem}
-                    className="relative"
-                  >
-                    <NavItemComponent item={item} isActive={!!isActive} />
-                  </motion.li>
-                );
-              })}
-            </motion.ul>
-          </nav>
-
-          {/* Bottom Section */}
-          <div className="border-t border-white/10 p-3 space-y-1">
-            {bottomNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href!}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                    isActive
-                      ? "bg-cyan-500/10 text-cyan-400"
-                      : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all duration-200 mt-2"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Sair</span>
-            </button>
-
-            {/* Version */}
-            <div className="pt-3 mt-2 border-t border-white/5">
-              <p className="text-[10px] text-slate-600 text-center">
-                LIDIA CRM v2.0 • Futuristic Edition
-              </p>
-            </div>
-          </div>
-        </div>
-      </motion.aside>
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }

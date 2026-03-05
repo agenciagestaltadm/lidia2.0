@@ -28,12 +28,12 @@ export function FloatingGeometric() {
           />
           <defs>
             <linearGradient id="hexGradient" x1="0" y1="0" x2="60" y2="68">
-              <stop stopColor="#00f0ff" stopOpacity="0.6" />
-              <stop offset="1" stopColor="#8b5cf6" stopOpacity="0.3" />
+              <stop stopColor="#10b981" stopOpacity="0.6" />
+              <stop offset="1" stopColor="#059669" stopOpacity="0.3" />
             </linearGradient>
             <linearGradient id="hexFill" x1="0" y1="0" x2="60" y2="68">
-              <stop stopColor="#00f0ff" stopOpacity="0.1" />
-              <stop offset="1" stopColor="#8b5cf6" stopOpacity="0.05" />
+              <stop stopColor="#10b981" stopOpacity="0.1" />
+              <stop offset="1" stopColor="#059669" stopOpacity="0.05" />
             </linearGradient>
           </defs>
         </svg>
@@ -64,8 +64,8 @@ export function FloatingGeometric() {
           />
           <defs>
             <linearGradient id="circleGradient" x1="0" y1="0" x2="80" y2="80">
-              <stop stopColor="#d946ef" stopOpacity="0.6" />
-              <stop offset="1" stopColor="#00f0ff" stopOpacity="0.3" />
+              <stop stopColor="#34d399" stopOpacity="0.6" />
+              <stop offset="1" stopColor="#10b981" stopOpacity="0.3" />
             </linearGradient>
           </defs>
         </svg>
@@ -95,12 +95,12 @@ export function FloatingGeometric() {
           />
           <defs>
             <linearGradient id="triGradient" x1="0" y1="0" x2="50" y2="44">
-              <stop stopColor="#8b5cf6" stopOpacity="0.6" />
-              <stop offset="1" stopColor="#d946ef" stopOpacity="0.3" />
+              <stop stopColor="#059669" stopOpacity="0.6" />
+              <stop offset="1" stopColor="#34d399" stopOpacity="0.3" />
             </linearGradient>
             <linearGradient id="triFill" x1="0" y1="0" x2="50" y2="44">
-              <stop stopColor="#8b5cf6" stopOpacity="0.1" />
-              <stop offset="1" stopColor="#d946ef" stopOpacity="0.05" />
+              <stop stopColor="#059669" stopOpacity="0.1" />
+              <stop offset="1" stopColor="#34d399" stopOpacity="0.05" />
             </linearGradient>
           </defs>
         </svg>
@@ -134,12 +134,12 @@ export function FloatingGeometric() {
           />
           <defs>
             <linearGradient id="squareGradient" x1="0" y1="0" x2="50" y2="50">
-              <stop stopColor="#10b981" stopOpacity="0.5" />
-              <stop offset="1" stopColor="#00f0ff" stopOpacity="0.3" />
+              <stop stopColor="#047857" stopOpacity="0.5" />
+              <stop offset="1" stopColor="#10b981" stopOpacity="0.3" />
             </linearGradient>
             <linearGradient id="squareFill" x1="0" y1="0" x2="50" y2="50">
-              <stop stopColor="#10b981" stopOpacity="0.1" />
-              <stop offset="1" stopColor="#00f0ff" stopOpacity="0.05" />
+              <stop stopColor="#047857" stopOpacity="0.1" />
+              <stop offset="1" stopColor="#10b981" stopOpacity="0.05" />
             </linearGradient>
           </defs>
         </svg>
@@ -168,8 +168,8 @@ export function FloatingGeometric() {
           />
           <defs>
             <linearGradient id="crossGradient" x1="0" y1="0" x2="40" y2="40">
-              <stop stopColor="#f59e0b" stopOpacity="0.5" />
-              <stop offset="1" stopColor="#d946ef" stopOpacity="0.3" />
+              <stop stopColor="#10b981" stopOpacity="0.5" />
+              <stop offset="1" stopColor="#34d399" stopOpacity="0.3" />
             </linearGradient>
           </defs>
         </svg>
@@ -179,7 +179,7 @@ export function FloatingGeometric() {
       {[...Array(6)].map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-1 h-1 rounded-full bg-cyan-400/40"
+          className="absolute w-1 h-1 rounded-full bg-emerald-400/40"
           style={{
             left: `${15 + Math.random() * 70}%`,
             top: `${10 + Math.random() * 80}%`,

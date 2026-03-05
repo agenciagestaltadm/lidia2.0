@@ -31,7 +31,7 @@ export const AnimatedInput = forwardRef<HTMLInputElement, AnimatedInputProps>(
             "bg-white/[0.03] backdrop-blur-sm",
             "border border-white/[0.08] rounded-lg",
             "transition-all duration-300",
-            "focus-within:border-cyan-500/50 focus-within:shadow-[0_0_20px_rgba(0,240,255,0.1)]",
+            "focus-within:border-emerald-500/50 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.1)]",
             error && "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.1)]",
             className
           )}
@@ -67,7 +67,7 @@ export const AnimatedInput = forwardRef<HTMLInputElement, AnimatedInputProps>(
           <div 
             className="absolute inset-0 rounded-lg pointer-events-none opacity-0 focus-within:opacity-100 transition-opacity duration-300"
             style={{
-              background: "linear-gradient(135deg, rgba(0,240,255,0.2), rgba(139,92,246,0.2))",
+              background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.2))",
               mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
               maskComposite: "exclude",
               padding: "1px",

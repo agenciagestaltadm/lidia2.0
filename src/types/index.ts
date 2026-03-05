@@ -1,126 +1,129 @@
-export type UserRole = "SUPER_USER" | "CLIENT_ADMIN" | "CLIENT_AGENT" | "CLIENT_VIEWER";
+// User roles in the system
+export type UserRole = "super_user" | "admin" | "manager" | "agent";
 
-export interface Profile {
+// Base user interface
+export interface User {
   id: string;
-  user_id: string;
   email: string;
-  full_name: string | null;
-  avatar_url: string | null;
+  name: string;
   role: UserRole;
-  company_id: string | null;
-  is_active: boolean;
-  last_sign_in_at: string | null;
-  created_at: string;
-  updated_at: string;
+  avatar?: string;
+  companyId?: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt?: string;
 }
 
+// Super User specific interface
+export interface SuperUser extends User {
+  role: "super_user";
+  canManagePlans: boolean;
+  canManageCompanies: boolean;
+  canManageAllUsers: boolean;
+  canConfigureApi: boolean;
+}
+
+// Regular user (Admin, Manager, Agent) interface
+export interface RegularUser extends User {
+  role: "admin" | "manager" | "agent";
+  companyId: string;
+  department?: string;
+  permissions: UserPermissions;
+}
+
+// User permissions
+export interface UserPermissions {
+  canViewDashboard: boolean;
+  canManageAttendances: boolean;
+  canManageContacts: boolean;
+  canSendBulk: boolean;
+  canViewKanban: boolean;
+  canViewAnalytics: boolean;
+  canManageUsers: boolean;
+  canManageSettings: boolean;
+}
+
+// Navigation item for sidebar
+export interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  children?: NavItem[];
+  requiredRole?: UserRole[];
+  requiredPermission?: keyof UserPermissions;
+}
+
+// Super User Navigation
+export const SUPER_USER_NAV_ITEMS: NavItem[] = [
+  { href: "/super/plans", label: "Planos do Super Usuário", icon: "CreditCard" },
+  { href: "/super/companies", label: "Empresas", icon: "Building2" },
+  { href: "/super/company-users", label: "Usuários Cadastrados na Empresa", icon: "Users" },
+  { href: "/super/api-waba", label: "API WABA: Canal de Conexão", icon: "Webhook" },
+  { href: "/super/settings", label: "Configurações de Tudo", icon: "Settings" },
+];
+
+// Client/Agent Navigation
+export const CLIENT_NAV_ITEMS: NavItem[] = [
+  { href: "/app/central", label: "Página Central", icon: "LayoutDashboard" },
+  { href: "/app/attendances", label: "Atendimentos", icon: "MessageSquare" },
+  { href: "/app/contacts", label: "Contatos", icon: "Contact" },
+  { href: "/app/bulk", label: "Disparo Bulk", icon: "Send" },
+  { href: "/app/kanban", label: "Kanban", icon: "Kanban" },
+  { href: "/app/connection", label: "Canal de Conexão", icon: "Link" },
+  { href: "/app/users", label: "Usuários", icon: "Users" },
+  { href: "/app/settings", label: "Configurações", icon: "Settings" },
+];
+
+// Company interface
 export interface Company {
   id: string;
   name: string;
-  document: string | null;
-  logo_url: string | null;
-  plan_id: string | null;
-  settings: Record<string, unknown>;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  cnpj: string;
+  email: string;
+  phone: string;
+  address?: string;
+  plan: PlanType;
+  isActive: boolean;
+  maxUsers: number;
+  currentUsers: number;
+  createdAt: string;
+  expiresAt?: string;
 }
 
+// Plan types
+export type PlanType = "basic" | "professional" | "enterprise" | "custom";
+
+// Plan interface
 export interface Plan {
   id: string;
   name: string;
-  price: number | null;
-  limits: {
-    max_users: number;
-    max_channels: number;
-    max_bulk_messages_per_day: number;
-  };
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  type: PlanType;
+  price: number;
+  description: string;
+  features: string[];
+  maxUsers: number;
+  maxAttendances: number;
+  hasApiAccess: boolean;
+  hasBulkMessaging: boolean;
+  hasAdvancedAnalytics: boolean;
 }
 
-export interface Channel {
+// API WABA Configuration
+export interface WabaConfig {
   id: string;
-  company_id: string;
-  type: "WHATSAPP" | "EMAIL" | "SMS" | "OTHER";
-  name: string;
-  credentials: Record<string, unknown> | null;
-  status: "CONNECTED" | "DISCONNECTED" | "ERROR";
-  last_error: string | null;
-  last_connected_at: string | null;
-  created_at: string;
-  updated_at: string;
+  companyId: string;
+  phoneNumberId: string;
+  businessAccountId: string;
+  accessToken: string;
+  webhookUrl: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
-export interface AuditLog {
-  id: string;
-  action: string;
-  actor_id: string;
-  company_id: string | null;
-  target_id: string | null;
-  target_type: string | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-}
-
-export interface Contact {
-  id: string;
-  company_id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  company_name: string | null;
-  tags: string[];
-  custom_fields: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Pipeline {
-  id: string;
-  company_id: string;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Stage {
-  id: string;
-  pipeline_id: string;
-  name: string;
-  order: number;
-  color: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Deal {
-  id: string;
-  company_id: string;
-  contact_id: string;
-  pipeline_id: string;
-  stage_id: string;
-  title: string;
-  value: number | null;
-  probability: number | null;
-  responsible_id: string;
-  expected_close_date: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Ticket {
-  id: string;
-  company_id: string;
-  contact_id: string;
-  channel_id: string | null;
-  title: string;
-  status: "OPEN" | "PENDING" | "CLOSED";
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  responsible_id: string | null;
-  tags: string[];
-  created_at: string;
-  updated_at: string;
+// Connection status
+export interface ConnectionStatus {
+  isOnline: boolean;
+  lastConnectedAt?: string;
+  qrCode?: string;
+  status: "connected" | "disconnected" | "connecting";
 }

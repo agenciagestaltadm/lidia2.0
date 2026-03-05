@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface GlowBadgeProps {
   children: React.ReactNode;
-  variant?: "cyan" | "violet" | "fuchsia" | "emerald" | "amber" | "default";
+  variant?: "green" | "emerald" | "default";
   size?: "sm" | "md";
   pulse?: boolean;
   className?: string;
@@ -18,35 +18,17 @@ export function GlowBadge({
   className,
 }: GlowBadgeProps) {
   const variantStyles = {
-    cyan: {
-      bg: "bg-cyan-500/10",
-      border: "border-cyan-500/30",
-      text: "text-cyan-400",
-      glow: "shadow-[0_0_10px_rgba(6,182,212,0.3)]",
-    },
-    violet: {
-      bg: "bg-violet-500/10",
-      border: "border-violet-500/30",
-      text: "text-violet-400",
-      glow: "shadow-[0_0_10px_rgba(139,92,246,0.3)]",
-    },
-    fuchsia: {
-      bg: "bg-fuchsia-500/10",
-      border: "border-fuchsia-500/30",
-      text: "text-fuchsia-400",
-      glow: "shadow-[0_0_10px_rgba(217,70,239,0.3)]",
+    green: {
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/30",
+      text: "text-emerald-400",
+      glow: "shadow-[0_0_10px_rgba(16,185,129,0.3)]",
     },
     emerald: {
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/30",
       text: "text-emerald-400",
       glow: "shadow-[0_0_10px_rgba(16,185,129,0.3)]",
-    },
-    amber: {
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/30",
-      text: "text-amber-400",
-      glow: "shadow-[0_0_10px_rgba(245,158,11,0.3)]",
     },
     default: {
       bg: "bg-white/5",
@@ -81,11 +63,8 @@ export function GlowBadge({
         <span 
           className={cn(
             "w-1.5 h-1.5 rounded-full mr-1.5",
-            variant === "cyan" && "bg-cyan-400",
-            variant === "violet" && "bg-violet-400",
-            variant === "fuchsia" && "bg-fuchsia-400",
+            variant === "green" && "bg-emerald-400",
             variant === "emerald" && "bg-emerald-400",
-            variant === "amber" && "bg-amber-400",
           )}
         />
       )}
