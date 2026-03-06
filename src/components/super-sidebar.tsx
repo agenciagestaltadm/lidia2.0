@@ -15,6 +15,7 @@ import {
   X,
   LogOut,
   Crown,
+  Plug,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { drawerSlide, overlayFade, sidebarItem } from "@/lib/animations";
@@ -30,12 +31,13 @@ interface SuperSidebarProps {
   onToggle: () => void;
 }
 
+// Super user navigation items as per specification
 const navItems: NavItem[] = [
-  { href: "/super/plans", label: "Planos do Super Usuário", icon: CreditCard },
+  { href: "/super/plans", label: "Planos", icon: CreditCard },
   { href: "/super/companies", label: "Empresas", icon: Building2 },
-  { href: "/super/company-users", label: "Usuários Cadastrados na Empresa", icon: Users },
-  { href: "/super/api-waba", label: "API WABA: Canal de Conexão", icon: Webhook },
-  { href: "/super/settings", label: "Configurações de Tudo", icon: Settings },
+  { href: "/super/company-users", label: "Usuários Cadastrados das Empresas", icon: Users },
+  { href: "/super/api-waba", label: "Canal de Conexão", icon: Plug },
+  { href: "/super/settings", label: "Configurações", icon: Settings },
 ];
 
 export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
@@ -134,8 +136,8 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
                           : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                       )}
                     >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.label}</span>
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      <span className="leading-tight">{item.label}</span>
                       {isActive && (
                         <motion.div
                           layoutId="superActiveIndicator"

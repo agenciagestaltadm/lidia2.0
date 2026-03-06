@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 -- ENUMS
 -- ============================================================
-CREATE TYPE user_role AS ENUM ('SUPER_USER', 'CLIENT_ADMIN', 'CLIENT_AGENT', 'CLIENT_VIEWER');
+CREATE TYPE user_role AS ENUM ('SUPER_USER', 'CLIENT_ADMIN', 'CLIENT_MANAGER', 'CLIENT_AGENT', 'CLIENT_VIEWER');
 CREATE TYPE channel_type AS ENUM ('WHATSAPP', 'EMAIL', 'SMS', 'OTHER');
 CREATE TYPE channel_status AS ENUM ('CONNECTED', 'DISCONNECTED', 'ERROR');
 CREATE TYPE ticket_status AS ENUM ('OPEN', 'PENDING', 'CLOSED');

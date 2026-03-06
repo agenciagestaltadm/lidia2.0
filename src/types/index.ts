@@ -1,5 +1,51 @@
-// User roles in the system
-export type UserRole = "super_user" | "admin" | "manager" | "agent";
+// User roles in the system - Aligned with PostgreSQL enum
+export type UserRole = "SUPER_USER" | "CLIENT_ADMIN" | "CLIENT_MANAGER" | "CLIENT_AGENT";
+
+// User permissions interface for granular access control
+export interface UserPermissions {
+  canViewCentral: boolean;        // Página Central
+  canViewAttendances: boolean;    // Atendimentos
+  canViewContacts: boolean;       // Contatos
+  canSendBulk: boolean;           // Disparo em Bulk
+  canViewKanban: boolean;         // Kanban
+  canManageConnection: boolean;   // Canal de Conexão
+  canManageUsers: boolean;        // Usuários
+  canViewSettings: boolean;       // Configurações
+}
+
+// Default permissions by role
+export const DEFAULT_PERMISSIONS: Record<Exclude<UserRole, "SUPER_USER">, UserPermissions> = {
+  CLIENT_ADMIN: {
+    canViewCentral: true,
+    canViewAttendances: true,
+    canViewContacts: true,
+    canSendBulk: true,
+    canViewKanban: true,
+    canManageConnection: true,
+    canManageUsers: true,
+    canViewSettings: true,
+  },
+  CLIENT_MANAGER: {
+    canViewCentral: true,
+    canViewAttendances: true,
+    canViewContacts: true,
+    canSendBulk: false,
+    canViewKanban: true,
+    canManageConnection: false,
+    canManageUsers: false,
+    canViewSettings: true,
+  },
+  CLIENT_AGENT: {
+    canViewCentral: true,
+    canViewAttendances: true,
+    canViewContacts: true,
+    canSendBulk: false,
+    canViewKanban: false,
+    canManageConnection: false,
+    canManageUsers: false,
+    canViewSettings: true,
+  },
+};
 
 // Base user interface
 export interface User {
@@ -9,38 +55,28 @@ export interface User {
   role: UserRole;
   avatar?: string;
   companyId?: string;
+  companyName?: string;
   isActive: boolean;
   createdAt: string;
   lastLoginAt?: string;
+  permissions?: UserPermissions; // Only for non-super users
 }
 
 // Super User specific interface
 export interface SuperUser extends User {
-  role: "super_user";
+  role: "SUPER_USER";
   canManagePlans: boolean;
   canManageCompanies: boolean;
   canManageAllUsers: boolean;
   canConfigureApi: boolean;
 }
 
-// Regular user (Admin, Manager, Agent) interface
+// Regular user (Client Admin, Manager, Agent) interface
 export interface RegularUser extends User {
-  role: "admin" | "manager" | "agent";
+  role: "CLIENT_ADMIN" | "CLIENT_MANAGER" | "CLIENT_AGENT";
   companyId: string;
   department?: string;
   permissions: UserPermissions;
-}
-
-// User permissions
-export interface UserPermissions {
-  canViewDashboard: boolean;
-  canManageAttendances: boolean;
-  canManageContacts: boolean;
-  canSendBulk: boolean;
-  canViewKanban: boolean;
-  canViewAnalytics: boolean;
-  canManageUsers: boolean;
-  canManageSettings: boolean;
 }
 
 // Navigation item for sidebar
@@ -53,25 +89,29 @@ export interface NavItem {
   requiredPermission?: keyof UserPermissions;
 }
 
-// Super User Navigation
+// Super User Navigation Items
 export const SUPER_USER_NAV_ITEMS: NavItem[] = [
-  { href: "/super/plans", label: "Planos do Super Usuário", icon: "CreditCard" },
+  { href: "/super/plans", label: "Planos", icon: "CreditCard" },
   { href: "/super/companies", label: "Empresas", icon: "Building2" },
-  { href: "/super/company-users", label: "Usuários Cadastrados na Empresa", icon: "Users" },
-  { href: "/super/api-waba", label: "API WABA: Canal de Conexão", icon: "Webhook" },
-  { href: "/super/settings", label: "Configurações de Tudo", icon: "Settings" },
+  { href: "/super/company-users", label: "Usuários Cadastrados das Empresas", icon: "Users" },
+  { href: "/super/api-waba", label: "Canal de Conexão", icon: "Webhook" },
+  { href: "/super/settings", label: "Configurações", icon: "Settings" },
 ];
 
-// Client/Agent Navigation
+// Client/Company Navigation Items with required permissions
 export const CLIENT_NAV_ITEMS: NavItem[] = [
-  { href: "/app/central", label: "Página Central", icon: "LayoutDashboard" },
-  { href: "/app/attendances", label: "Atendimentos", icon: "MessageSquare" },
-  { href: "/app/contacts", label: "Contatos", icon: "Contact" },
-  { href: "/app/bulk", label: "Disparo Bulk", icon: "Send" },
-  { href: "/app/kanban", label: "Kanban", icon: "Kanban" },
-  { href: "/app/connection", label: "Canal de Conexão", icon: "Link" },
-  { href: "/app/users", label: "Usuários", icon: "Users" },
-  { href: "/app/settings", label: "Configurações", icon: "Settings" },
+  { href: "/app/central", label: "Página Central", icon: "LayoutDashboard", requiredPermission: "canViewCentral" },
+  { href: "/app/attendances", label: "Atendimentos", icon: "MessageSquare", requiredPermission: "canViewAttendances" },
+  { href: "/app/contacts", label: "Contatos", icon: "Contact", requiredPermission: "canViewContacts" },
+  { href: "/app/bulk", label: "Disparo em Bulk", icon: "Send", requiredPermission: "canSendBulk" },
+  { href: "/app/kanban", label: "Kanban", icon: "Kanban", requiredPermission: "canViewKanban" },
+  { href: "/app/connection", label: "Canal de Conexão", icon: "Plug", requiredPermission: "canManageConnection" },
+  { href: "/app/users", label: "Usuários", icon: "Users", requiredPermission: "canManageUsers" },
+];
+
+// Client bottom navigation items
+export const CLIENT_BOTTOM_NAV_ITEMS: NavItem[] = [
+  { href: "/app/settings", label: "Configurações", icon: "Settings", requiredPermission: "canViewSettings" },
 ];
 
 // Company interface
@@ -126,4 +166,22 @@ export interface ConnectionStatus {
   lastConnectedAt?: string;
   qrCode?: string;
   status: "connected" | "disconnected" | "connecting";
+}
+
+// User with company details (for admin management)
+export interface UserWithCompany extends User {
+  company: {
+    id: string;
+    name: string;
+  };
+}
+
+// Permission change log entry
+export interface PermissionChangeLog {
+  id: string;
+  userId: string;
+  changedBy: string;
+  oldPermissions: UserPermissions;
+  newPermissions: UserPermissions;
+  changedAt: string;
 }

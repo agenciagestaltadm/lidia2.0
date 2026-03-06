@@ -24,11 +24,11 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
   const getPageTitle = () => {
     const path = pathname.split("/").pop() || "plans";
     const titles: Record<string, string> = {
-      plans: "Planos do Super Usuário",
+      plans: "Planos",
       companies: "Empresas",
-      "company-users": "Usuários Cadastrados na Empresa",
-      "api-waba": "API WABA: Canal de Conexão",
-      settings: "Configurações de Tudo",
+      "company-users": "Usuários Cadastrados das Empresas",
+      "api-waba": "Canal de Conexão",
+      settings: "Configurações",
     };
     return titles[path] || path.charAt(0).toUpperCase() + path.slice(1);
   };

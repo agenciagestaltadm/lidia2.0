@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request);
+  const { supabaseResponse, user, supabase } = await updateSession(request);
 
   // Get the pathname
   const pathname = request.nextUrl.pathname;
@@ -18,11 +18,11 @@ export async function middleware(request: NextRequest) {
 
   // If user is logged in and trying to access login page
   if (user && isPublicRoute) {
-    // Get user role from user metadata
-    const userRole = user.user_metadata?.role || 'agent';
+    // Get user role from user metadata (updated during login)
+    const userRole = user.user_metadata?.role;
     
     // Redirect based on user role
-    if (userRole === 'super_user') {
+    if (userRole === "SUPER_USER") {
       return NextResponse.redirect(new URL("/super/plans", request.url));
     } else {
       return NextResponse.redirect(new URL("/app/central", request.url));
@@ -32,8 +32,18 @@ export async function middleware(request: NextRequest) {
   // Role-based access control for super user routes
   if (pathname.startsWith("/super")) {
     const userRole = user?.user_metadata?.role;
-    if (userRole !== 'super_user') {
+    if (userRole !== "SUPER_USER") {
+      // Redirect non-super users to their dashboard
       return NextResponse.redirect(new URL("/app/central", request.url));
+    }
+  }
+
+  // Role-based access control for app routes (company users)
+  if (pathname.startsWith("/app")) {
+    const userRole = user?.user_metadata?.role;
+    if (userRole === "SUPER_USER") {
+      // Super users should be redirected to /super/* routes
+      return NextResponse.redirect(new URL("/super/plans", request.url));
     }
   }
 
