@@ -1,3 +1,8 @@
 export { useAuth } from "./use-auth";
 export { usePermissions } from "./use-permissions";
 export { useSupabaseQuery } from "./use-supabase-query";
+export { useSuperDashboard } from "./use-super-dashboard";
+export { usePlans } from "./use-plans";
+export { useCompanies } from "./use-companies";
+export { useCompanyUsers } from "./use-company-users";
+export { useAuditLogs } from "./use-audit-logs";

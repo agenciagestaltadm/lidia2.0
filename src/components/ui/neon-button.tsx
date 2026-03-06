@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 interface NeonButtonProps extends HTMLMotionProps<"button"> {
-  variant?: "green" | "ghost";
+  variant?: "green" | "ghost" | "red" | "blue" | "purple";
   size?: "sm" | "md" | "lg";
   glow?: boolean;
   loading?: boolean;
@@ -33,11 +33,17 @@ export function NeonButton({
   const variantStyles = {
     green: "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white",
     ghost: "bg-white/5 text-white hover:bg-white/10 border border-white/10",
+    red: "bg-gradient-to-r from-red-500 to-red-600 text-white",
+    blue: "bg-gradient-to-r from-blue-500 to-blue-600 text-white",
+    purple: "bg-gradient-to-r from-purple-500 to-purple-600 text-white",
   };
 
   const glowStyles = {
     green: "shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)]",
     ghost: "hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]",
+    red: "shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]",
+    blue: "shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)]",
+    purple: "shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)]",
   };
 
   return (

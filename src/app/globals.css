@@ -359,3 +359,38 @@ body {
     scroll-behavior: auto;
   }
 }
+
+/* ========================================
+   THEME TRANSITIONS
+   ======================================== */
+
+/* Smooth transitions for theme changes */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Prevent flash during initial load */
+html {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+/* Ensure smooth background transitions */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glass effect transitions */
+.glass,
+.glass-strong,
+.glass-subtle {
+  transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+}

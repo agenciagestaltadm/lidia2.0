@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { GlassCard } from "./ui/glass-card";
 import { AnimatePresence, motion as motionDiv } from "framer-motion";
+import { ThemeToggleSwitch } from "./theme-toggle-switch";
 
 interface SuperHeaderProps {
   onMenuClick: () => void;
@@ -18,7 +19,6 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
   const pathname = usePathname();
   const { signOut } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
 
   // Get page title from pathname
   const getPageTitle = () => {
@@ -29,6 +29,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
       "company-users": "Usuários Cadastrados das Empresas",
       "api-waba": "Canal de Conexão",
       settings: "Configurações",
+      central: "Dashboard",
     };
     return titles[path] || path.charAt(0).toUpperCase() + path.slice(1);
   };
@@ -75,30 +76,9 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
 
         {/* Right Section */}
         <div className="flex items-center gap-3">
-          {/* Online toggle */}
-          <div className="flex items-center gap-2 mr-4">
-            <button
-              onClick={() => setIsOnline(!isOnline)}
-              className={cn(
-                "relative w-12 h-6 rounded-full transition-colors duration-300",
-                isOnline ? "bg-emerald-500/30" : "bg-slate-700"
-              )}
-            >
-              <motion.div
-                animate={{ x: isOnline ? 24 : 2 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className={cn(
-                  "absolute top-1 w-4 h-4 rounded-full transition-colors",
-                  isOnline ? "bg-emerald-400" : "bg-slate-500"
-                )}
-              />
-            </button>
-            <span className={cn(
-              "text-sm hidden sm:block",
-              isOnline ? "text-emerald-400" : "text-slate-500"
-            )}>
-              {isOnline ? "Online" : "Offline"}
-            </span>
+          {/* Theme Toggle */}
+          <div className="flex items-center gap-2 mr-2">
+            <ThemeToggleSwitch />
           </div>
 
           {/* Notifications */}

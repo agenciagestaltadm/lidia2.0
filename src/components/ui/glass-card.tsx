@@ -8,7 +8,7 @@ interface GlassCardProps {
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
-  glow?: "green" | "none";
+  glow?: "green" | "blue" | "purple" | "amber" | "red" | "none";
   onClick?: () => void;
 }
 
@@ -28,6 +28,10 @@ export function GlassCard({
         "shadow-[0_4px_30px_rgba(0,0,0,0.5)]",
         "transition-all duration-300",
         glow === "green" && "hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]",
+        glow === "blue" && "hover:shadow-[0_0_30px_rgba(59,130,246,0.15)]",
+        glow === "purple" && "hover:shadow-[0_0_30px_rgba(139,92,246,0.15)]",
+        glow === "amber" && "hover:shadow-[0_0_30px_rgba(245,158,11,0.15)]",
+        glow === "red" && "hover:shadow-[0_0_30px_rgba(239,68,68,0.15)]",
         className
       )}
       initial="rest"
