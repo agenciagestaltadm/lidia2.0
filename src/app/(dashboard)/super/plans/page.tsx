@@ -39,10 +39,10 @@ function FeatureLimit({
   unlimited?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 text-sm text-slate-400">
+    <div className="flex items-center gap-2 text-sm dark:text-slate-400 text-slate-500">
       <Icon className="w-4 h-4 text-emerald-500/60" />
       <span>{label}:</span>
-      <span className="text-emerald-400 font-medium">
+      <span className="dark:text-emerald-400 text-emerald-600 font-medium">
         {unlimited || value === -1 ? "Ilimitado" : value.toLocaleString("pt-BR")}
       </span>
     </div>
@@ -93,8 +93,8 @@ function PlanCard({
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-              <p className="text-sm text-slate-400 mt-1">{plan.description}</p>
+              <h3 className="text-lg font-bold dark:text-white text-slate-900">{plan.name}</h3>
+              <p className="text-sm dark:text-slate-400 text-slate-500 mt-1">{plan.description}</p>
             </div>
           </div>
 
@@ -102,10 +102,10 @@ function PlanCard({
           <div className="mb-6">
             {plan.price ? (
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-white">
+                <span className="text-3xl font-bold dark:text-white text-slate-900">
                   {formatCurrency(plan.price)}
                 </span>
-                <span className="text-slate-400">/mês</span>
+                <span className="dark:text-slate-400 text-slate-500">/mês</span>
               </div>
             ) : (
               <span className="text-2xl font-bold text-emerald-400">
@@ -142,17 +142,17 @@ function PlanCard({
               {features.map((feature, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-300">{feature}</span>
+                  <span className="text-sm dark:text-slate-300 text-slate-600">{feature}</span>
                 </div>
               ))}
             </div>
           )}
 
           {/* Stats */}
-          <div className="pt-4 border-t border-white/10">
+          <div className="pt-4 border-t dark:border-white/10 border-slate-200">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Empresas ativas:</span>
-              <span className="text-emerald-400 font-medium">
+              <span className="dark:text-slate-400 text-slate-500">Empresas ativas:</span>
+              <span className="dark:text-emerald-400 text-emerald-600 font-medium">
                 {activeCompanies}
               </span>
             </div>
@@ -160,10 +160,10 @@ function PlanCard({
         </div>
 
         {/* Actions */}
-        <div className="p-4 border-t border-white/5 flex gap-2">
+        <div className="p-4 border-t dark:border-white/5 border-slate-200 flex gap-2">
           <button
             onClick={() => onEdit(plan)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 hover:text-emerald-400 transition-all duration-200"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg dark:bg-white/5 bg-slate-100 dark:text-slate-300 text-slate-600 dark:hover:bg-white/10 hover:bg-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-200"
           >
             <Edit className="w-4 h-4" />
             Editar
@@ -181,7 +181,7 @@ function PlanCard({
           </button>
           <button
             onClick={() => onDelete(plan)}
-            className="px-4 py-2 rounded-lg bg-white/5 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+            className="px-4 py-2 rounded-lg dark:bg-white/5 bg-slate-100 dark:text-slate-400 text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -196,13 +196,13 @@ function PlanCardSkeleton() {
   return (
     <GlassCard className="h-full p-6" hover={false}>
       <div className="animate-pulse space-y-4">
-        <div className="h-6 bg-white/10 rounded w-3/4" />
-        <div className="h-4 bg-white/10 rounded w-1/2" />
-        <div className="h-10 bg-white/10 rounded w-1/3" />
+        <div className="h-6 dark:bg-white/10 bg-slate-200 rounded w-3/4" />
+        <div className="h-4 dark:bg-white/10 bg-slate-200 rounded w-1/2" />
+        <div className="h-10 dark:bg-white/10 bg-slate-200 rounded w-1/3" />
         <div className="space-y-2">
-          <div className="h-4 bg-white/10 rounded" />
-          <div className="h-4 bg-white/10 rounded" />
-          <div className="h-4 bg-white/10 rounded" />
+          <div className="h-4 dark:bg-white/10 bg-slate-200 rounded" />
+          <div className="h-4 dark:bg-white/10 bg-slate-200 rounded" />
+          <div className="h-4 dark:bg-white/10 bg-slate-200 rounded" />
         </div>
       </div>
     </GlassCard>
@@ -272,10 +272,10 @@ export default function SuperPlansPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="h-8 bg-white/10 rounded w-48 mb-2" />
-            <div className="h-4 bg-white/10 rounded w-64" />
+            <div className="h-8 dark:bg-white/10 bg-slate-200 rounded w-48 mb-2" />
+            <div className="h-4 dark:bg-white/10 bg-slate-200 rounded w-64" />
           </div>
-          <div className="h-10 bg-white/10 rounded w-32" />
+          <div className="h-10 dark:bg-white/10 bg-slate-200 rounded w-32" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
@@ -291,10 +291,10 @@ export default function SuperPlansPage() {
       <div className="flex items-center justify-center h-[60vh]">
         <GlassCard className="p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">
+          <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-2">
             Erro ao carregar planos
           </h3>
-          <p className="text-sm text-slate-400 mb-4">{error}</p>
+          <p className="text-sm dark:text-slate-400 text-slate-500 mb-4">{error}</p>
           <NeonButton onClick={refetch}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Tentar novamente
@@ -323,10 +323,10 @@ export default function SuperPlansPage() {
               Super Admin
             </GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Planos do Sistema
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Gerencie os planos disponíveis para as empresas
           </p>
         </div>
@@ -345,8 +345,8 @@ export default function SuperPlansPage() {
         ].map((stat, index) => (
           <motion.div key={stat.label} variants={fadeInUp} custom={index}>
             <GlassCard className="p-4" glow="green">
-              <p className="text-slate-400 text-xs">{stat.label}</p>
-              <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+              <p className="dark:text-slate-400 text-slate-500 text-xs">{stat.label}</p>
+              <p className="text-2xl font-bold dark:text-white text-slate-900 mt-1">{stat.value}</p>
             </GlassCard>
           </motion.div>
         ))}
@@ -373,10 +373,10 @@ export default function SuperPlansPage() {
       {plans.length === 0 && (
         <motion.div variants={fadeInUp} className="text-center py-16">
           <CreditCard className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">
+          <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-2">
             Nenhum plano cadastrado
           </h3>
-          <p className="text-slate-400 mb-4">
+          <p className="dark:text-slate-400 text-slate-500 mb-4">
             Crie o primeiro plano para começar
           </p>
           <NeonButton onClick={handleCreate}>

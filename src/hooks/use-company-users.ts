@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/types";
 
@@ -46,7 +46,8 @@ export function useCompanyUsers() {
     totalCount: 0,
   });
 
-  const supabase = createClient();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchUsers = useCallback(async () => {
     try {

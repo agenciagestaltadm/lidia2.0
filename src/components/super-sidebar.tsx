@@ -91,25 +91,22 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
         <div className="absolute inset-0 dark:bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 bg-gradient-to-br from-emerald-500/3 via-transparent to-emerald-500/3 pointer-events-none" />
 
         {/* Header */}
-        <div className="relative flex h-20 items-center justify-between dark:border-emerald-500/15 border-slate-200 px-4 shrink-0">
-          <Link href="/super/central" className="flex items-center gap-3 overflow-hidden">
+        <div className="relative flex items-center justify-between dark:border-emerald-500/15 border-slate-200 px-3 shrink-0" style={{ height: isOpen ? 80 : 72 }}>
+          <Link href="/super/central" className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
             <motion.div
-              className="rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+              className="flex items-center justify-center shrink-0 overflow-hidden"
               style={{
-                width: isOpen ? 56 : 44,
-                height: isOpen ? 56 : 44,
-                background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
-                border: "1px solid rgba(16,185,129,0.4)",
-                boxShadow: "0 0 20px rgba(16,185,129,0.15)",
+                width: isOpen ? 200 : 44,
+                height: isOpen ? 60 : 44,
               }}
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.03 }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
               <Image
-                src={isOpen ? "/2.png" : "/3.png"}
+                src="/3.png"
                 alt="LIDIA"
-                width={isOpen ? 48 : 36}
-                height={isOpen ? 48 : 36}
+                width={isOpen ? 200 : 40}
+                height={isOpen ? 60 : 40}
                 className="object-contain"
                 priority
               />
@@ -119,7 +116,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
           {/* Collapse toggle button */}
           <motion.button
             onClick={onToggle}
-            className="p-1.5 rounded-lg dark:text-slate-500 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+            className="p-1.5 rounded-lg dark:text-slate-500 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors shrink-0"
             whileTap={{ scale: 0.95 }}
             title={isOpen ? "Recolher menu" : "Expandir menu"}
           >
@@ -167,8 +164,8 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
                     className={cn(
                       "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-lg shadow-emerald-500/10"
-                        : "text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent"
+                        ? "bg-emerald-500/15 dark:text-emerald-400 text-emerald-600 border border-emerald-500/30 shadow-lg shadow-emerald-500/10"
+                        : "dark:text-slate-400 text-slate-600 dark:hover:bg-white/5 hover:bg-slate-100 dark:hover:text-slate-200 hover:text-slate-900 border border-transparent"
                     )}
                   >
                     {/* Active indicator */}
@@ -187,7 +184,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
                     >
                       <Icon className={cn(
                         "h-5 w-5 flex-shrink-0 transition-colors",
-                        isActive ? "text-emerald-400" : "text-slate-500 group-hover:text-slate-300"
+                        isActive ? "dark:text-emerald-400 text-emerald-600" : "dark:text-slate-500 text-slate-400 dark:group-hover:text-slate-300 group-hover:text-slate-700"
                       )} />
                     </motion.div>
 
@@ -221,7 +218,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="relative border-t border-emerald-500/15 p-3 shrink-0">
+        <div className="relative border-t dark:border-emerald-500/15 border-slate-200 p-3 shrink-0">
           <motion.button
             onClick={signOut}
             className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all duration-200 group"
@@ -251,9 +248,9 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="pt-3 mt-2 border-t border-white/5"
+                className="pt-3 mt-2 border-t dark:border-white/5 border-slate-200"
               >
-                <p className="text-[10px] text-slate-600 text-center">
+                <p className="text-[10px] dark:text-slate-600 text-slate-400 text-center">
                   LIDIA SUPER v2.0
                 </p>
               </motion.div>
@@ -270,7 +267,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed left-0 top-0 z-50 h-screen w-72 border-r border-emerald-500/15 bg-gradient-to-b from-black/98 to-black/95 backdrop-blur-2xl lg:hidden flex flex-col"
+            className="fixed left-0 top-0 z-50 h-screen w-72 border-r dark:border-emerald-500/15 border-slate-200 dark:bg-gradient-to-b from-black/98 to-black/95 bg-white backdrop-blur-2xl lg:hidden flex flex-col"
           >
             {/* Glass effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />

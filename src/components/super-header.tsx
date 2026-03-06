@@ -1,15 +1,13 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Menu, Bell, ChevronDown, LogOut, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, ChevronDown, LogOut, User } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { GlassCard } from "./ui/glass-card";
-import { AnimatePresence, motion as motionDiv } from "framer-motion";
 import { ThemeToggleSwitch } from "./theme-toggle-switch";
 
 interface SuperHeaderProps {
@@ -45,32 +43,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
       <div className="flex h-full items-center justify-between px-4 lg:px-6">
         {/* Left Section */}
         <div className="flex items-center gap-4">
-          <motion.button
-            onClick={onMenuClick}
-            className="hidden lg:flex p-2 rounded-lg dark:text-slate-400 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-            whileTap={{ scale: 0.95 }}
-            title="Colapsar sidebar"
-          >
-            <Menu className="h-5 w-5" />
-          </motion.button>
-
           <div className="flex items-center gap-3">
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center lg:hidden overflow-hidden"
-              style={{
-                background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
-                border: "1px solid rgba(16,185,129,0.4)",
-              }}
-            >
-              <Image
-                src="/3.png"
-                alt="LIDIA"
-                width={24}
-                height={24}
-                className="object-contain"
-                priority
-              />
-            </div>
             <div>
               <h1 className="text-lg font-semibold text-foreground">
                 {getPageTitle()}
@@ -117,7 +90,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
 
             <AnimatePresence>
               {showProfileMenu && (
-                <motionDiv.div
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
@@ -150,7 +123,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
                       </button>
                     </div>
                   </GlassCard>
-                </motionDiv.div>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>

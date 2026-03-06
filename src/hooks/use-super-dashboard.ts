@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface DashboardMetrics {
@@ -60,7 +60,8 @@ export function useSuperDashboard() {
     lastUpdated: null,
   });
 
-  const supabase = createClient();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchMetrics = useCallback(async () => {
     try {

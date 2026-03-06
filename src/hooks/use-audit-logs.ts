@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export interface AuditLog {
@@ -48,7 +48,8 @@ export function useAuditLogs(pageSize: number = 50) {
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<AuditLogFilters>({});
 
-  const supabase = createClient();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchLogs = useCallback(async () => {
     try {

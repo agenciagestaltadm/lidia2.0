@@ -401,17 +401,17 @@ export default function SuperCentralPage() {
         <GlassCard className="p-6" glow="purple" hover>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-foreground">
                 Receita Mensal (MRR)
               </h3>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-muted-foreground">
                 Evolução da receita nos últimos 6 meses
               </p>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-purple-500" />
-                <span className="text-xs text-slate-400">Receita (R$)</span>
+                <span className="text-xs text-muted-foreground">Receita (R$)</span>
               </div>
             </div>
           </div>
