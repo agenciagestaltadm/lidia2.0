@@ -19,7 +19,8 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, redirectBasedOnRole, isLoading, error: authError } = useAuth();
+  const { signIn, isLoading, error: authError } = useAuth();
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   const validateEmail = (email: string) => {
@@ -43,8 +44,12 @@ function LoginForm() {
     const result = await signIn(email, password);
 
     if (result.success && result.user) {
-      // Redirect based on user role
-      redirectBasedOnRole(result.user);
+      // Redirect based on user role using replace to prevent back-button loop
+      if (result.user.role === "SUPER_USER") {
+        router.replace("/super/plans");
+      } else {
+        router.replace("/app/central");
+      }
     } else if (result.error) {
       setError(result.error);
     }

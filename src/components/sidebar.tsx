@@ -19,7 +19,7 @@ import {
   ChevronDown,
   LogOut,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
 import { drawerSlide, overlayFade, sidebarItem, sidebarSubmenu } from "@/lib/animations";
 
@@ -44,12 +44,11 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { signOut } = useAuth();
   const { canAccessRoute, isCompanyAdmin, canManageUsers } = usePermissions();
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
+    await signOut();
   };
 
   // Navigation items filtered by permissions
