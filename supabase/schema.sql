@@ -57,6 +57,17 @@ CREATE TABLE profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Super Users (admins globais do sistema)
+CREATE TABLE super_users (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    name TEXT,
+    is_active BOOLEAN DEFAULT true,
+    last_login_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Channels
 CREATE TABLE channels (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -194,6 +205,7 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 -- Enable RLS on all tables
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE super_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
@@ -244,6 +256,15 @@ CREATE POLICY "Users can view profiles in their company" ON profiles
 CREATE POLICY "Users can update their own profile" ON profiles
     FOR UPDATE USING (
         profiles.user_id = auth.uid()
+    );
+
+-- Super Users policies
+CREATE POLICY "Super users can view all super users" ON super_users
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM super_users su
+            WHERE su.id = auth.uid()
+        )
     );
 
 -- Channels policies
@@ -364,6 +385,8 @@ CREATE TRIGGER update_companies_updated_at BEFORE UPDATE ON companies
 CREATE TRIGGER update_plans_updated_at BEFORE UPDATE ON plans
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_super_users_updated_at BEFORE UPDATE ON super_users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_channels_updated_at BEFORE UPDATE ON channels
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

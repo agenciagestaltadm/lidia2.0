@@ -44,7 +44,7 @@ export function useAuth() {
         .from("super_users")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (superUser) {
         return {
@@ -66,7 +66,7 @@ export function useAuth() {
           companies:company_id (name)
         `)
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (profileError || !profile) {
         console.error("Error fetching profile:", profileError);
