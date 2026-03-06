@@ -82,7 +82,7 @@
 
 .light {
   --background: #f8fafc;
-  --foreground: #000000;
+  --foreground: #0f172a;
   --primary: #059669;
   --primary-foreground: #ffffff;
   --secondary: #e2e8f0;
@@ -96,12 +96,12 @@
   --border: rgba(0, 0, 0, 0.08);
   --input: rgba(0, 0, 0, 0.05);
   --ring: #059669;
-  --card: rgba(255, 255, 255, 0.8);
-  --card-foreground: #000000;
+  --card: rgba(255, 255, 255, 0.95);
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #000000;
-  --sidebar: rgba(248, 250, 252, 0.9);
-  --sidebar-foreground: #000000;
+  --popover-foreground: #0f172a;
+  --sidebar: rgba(255, 255, 255, 0.95);
+  --sidebar-foreground: #0f172a;
   --sidebar-border: rgba(0, 0, 0, 0.08);
   --sidebar-ring: #059669;
   --sidebar-accent: rgba(5, 150, 105, 0.1);

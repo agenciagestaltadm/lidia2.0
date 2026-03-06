@@ -26,11 +26,11 @@ export function GlassCard({
         "backdrop-blur-xl",
         "border transition-all duration-300",
         // Dark mode styles
-        "dark:bg-[#0a0a0a]/80 dark:border-emerald-500/10",
-        "dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)]",
+        "dark:bg-[#0f0f0f]/95 dark:border-emerald-500/20",
+        "dark:shadow-[0_4px_30px_rgba(0,0,0,0.6)]",
         // Light mode styles
-        "bg-white/80 border-slate-200/50",
-        "shadow-[0_4px_30px_rgba(0,0,0,0.08)]",
+        "bg-white/95 border-slate-200/60",
+        "shadow-[0_4px_20px_rgba(0,0,0,0.06)]",
         // Glow effects - Dark mode
         glow === "green" && "dark:hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]",
         glow === "blue" && "dark:hover:shadow-[0_0_30px_rgba(59,130,246,0.15)]",

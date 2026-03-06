@@ -58,12 +58,12 @@ function KPICard({
 
         <div className="relative flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-400 mb-1">{title}</p>
-            <p className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+            <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
               {value}
             </p>
             {subtitle && (
-              <p className="text-xs text-emerald-400/80 mt-1">{subtitle}</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{subtitle}</p>
             )}
             {trend !== undefined && (
               <div
@@ -158,9 +158,9 @@ function SimpleBarChart({
                 }}
               />
             </div>
-            <span className="text-xs text-slate-500">
-              {String(item[labelKey])}
-            </span>
+              <span className="text-xs text-muted-foreground">
+                {String(item[labelKey])}
+              </span>
           </div>
         );
       })}
@@ -188,14 +188,14 @@ function StatRow({
   };
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
       <div className="flex items-center gap-3">
         <div className={cn("p-2 rounded-lg", colorClasses[color])}>
           <Icon className="w-4 h-4" />
         </div>
-        <span className="text-sm text-slate-400">{label}</span>
+        <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-      <span className="text-sm font-semibold text-white">{value}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
     </div>
   );
 }
@@ -220,7 +220,7 @@ export default function SuperCentralPage() {
           >
             <RefreshCw className="w-8 h-8 text-emerald-500" />
           </motion.div>
-          <p className="text-slate-400 text-sm">Carregando métricas...</p>
+          <p className="text-muted-foreground text-sm">Carregando métricas...</p>
         </div>
       </div>
     );
@@ -231,8 +231,8 @@ export default function SuperCentralPage() {
       <div className="flex items-center justify-center h-[60vh]">
         <GlassCard className="p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Erro ao carregar dados</h3>
-          <p className="text-sm text-slate-400 mb-4">{error}</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Erro ao carregar dados</h3>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
           <NeonButton variant="red" onClick={refetch}>
             Tentar novamente
           </NeonButton>
@@ -260,15 +260,15 @@ export default function SuperCentralPage() {
               Live Dashboard
             </GlowBadge>
             {lastUpdated && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted-foreground">
                 Atualizado {lastUpdated.toLocaleTimeString("pt-BR")}
               </span>
             )}
           </div>
-          <h1 className="text-2xl md:text-4xl font-bold text-white">
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground">
             Dashboard Central
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Visão geral completa do sistema LIDIA 2.0
           </p>
         </div>
@@ -324,21 +324,21 @@ export default function SuperCentralPage() {
           <GlassCard className="p-6" glow="green" hover>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-foreground">
                   Crescimento Temporal
                 </h3>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   Evolução de empresas e usuários
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="text-xs text-slate-400">Empresas</span>
+                  <span className="text-xs text-muted-foreground">Empresas</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-blue-500" />
-                  <span className="text-xs text-slate-400">Usuários</span>
+                  <span className="text-xs text-muted-foreground">Usuários</span>
                 </div>
               </div>
             </div>
@@ -355,10 +355,10 @@ export default function SuperCentralPage() {
         <motion.div variants={fadeInUp}>
           <GlassCard className="p-6 h-full" glow="blue" hover>
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-foreground">
                 Estatísticas Rápidas
               </h3>
-              <p className="text-sm text-slate-400">Resumo do sistema</p>
+              <p className="text-sm text-muted-foreground">Resumo do sistema</p>
             </div>
             <div className="space-y-1">
               <StatRow

@@ -54,12 +54,12 @@ export function Logo({
 export function SidebarLogo({ collapsed = false }: { collapsed?: boolean }) {
   if (collapsed) {
     return (
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
         <Image
           src="/3.png"
           alt="LIDIA"
-          width={32}
-          height={32}
+          width={40}
+          height={40}
           className="object-contain"
           priority
         />
@@ -69,23 +69,15 @@ export function SidebarLogo({ collapsed = false }: { collapsed?: boolean }) {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+      <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
         <Image
-          src="/3.png"
+          src="/2.png"
           alt="LIDIA"
-          width={32}
-          height={32}
+          width={52}
+          height={52}
           className="object-contain"
           priority
         />
-      </div>
-      <div className="flex flex-col whitespace-nowrap">
-        <span className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">
-          LIDIA
-        </span>
-        <span className="text-[10px] text-emerald-500/80 uppercase tracking-wider font-medium">
-          Super Admin
-        </span>
       </div>
     </div>
   );

@@ -91,11 +91,13 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
         <div className="absolute inset-0 dark:bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 bg-gradient-to-br from-emerald-500/3 via-transparent to-emerald-500/3 pointer-events-none" />
 
         {/* Header */}
-        <div className="relative flex h-16 items-center justify-between dark:border-emerald-500/15 border-slate-200 px-4 shrink-0">
+        <div className="relative flex h-20 items-center justify-between dark:border-emerald-500/15 border-slate-200 px-4 shrink-0">
           <Link href="/super/central" className="flex items-center gap-3 overflow-hidden">
             <motion.div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+              className="rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
               style={{
+                width: isOpen ? 56 : 44,
+                height: isOpen ? 56 : 44,
                 background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
                 border: "1px solid rgba(16,185,129,0.4)",
                 boxShadow: "0 0 20px rgba(16,185,129,0.15)",
@@ -104,32 +106,14 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
               <Image
-                src="/3.png"
+                src={isOpen ? "/2.png" : "/3.png"}
                 alt="LIDIA"
-                width={28}
-                height={28}
+                width={isOpen ? 48 : 36}
+                height={isOpen ? 48 : 36}
                 className="object-contain"
                 priority
               />
             </motion.div>
-            <AnimatePresence mode="wait">
-              {isOpen && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2, delay: 0.1 }}
-                  className="flex flex-col whitespace-nowrap"
-                >
-                  <span className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">
-                    LIDIA
-                  </span>
-                  <span className="text-[10px] text-emerald-500/80 uppercase tracking-wider font-medium">
-                    Super Admin
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </Link>
 
           {/* Collapse toggle button */}

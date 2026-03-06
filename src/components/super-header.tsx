@@ -72,10 +72,10 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
               />
             </div>
             <div>
-              <h1 className="text-lg font-semibold dark:text-white text-slate-900">
+              <h1 className="text-lg font-semibold text-foreground">
                 {getPageTitle()}
               </h1>
-              <p className="text-xs dark:text-slate-500 text-slate-400 hidden sm:block">
+              <p className="text-xs text-muted-foreground hidden sm:block">
                 Super Admin Dashboard
               </p>
             </div>
