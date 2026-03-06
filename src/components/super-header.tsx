@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Menu, Bell, Crown, ChevronDown, LogOut, User } from "lucide-react";
+import { Menu, Bell, ChevronDown, LogOut, User } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
 
   return (
     <motion.header 
-      className="sticky top-0 z-30 h-16 border-b border-emerald-500/15 bg-black/80 backdrop-blur-xl"
+      className="sticky top-0 z-30 h-16 border-b dark:border-emerald-500/15 border-slate-200 dark:bg-black/80 bg-white/80 backdrop-blur-xl"
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -46,7 +47,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
         <div className="flex items-center gap-4">
           <motion.button
             onClick={onMenuClick}
-            className="hidden lg:flex p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+            className="hidden lg:flex p-2 rounded-lg dark:text-slate-400 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
             whileTap={{ scale: 0.95 }}
             title="Colapsar sidebar"
           >
@@ -55,19 +56,26 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
 
           <div className="flex items-center gap-3">
             <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center lg:hidden"
+              className="w-8 h-8 rounded-lg flex items-center justify-center lg:hidden overflow-hidden"
               style={{
                 background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
                 border: "1px solid rgba(16,185,129,0.4)",
               }}
             >
-              <Crown className="w-4 h-4 text-emerald-400" />
+              <Image
+                src="/3.png"
+                alt="LIDIA"
+                width={24}
+                height={24}
+                className="object-contain"
+                priority
+              />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">
+              <h1 className="text-lg font-semibold dark:text-white text-slate-900">
                 {getPageTitle()}
               </h1>
-              <p className="text-xs text-slate-500 hidden sm:block">
+              <p className="text-xs dark:text-slate-500 text-slate-400 hidden sm:block">
                 Super Admin Dashboard
               </p>
             </div>
@@ -82,7 +90,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
           </div>
 
           {/* Notifications */}
-          <button className="relative p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+          <button className="relative p-2 rounded-lg dark:text-slate-400 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors">
             <Bell className="h-5 w-5" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
           </button>
@@ -91,7 +99,7 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 p-1.5 rounded-lg hover:dark:bg-white/5 hover:bg-slate-100 transition-colors"
             >
               <div 
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
@@ -117,14 +125,14 @@ export function SuperHeader({ onMenuClick }: SuperHeaderProps) {
                   className="absolute right-0 top-full mt-2 w-56 z-50"
                 >
                   <GlassCard className="p-2" hover={false}>
-                    <div className="px-3 py-2 border-b border-white/10">
-                      <p className="text-sm font-medium text-white">Super Usuário</p>
-                      <p className="text-xs text-slate-400">super@lidia.com</p>
+                    <div className="px-3 py-2 border-b dark:border-white/10 border-slate-200">
+                      <p className="text-sm font-medium dark:text-white text-slate-900">Super Usuário</p>
+                      <p className="text-xs dark:text-slate-400 text-slate-500">super@lidia.com</p>
                     </div>
                     <div className="py-1">
                       <Link
                         href="/super/settings"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-white/5 hover:text-emerald-400 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm dark:text-slate-300 text-slate-700 hover:dark:bg-white/5 hover:bg-slate-100 hover:dark:text-emerald-400 hover:text-emerald-600 transition-colors"
                         onClick={() => setShowProfileMenu(false)}
                       >
                         <User className="w-4 h-4" />

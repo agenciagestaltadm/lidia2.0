@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import {
   CreditCard,
   Building2,
@@ -12,7 +13,6 @@ import {
   Menu,
   X,
   LogOut,
-  Crown,
   Plug,
   LayoutDashboard,
   ChevronLeft,
@@ -58,7 +58,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-40 dark:bg-black/70 bg-slate-900/70 backdrop-blur-sm lg:hidden"
             onClick={onToggle}
           />
         )}
@@ -67,7 +67,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
       {/* Mobile toggle button */}
       <motion.button
         onClick={onToggle}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-xl bg-[#0a0a0a]/90 border border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/10"
+        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-xl dark:bg-[#0a0a0a]/90 bg-white/90 border dark:border-emerald-500/30 border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/10"
         whileTap={{ scale: 0.95 }}
         whileHover={{ scale: 1.05 }}
       >
@@ -85,16 +85,16 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
           stiffness: 400,
           damping: 30,
         }}
-        className="fixed left-0 top-0 z-50 h-screen border-r border-emerald-500/15 bg-gradient-to-b from-black/95 to-black/90 backdrop-blur-2xl hidden lg:flex flex-col overflow-hidden"
+        className="fixed left-0 top-0 z-50 h-screen border-r dark:border-emerald-500/15 border-slate-200 dark:bg-gradient-to-b from-black/95 to-black/90 bg-white backdrop-blur-2xl hidden lg:flex flex-col overflow-hidden"
       >
         {/* Glass effect overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
+        <div className="absolute inset-0 dark:bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 bg-gradient-to-br from-emerald-500/3 via-transparent to-emerald-500/3 pointer-events-none" />
 
         {/* Header */}
-        <div className="relative flex h-16 items-center justify-between border-b border-emerald-500/15 px-4 shrink-0">
+        <div className="relative flex h-16 items-center justify-between dark:border-emerald-500/15 border-slate-200 px-4 shrink-0">
           <Link href="/super/central" className="flex items-center gap-3 overflow-hidden">
             <motion.div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
               style={{
                 background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
                 border: "1px solid rgba(16,185,129,0.4)",
@@ -103,7 +103,14 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
-              <Crown className="w-4 h-4 text-emerald-400" />
+              <Image
+                src="/3.png"
+                alt="LIDIA"
+                width={28}
+                height={28}
+                className="object-contain"
+                priority
+              />
             </motion.div>
             <AnimatePresence mode="wait">
               {isOpen && (
@@ -128,7 +135,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
           {/* Collapse toggle button */}
           <motion.button
             onClick={onToggle}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+            className="p-1.5 rounded-lg dark:text-slate-500 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
             whileTap={{ scale: 0.95 }}
             title={isOpen ? "Recolher menu" : "Expandir menu"}
           >
@@ -288,14 +295,21 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
             <div className="relative flex h-16 items-center justify-between border-b border-emerald-500/15 px-4">
               <Link href="/super/central" className="flex items-center gap-3">
                 <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden"
                   style={{
                     background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
                     border: "1px solid rgba(16,185,129,0.4)",
                     boxShadow: "0 0 20px rgba(16,185,129,0.15)",
                   }}
                 >
-                  <Crown className="w-4 h-4 text-emerald-400" />
+                  <Image
+                    src="/3.png"
+                    alt="LIDIA"
+                    width={28}
+                    height={28}
+                    className="object-contain"
+                    priority
+                  />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">

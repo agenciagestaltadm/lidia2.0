@@ -6,3 +6,5 @@ export { usePlans } from "./use-plans";
 export { useCompanies } from "./use-companies";
 export { useCompanyUsers } from "./use-company-users";
 export { useAuditLogs } from "./use-audit-logs";
+export { useChannels } from "./use-channels";
+export { useSystemSettings } from "./use-system-settings";

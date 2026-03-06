@@ -5,7 +5,8 @@ export const dynamic = "force-dynamic";
 import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, AlertCircle, Mail, Lock, Sparkles } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Mail, Lock } from "lucide-react";
+import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
 import { GradientMesh } from "@/components/animations/gradient-mesh";
 import { FloatingParticles } from "@/components/animations/floating-particles";
@@ -66,7 +67,7 @@ function LoginForm() {
         {/* Header */}
         <motion.div variants={fadeInUp} className="text-center mb-8">
           <motion.div
-            className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl"
+            className="inline-flex items-center justify-center w-20 h-20 mb-4 rounded-2xl overflow-hidden"
             style={{
               background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.2))",
               border: "1px solid rgba(16,185,129,0.3)",
@@ -74,14 +75,21 @@ function LoginForm() {
             whileHover={{ scale: 1.05, rotate: 5 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Sparkles className="w-8 h-8 text-emerald-400" />
+            <Image
+              src="/1.png"
+              alt="LIDIA"
+              width={64}
+              height={64}
+              className="object-contain"
+              priority
+            />
           </motion.div>
           
           <h1 className="text-3xl font-bold mb-2">
             <span className="gradient-text">LIDIA</span>
-            <span className="text-white"> 2.0</span>
+            <span className="dark:text-white text-slate-900"> 2.0</span>
           </h1>
-          <p className="text-slate-400 text-sm">
+          <p className="dark:text-slate-400 text-slate-600 text-sm">
             Entre com suas credenciais para acessar o sistema
           </p>
         </motion.div>

@@ -136,6 +136,14 @@ body {
     inset 0 1px 0 rgba(16, 185, 129, 0.05);
 }
 
+.light .glass {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(16, 185, 129, 0.1);
+}
+
 .glass-strong {
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(24px);
@@ -143,11 +151,21 @@ body {
   border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
+.light .glass-strong {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
 .glass-subtle {
   background: rgba(10, 10, 10, 0.5);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(16, 185, 129, 0.08);
+}
+
+.light .glass-subtle {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 /* ========================================

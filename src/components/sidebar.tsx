@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -108,24 +109,28 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const bottomNavItems = getBottomNavItems();
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-black/60 backdrop-blur-xl border-r border-white/5">
+    <div className="flex flex-col h-full dark:bg-black/60 bg-white/80 backdrop-blur-xl border-r dark:border-white/5 border-slate-200">
       {/* Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-white/5">
+      <div className="flex items-center justify-between p-4 border-b dark:border-white/5 border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <span className="text-black font-bold text-xl">L</span>
-            </div>
-            <div className="absolute inset-0 rounded-xl bg-emerald-400/20 blur-md -z-10" />
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/20">
+            <Image
+              src="/3.png"
+              alt="LIDIA"
+              width={40}
+              height={40}
+              className="object-contain"
+              priority
+            />
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg tracking-tight">LIDIA</h1>
+            <h1 className="dark:text-white text-slate-900 font-bold text-lg tracking-tight">LIDIA</h1>
             <p className="text-xs text-emerald-400/80 font-medium">CRM</p>
           </div>
         </div>
         <button
           onClick={onToggle}
-          className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+          className="lg:hidden p-2 rounded-lg dark:text-slate-400 text-slate-500 hover:dark:text-white hover:text-slate-900 hover:dark:bg-white/5 hover:bg-slate-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
