@@ -5,3 +5,5 @@ export { CompanyModal } from "./company-modal";
 export type { CompanyFormData } from "./company-modal";
 
 export { CompanyMetricsModal } from "./company-metrics-modal";
+
+export { UserModal } from "./user-modal";

@@ -137,7 +137,7 @@ function formatRelativeTime(dateString: string | null): string {
 }
 
 export default function SuperCompanyUsersPage() {
-  const { users, loading, error, refetch } = useCompanyUsers();
+  const { users, loading, error, refresh } = useCompanyUsers();
   const [searchTerm, setSearchTerm] = useState("");
 
   // Filter users based on search term
@@ -244,7 +244,7 @@ export default function SuperCompanyUsersPage() {
       {loading ? (
         <LoadingSkeleton />
       ) : error ? (
-        <ErrorState error={error} onRetry={refetch} />
+        <ErrorState error={error} onRetry={refresh} />
       ) : filteredUsers.length === 0 ? (
         <EmptyState searchTerm={searchTerm} />
       ) : (

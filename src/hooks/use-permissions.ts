@@ -70,6 +70,7 @@ export function usePermissions() {
       CLIENT_ADMIN: "Administrador",
       CLIENT_MANAGER: "Gerente",
       CLIENT_AGENT: "Agente",
+      CLIENT_VIEWER: "Visualizador",
     };
     return roleNames[role || user?.role || "CLIENT_AGENT"];
   }, [user?.role]);

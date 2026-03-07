@@ -1,5 +1,5 @@
 // User roles in the system - Aligned with PostgreSQL enum
-export type UserRole = "SUPER_USER" | "CLIENT_ADMIN" | "CLIENT_MANAGER" | "CLIENT_AGENT";
+export type UserRole = "SUPER_USER" | "CLIENT_ADMIN" | "CLIENT_MANAGER" | "CLIENT_AGENT" | "CLIENT_VIEWER";
 
 // User permissions interface for granular access control
 export interface UserPermissions {
@@ -44,6 +44,16 @@ export const DEFAULT_PERMISSIONS: Record<Exclude<UserRole, "SUPER_USER">, UserPe
     canManageConnection: false,
     canManageUsers: false,
     canViewSettings: true,
+  },
+  CLIENT_VIEWER: {
+    canViewCentral: true,
+    canViewAttendances: true,
+    canViewContacts: true,
+    canSendBulk: false,
+    canViewKanban: false,
+    canManageConnection: false,
+    canManageUsers: false,
+    canViewSettings: false,
   },
 };
 

@@ -92,6 +92,7 @@ function AccessDenied({ message, requiredRoles, onBack }: AccessDeniedProps) {
     CLIENT_ADMIN: "Administrador",
     CLIENT_MANAGER: "Gerente",
     CLIENT_AGENT: "Agente",
+    CLIENT_VIEWER: "Visualizador",
   };
 
   return (

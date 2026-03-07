@@ -10,6 +10,7 @@ export interface CompanyUser {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  phone: string | null;
   role: UserRole;
   company_id: string | null;
   company?: {
@@ -29,16 +30,17 @@ interface CompanyUsersState {
   totalCount: number;
 }
 
-interface UserFormData {
+export interface UserFormData {
   email: string;
   full_name?: string;
+  phone?: string;
   role?: UserRole;
   company_id?: string;
   is_active?: boolean;
   password?: string;
 }
 
-export function useCompanyUsers() {
+export function useCompanyUsers(companyId?: string | null) {
   const [state, setState] = useState<CompanyUsersState>({
     users: [],
     loading: true,
@@ -53,8 +55,7 @@ export function useCompanyUsers() {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Fetch users with company details
-      const { data, error } = await supabase
+      let query = supabase
         .from("profiles")
         .select(`
           *,
@@ -63,13 +64,26 @@ export function useCompanyUsers() {
         .neq("role", "SUPER_USER")
         .order("created_at", { ascending: false });
 
+      // Filter by company if provided
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
-      // Get total count (excluding super users)
-      const { count } = await supabase
+      // Get total count (with same filters)
+      let countQuery = supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
         .neq("role", "SUPER_USER");
+
+      if (companyId) {
+        countQuery = countQuery.eq("company_id", companyId);
+      }
+
+      const { count } = await countQuery;
 
       setState({
         users: (data as CompanyUser[]) || [],
@@ -85,7 +99,7 @@ export function useCompanyUsers() {
         error: err instanceof Error ? err.message : "Erro ao carregar usuários",
       }));
     }
-  }, [supabase]);
+  }, [supabase, companyId]);
 
   const createUser = useCallback(
     async (userData: UserFormData): Promise<{ success: boolean; error?: string }> => {
@@ -98,6 +112,8 @@ export function useCompanyUsers() {
             data: {
               full_name: userData.full_name,
             },
+            // Skip email confirmation
+            emailRedirectTo: undefined,
           },
         });
 
@@ -109,6 +125,7 @@ export function useCompanyUsers() {
           user_id: authData.user.id,
           email: userData.email,
           full_name: userData.full_name,
+          phone: userData.phone,
           role: userData.role || "CLIENT_AGENT",
           company_id: userData.company_id,
           is_active: userData.is_active ?? true,
@@ -301,7 +318,7 @@ export function useCompanyUsers() {
 
   return {
     ...state,
-    refetch: fetchUsers,
+    refresh: fetchUsers,
     createUser,
     updateUser,
     deleteUser,

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface GlowBadgeProps {
   children: React.ReactNode;
-  variant?: "green" | "emerald" | "red" | "blue" | "amber" | "default";
+  variant?: "green" | "emerald" | "red" | "blue" | "amber" | "purple" | "default";
   size?: "sm" | "md";
   pulse?: boolean;
   className?: string;
@@ -53,6 +53,13 @@ export function GlowBadge({
       text: "dark:text-amber-400 text-amber-600",
       glow: "dark:shadow-[0_0_10px_rgba(245,158,11,0.3)] shadow-[0_0_10px_rgba(245,158,11,0.25)]",
       dot: "dark:bg-amber-400 bg-amber-500",
+    },
+    purple: {
+      bg: "dark:bg-purple-500/10 bg-purple-500/15",
+      border: "dark:border-purple-500/30 border-purple-500/40",
+      text: "dark:text-purple-400 text-purple-600",
+      glow: "dark:shadow-[0_0_10px_rgba(168,85,247,0.3)] shadow-[0_0_10px_rgba(168,85,247,0.25)]",
+      dot: "dark:bg-purple-400 bg-purple-500",
     },
     default: {
       bg: "dark:bg-white/5 bg-slate-100",
