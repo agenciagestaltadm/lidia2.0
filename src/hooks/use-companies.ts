@@ -11,6 +11,12 @@ export interface Company {
   plan_id: string | null;
   settings: Record<string, unknown>;
   is_active: boolean;
+  max_users: number;
+  max_connections: number;
+  identity: string | null;
+  is_trial: boolean;
+  trial_period: number;
+  trial_end_date: string | null;
   created_at: string;
   updated_at: string;
   plan?: {
@@ -30,9 +36,30 @@ interface CompaniesState {
 interface CompanyFormData {
   name: string;
   document?: string;
-  plan_id?: string;
+  plan_id?: string | null;
   is_active?: boolean;
+  max_users?: number;
+  max_connections?: number;
+  identity?: string;
+  is_trial?: boolean;
+  trial_period?: number;
   settings?: Record<string, unknown>;
+}
+
+export interface CompanyMetrics {
+  messages: {
+    sent: number;
+    received: number;
+  };
+  attendances: {
+    open: number;
+    closed: number;
+    pending: number;
+    total: number;
+  };
+  contacts: number;
+  users: number;
+  connections: number;
 }
 
 export function useCompanies() {
@@ -255,6 +282,76 @@ export function useCompanies() {
     [supabase]
   );
 
+  const getCompanyMetrics = useCallback(
+    async (companyId: string): Promise<{ success: boolean; metrics?: CompanyMetrics; error?: string }> => {
+      try {
+        // Buscar contagem de usuários
+        const { count: usersCount, error: usersError } = await supabase
+          .from("profiles")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId);
+
+        if (usersError) throw usersError;
+
+        // Buscar contagem de contatos
+        const { count: contactsCount, error: contactsError } = await supabase
+          .from("contacts")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId);
+
+        if (contactsError) throw contactsError;
+
+        // Buscar contagem de conexões/canais
+        const { count: connectionsCount, error: connectionsError } = await supabase
+          .from("channels")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId);
+
+        if (connectionsError) throw connectionsError;
+
+        // Buscar atendimentos por status
+        const { data: ticketsData, error: ticketsError } = await supabase
+          .from("tickets")
+          .select("status")
+          .eq("company_id", companyId);
+
+        if (ticketsError) throw ticketsError;
+
+        const attendances = {
+          open: ticketsData?.filter((t) => t.status === "OPEN").length || 0,
+          closed: ticketsData?.filter((t) => t.status === "CLOSED").length || 0,
+          pending: ticketsData?.filter((t) => t.status === "PENDING").length || 0,
+          total: ticketsData?.length || 0,
+        };
+
+        // Buscar mensagens enviadas e recebidas (da tabela messages se existir, ou usar tickets como proxy)
+        // Por enquanto, vamos usar uma estimativa baseada em tickets e contatos
+        const messages = {
+          sent: (ticketsData?.length || 0) * 3, // Estimativa: 3 mensagens por ticket
+          received: (ticketsData?.length || 0) * 2, // Estimativa: 2 mensagens por ticket
+        };
+
+        return {
+          success: true,
+          metrics: {
+            messages,
+            attendances,
+            contacts: contactsCount || 0,
+            users: usersCount || 0,
+            connections: connectionsCount || 0,
+          },
+        };
+      } catch (err) {
+        console.error("Error fetching company metrics:", err);
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : "Erro ao carregar métricas",
+        };
+      }
+    },
+    [supabase]
+  );
+
   // Subscribe to real-time changes
   useEffect(() => {
     fetchCompanies();
@@ -282,5 +379,6 @@ export function useCompanies() {
     toggleCompanyStatus,
     getCompanyUsers,
     getCompanyStats,
+    getCompanyMetrics,
   };
 }

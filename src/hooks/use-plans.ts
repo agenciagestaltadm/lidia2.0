@@ -9,6 +9,8 @@ export interface Plan {
   description: string | null;
   price: number | null;
   is_active: boolean;
+  is_trial: boolean;
+  trial_days: number;
   limits: {
     max_users: number;
     max_channels: number;
@@ -41,6 +43,8 @@ interface PlanFormData {
   description?: string;
   price?: number;
   is_active?: boolean;
+  is_trial?: boolean;
+  trial_days?: number;
   limits?: Partial<Plan["limits"]>;
   features?: string[];
 }

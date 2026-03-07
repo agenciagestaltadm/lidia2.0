@@ -3,15 +3,17 @@
 export const dynamic = "force-dynamic";
 
 import { motion } from "framer-motion";
-import { Building2, Plus, Search, Edit, Trash2, Users, CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
+import { Building2, Plus, Search, Edit, Trash2, Users, CheckCircle, XCircle, Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { GlowBadge } from "@/components/ui/glow-badge";
 import { NeonButton } from "@/components/ui/neon-button";
 import { AnimatedInput } from "@/components/ui/animated-input";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
-import { useCompanies } from "@/hooks/use-companies";
+import { useCompanies, type Company } from "@/hooks/use-companies";
+import { usePlans } from "@/hooks/use-plans";
 import { useState, useMemo } from "react";
+import { CompanyModal, CompanyMetricsModal, type CompanyFormData } from "@/components/modals";
 
 const planColors: Record<string, "green" | "emerald" | "red" | "blue" | "amber" | "default"> = {
   "Básico": "emerald",
@@ -88,7 +90,7 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
 }
 
 // Empty state component
-function EmptyState({ searchTerm }: { searchTerm: string }) {
+function EmptyState({ searchTerm, onCreateClick }: { searchTerm: string; onCreateClick: () => void }) {
   return (
     <motion.div variants={fadeInUp}>
       <GlassCard className="p-8 text-center" hover={false}>
@@ -102,7 +104,7 @@ function EmptyState({ searchTerm }: { searchTerm: string }) {
             : "Comece cadastrando a primeira empresa"}
         </p>
         {!searchTerm && (
-          <NeonButton variant="green">
+          <NeonButton variant="green" onClick={onCreateClick}>
             <Plus className="w-4 h-4 mr-2" />
             Nova Empresa
           </NeonButton>
@@ -113,8 +115,15 @@ function EmptyState({ searchTerm }: { searchTerm: string }) {
 }
 
 export default function SuperCompaniesPage() {
-  const { companies, loading, error, refetch } = useCompanies();
+  const { companies, loading, error, refetch, createCompany, updateCompany, deleteCompany, toggleCompanyStatus, getCompanyMetrics } = useCompanies();
+  const { plans } = usePlans();
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Modal states
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [showMetricsModal, setShowMetricsModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
 
   // Filter companies based on search term
   const filteredCompanies = useMemo(() => {
@@ -133,6 +142,60 @@ export default function SuperCompaniesPage() {
     const inactive = total - active;
     return { total, active, inactive };
   }, [companies]);
+
+  // Modal handlers
+  const handleCreateCompany = () => {
+    setSelectedCompany(null);
+    setModalMode("create");
+    setShowCompanyModal(true);
+  };
+
+  const handleEditCompany = (company: Company) => {
+    setSelectedCompany(company);
+    setModalMode("edit");
+    setShowCompanyModal(true);
+  };
+
+  const handleSaveCompany = async (formData: CompanyFormData) => {
+    const companyData = {
+      name: formData.name,
+      document: formData.document,
+      identity: formData.identity,
+      plan_id: formData.plan_id || null,
+      max_users: formData.max_users,
+      max_connections: formData.max_connections,
+      is_active: formData.is_active,
+      is_trial: formData.is_trial,
+      trial_period: formData.trial_period,
+    };
+
+    if (modalMode === "create") {
+      const result = await createCompany(companyData);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+    } else if (selectedCompany) {
+      const result = await updateCompany(selectedCompany.id, companyData);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+    }
+  };
+
+  const handleDeleteCompany = async (company: Company) => {
+    if (!confirm(`Tem certeza que deseja excluir a empresa "${company.name}"?`)) {
+      return;
+    }
+    const result = await deleteCompany(company.id);
+    if (!result.success) {
+      alert(result.error);
+    }
+  };
+
+  const handleViewMetrics = (company: Company) => {
+    setSelectedCompany(company);
+    setShowMetricsModal(true);
+  };
 
   return (
     <motion.div
@@ -154,7 +217,7 @@ export default function SuperCompaniesPage() {
             Gerencie todas as empresas cadastradas no sistema
           </p>
         </div>
-        <NeonButton variant="green">
+        <NeonButton variant="green" onClick={handleCreateCompany}>
           <Plus className="w-4 h-4 mr-2" />
           Nova Empresa
         </NeonButton>
@@ -213,7 +276,7 @@ export default function SuperCompaniesPage() {
       ) : error ? (
         <ErrorState error={error} onRetry={refetch} />
       ) : filteredCompanies.length === 0 ? (
-        <EmptyState searchTerm={searchTerm} />
+        <EmptyState searchTerm={searchTerm} onCreateClick={handleCreateCompany} />
       ) : (
         /* Companies Table */
         <motion.div variants={fadeInUp}>
@@ -224,8 +287,9 @@ export default function SuperCompaniesPage() {
                   <tr className="border-b dark:border-emerald-500/10 border-slate-200">
                     <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Empresa</th>
                     <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Plano</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Limites</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Trial</th>
                     <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Status</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Criado em</th>
                     <th className="text-right py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Ações</th>
                   </tr>
                 </thead>
@@ -271,6 +335,37 @@ export default function SuperCompaniesPage() {
                         )}
                       </td>
                       <td className="py-4 px-6">
+                        <div className="text-sm">
+                          <p className="dark:text-slate-300 text-slate-700">
+                            <span className="dark:text-slate-500 text-slate-400">Usuários:</span>{" "}
+                            {company.max_users}
+                          </p>
+                          <p className="dark:text-slate-300 text-slate-700">
+                            <span className="dark:text-slate-500 text-slate-400">Conexões:</span>{" "}
+                            {company.max_connections}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          {company.is_trial ? (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-amber-400" />
+                              <span className="dark:text-amber-400 text-amber-600 text-sm">
+                                {company.trial_period} dias
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-slate-400" />
+                              <span className="dark:text-slate-500 text-slate-400 text-sm">
+                                Inativo
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <span className={cn(
                             "w-2 h-2 rounded-full",
@@ -282,16 +377,26 @@ export default function SuperCompaniesPage() {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="dark:text-slate-400 text-slate-500 text-sm">
-                          {new Date(company.created_at).toLocaleDateString("pt-BR")}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 rounded-lg hover:dark:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:dark:text-emerald-400 hover:text-emerald-600 transition-colors">
+                          <button
+                            onClick={() => handleViewMetrics(company)}
+                            className="p-2 rounded-lg hover:dark:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:dark:text-blue-400 hover:text-blue-600 transition-colors"
+                            title="Ver Métricas"
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEditCompany(company)}
+                            className="p-2 rounded-lg hover:dark:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:dark:text-emerald-400 hover:text-emerald-600 transition-colors"
+                            title="Editar"
+                          >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button className="p-2 rounded-lg hover:dark:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:dark:text-red-400 hover:text-red-500 transition-colors">
+                          <button
+                            onClick={() => handleDeleteCompany(company)}
+                            className="p-2 rounded-lg hover:dark:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:dark:text-red-400 hover:text-red-500 transition-colors"
+                            title="Excluir"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -304,6 +409,23 @@ export default function SuperCompaniesPage() {
           </GlassCard>
         </motion.div>
       )}
+
+      {/* Modais */}
+      <CompanyModal
+        isOpen={showCompanyModal}
+        onClose={() => setShowCompanyModal(false)}
+        onSave={handleSaveCompany}
+        company={selectedCompany}
+        plans={plans}
+        mode={modalMode}
+      />
+
+      <CompanyMetricsModal
+        isOpen={showMetricsModal}
+        onClose={() => setShowMetricsModal(false)}
+        company={selectedCompany}
+        fetchMetrics={getCompanyMetrics}
+      />
     </motion.div>
   );
 }

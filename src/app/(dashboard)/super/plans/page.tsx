@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   CreditCard,
   Plus,
@@ -25,6 +25,7 @@ import { NeonButton } from "@/components/ui/neon-button";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn, formatCurrency } from "@/lib/utils";
 import { usePlans, type Plan } from "@/hooks/use-plans";
+import { PlanModal, type PlanFormData } from "@/components/modals";
 
 // Feature limit display
 function FeatureLimit({
@@ -215,6 +216,8 @@ export default function SuperPlansPage() {
     loading,
     error,
     refetch,
+    createPlan,
+    updatePlan,
     togglePlanStatus,
     deletePlan,
   } = usePlans();
@@ -257,6 +260,37 @@ export default function SuperPlansPage() {
 
     if (!result.success) {
       alert(result.error);
+    }
+  };
+
+  const handleSave = async (formData: PlanFormData) => {
+    const planData = {
+      name: formData.name,
+      description: formData.description,
+      price: formData.price,
+      is_active: formData.is_active,
+      is_trial: formData.is_trial,
+      trial_days: formData.trial_days,
+      limits: {
+        max_users: formData.max_users,
+        max_channels: formData.max_channels,
+        max_bulk_messages_per_day: 100,
+        max_contacts: 1000,
+        max_attendances_per_month: 1000,
+      },
+      features: [],
+    };
+
+    if (modalMode === "create") {
+      const result = await createPlan(planData);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+    } else if (selectedPlan) {
+      const result = await updatePlan(selectedPlan.id, planData);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
     }
   };
 
@@ -387,46 +421,13 @@ export default function SuperPlansPage() {
       )}
 
       {/* Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg"
-            >
-              <GlassCard className="p-6" glow="green">
-                <h2 className="text-xl font-bold text-white mb-4">
-                  {modalMode === "create" ? "Novo Plano" : "Editar Plano"}
-                </h2>
-                <p className="text-slate-400 text-sm">
-                  Formulário de {modalMode === "create" ? "criação" : "edição"}{" "}
-                  de plano será implementado aqui.
-                </p>
-                <div className="flex justify-end gap-2 mt-6">
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <NeonButton onClick={() => setShowModal(false)}>
-                    Salvar
-                  </NeonButton>
-                </div>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <PlanModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSave={handleSave}
+        plan={selectedPlan}
+        mode={modalMode}
+      />
     </motion.div>
   );
 }
