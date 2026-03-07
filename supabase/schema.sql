@@ -37,6 +37,10 @@ CREATE TABLE companies (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Foreign Keys
+ALTER TABLE companies ADD CONSTRAINT fk_companies_plan 
+    FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL;
+
 -- Plans
 CREATE TABLE plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

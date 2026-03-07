@@ -117,13 +117,11 @@ export function useCompanies() {
           Object.entries(companyData).filter(([_, v]) => v !== undefined)
         );
 
+        // Insert sem o join de plan
         const { data, error } = await supabase
           .from("companies")
           .insert(cleanData)
-          .select(`
-            *,
-            plan:plan_id (id, name, price)
-          `)
+          .select()
           .single();
 
         if (error) {
