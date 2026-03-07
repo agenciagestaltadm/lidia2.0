@@ -70,10 +70,10 @@ export default function KanbanPage() {
           <div className="flex items-center gap-2 mb-2">
             <GlowBadge variant="green">Kanban</GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Pipeline de Vendas
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Visualize e gerencie seu funil de vendas
           </p>
         </div>
@@ -98,10 +98,10 @@ export default function KanbanPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className={cn("w-3 h-3 rounded-full", column.color)} />
-                <h2 className="font-semibold text-white">{column.title}</h2>
-                <span className="text-sm text-slate-400">({column.cards.length})</span>
+                <h2 className="font-semibold dark:text-white text-slate-900">{column.title}</h2>
+                <span className="text-sm dark:text-slate-400 text-slate-500">({column.cards.length})</span>
               </div>
-              <button className="p-1 rounded-lg hover:bg-white/5 text-slate-400">
+              <button className="p-1 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -114,11 +114,11 @@ export default function KanbanPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-emerald-500/30 transition-colors cursor-pointer group"
+                  className="p-4 rounded-lg dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 border dark:hover:border-emerald-500/30 hover:border-emerald-500/30 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-medium text-white text-sm">{card.title}</h3>
-                    <button className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/5 text-slate-400 transition-opacity">
+                    <h3 className="font-medium dark:text-white text-slate-900 text-sm">{card.title}</h3>
+                    <button className="opacity-0 group-hover:opacity-100 p-1 rounded dark:hover:bg-white/5 hover:bg-slate-200 dark:text-slate-400 text-slate-500 transition-opacity">
                       <MoreVertical className="w-4 h-4" />
                     </button>
                   </div>
@@ -129,7 +129,7 @@ export default function KanbanPage() {
                     </span>
                   </div>
                   
-                  <div className="space-y-1 text-xs text-slate-400">
+                  <div className="space-y-1 text-xs dark:text-slate-400 text-slate-500">
                     <div className="flex items-center gap-1">
                       <User className="w-3 h-3" />
                       <span>{card.customer}</span>

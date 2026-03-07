@@ -112,8 +112,8 @@ function StatCard({ stat, index }: { stat: typeof stats[0]; index: number }) {
       <GlassCard glow="green" className="p-6 h-full">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
-            <h3 className="text-3xl font-bold text-white">{stat.value}</h3>
+            <p className="dark:text-slate-400 text-slate-500 text-sm mb-1">{stat.label}</p>
+            <h3 className="text-3xl font-bold dark:text-white text-slate-900">{stat.value}</h3>
             <div className="flex items-center gap-1 mt-2">
               {stat.trend === "up" ? (
                 <ArrowUpRight className="w-4 h-4 text-emerald-400" />
@@ -123,7 +123,7 @@ function StatCard({ stat, index }: { stat: typeof stats[0]; index: number }) {
               <span className={`text-sm ${stat.trend === "up" ? "text-emerald-400" : "text-red-400"}`}>
                 {stat.change}
               </span>
-              <span className="text-slate-500 text-sm ml-1">vs ontem</span>
+              <span className="dark:text-slate-500 text-slate-400 text-sm ml-1">vs ontem</span>
             </div>
           </div>
           <div 
@@ -157,8 +157,8 @@ function QuickActionCard({ action, index }: { action: typeof quickActions[0]; in
             >
               <Icon className="w-6 h-6 text-white" />
             </div>
-            <h4 className="text-white font-semibold mb-1">{action.label}</h4>
-            <p className="text-slate-400 text-sm">{action.description}</p>
+            <h4 className="dark:text-white text-slate-900 font-semibold mb-1">{action.label}</h4>
+            <p className="dark:text-slate-400 text-slate-500 text-sm">{action.description}</p>
           </div>
         </GlassCard>
       </Link>
@@ -182,13 +182,13 @@ export default function CentralPage() {
               <Sparkles className="w-3 h-3 mr-1" />
               Sistema Ativo
             </GlowBadge>
-            <span className="text-slate-500 text-sm">•</span>
-            <span className="text-slate-400 text-sm">{new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+            <span className="dark:text-slate-500 text-slate-400 text-sm">•</span>
+            <span className="dark:text-slate-400 text-slate-500 text-sm">{new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Bem-vindo de volta!
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Aqui está o resumo da sua central de atendimentos
           </p>
         </div>
@@ -216,7 +216,7 @@ export default function CentralPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions - Takes up 2 columns */}
         <motion.div variants={fadeInUp} className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <h2 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
             <Plus className="w-5 h-5 text-emerald-400" />
             Ações Rápidas
           </h2>
@@ -227,7 +227,7 @@ export default function CentralPage() {
           </div>
 
           {/* Management Cards */}
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2 mt-8">
+          <h2 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2 mt-8">
             <Building className="w-5 h-5 text-emerald-400" />
             Gerenciamento
           </h2>
@@ -239,8 +239,8 @@ export default function CentralPage() {
                     <Building className="w-7 h-7 text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">Empresas</h3>
-                    <p className="text-slate-400 text-sm">Gerenciar clientes e fornecedores</p>
+                    <h3 className="text-lg font-semibold dark:text-white text-slate-900">Empresas</h3>
+                    <p className="dark:text-slate-400 text-slate-500 text-sm">Gerenciar clientes e fornecedores</p>
                   </div>
                 </div>
               </GlassCard>
@@ -252,8 +252,8 @@ export default function CentralPage() {
                     <Users className="w-7 h-7 text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">Usuários</h3>
-                    <p className="text-slate-400 text-sm">Gerenciar equipe e permissões</p>
+                    <h3 className="text-lg font-semibold dark:text-white text-slate-900">Usuários</h3>
+                    <p className="dark:text-slate-400 text-slate-500 text-sm">Gerenciar equipe e permissões</p>
                   </div>
                 </div>
               </GlassCard>
@@ -263,22 +263,22 @@ export default function CentralPage() {
 
         {/* Activity Feed - Takes up 1 column */}
         <motion.div variants={fadeInUp} className="space-y-4">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <h2 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
             <Clock className="w-5 h-5 text-emerald-400" />
             Atividade Recente
           </h2>
           <GlassCard className="p-0 overflow-hidden" hover={false}>
-            <div className="p-4 border-b border-white/10">
-              <h3 className="text-sm font-medium text-slate-300">Últimas ações</h3>
+            <div className="p-4 border-b dark:border-white/10 border-slate-200">
+              <h3 className="text-sm font-medium dark:text-slate-300 text-slate-700">Últimas ações</h3>
             </div>
-            <div className="divide-y divide-white/5">
+            <div className="divide-y dark:divide-white/5 divide-slate-100">
               {recentActivities.map((activity, index) => (
                 <motion.div
                   key={activity.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="p-4 hover:bg-white/[0.02] transition-colors"
+                  className="p-4 dark:hover:bg-white/[0.02] hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-start gap-3">
                     <div 
@@ -287,14 +287,14 @@ export default function CentralPage() {
                       }`}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-300 truncate">{activity.text}</p>
-                      <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+                      <p className="text-sm dark:text-slate-300 text-slate-700 truncate">{activity.text}</p>
+                      <p className="text-xs dark:text-slate-500 text-slate-400 mt-1">{activity.time}</p>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
-            <div className="p-3 border-t border-white/10">
+            <div className="p-3 border-t dark:border-white/10 border-slate-200">
               <Link 
                 href="/app/notifications"
                 className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors flex items-center justify-center gap-1"
@@ -311,7 +311,7 @@ export default function CentralPage() {
               <Sparkles className="w-4 h-4" />
               Dica do Dia
             </h3>
-            <p className="text-sm text-slate-300">
+            <p className="text-sm dark:text-slate-300 text-slate-600">
               Use filtros avançados no funil de vendas para identificar oportunidades com maior probabilidade de conversão.
             </p>
           </GlassCard>

@@ -79,8 +79,8 @@ export default function UsersPage() {
       <div className="flex items-center justify-center h-full">
         <GlassCard className="p-8 text-center">
           <Shield className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Acesso Restrito</h2>
-          <p className="text-slate-400">
+          <h2 className="text-xl font-bold dark:text-white text-slate-900 mb-2">Acesso Restrito</h2>
+          <p className="dark:text-slate-400 text-slate-500">
             Você não tem permissão para gerenciar usuários.
           </p>
         </GlassCard>
@@ -141,10 +141,10 @@ export default function UsersPage() {
           <div className="flex items-center gap-2 mb-2">
             <GlowBadge variant="green">Gestão</GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Gerenciamento de Usuários
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Gerencie permissões e acessos da equipe
           </p>
         </div>
@@ -155,7 +155,7 @@ export default function UsersPage() {
       </motion.div>
 
       {/* Stats */}
-      <motion.div 
+      <motion.div
         variants={staggerContainer}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
@@ -170,12 +170,12 @@ export default function UsersPage() {
             <motion.div key={stat.label} variants={fadeInUp} custom={index}>
               <GlassCard className="p-4" glow="green">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/5">
+                  <div className="p-2 rounded-lg dark:bg-white/5 bg-slate-100">
                     <Icon className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs">{stat.label}</p>
-                    <p className="text-xl font-bold text-white">{stat.value}</p>
+                    <p className="dark:text-slate-400 text-slate-500 text-xs">{stat.label}</p>
+                    <p className="text-xl font-bold dark:text-white text-slate-900">{stat.value}</p>
                   </div>
                 </div>
               </GlassCard>
@@ -193,7 +193,7 @@ export default function UsersPage() {
                 placeholder="Buscar usuários..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                icon={<Search className="w-5 h-5 text-slate-400" />}
+                icon={<Search className="w-5 h-5 dark:text-slate-400 text-slate-500" />}
               />
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -205,7 +205,7 @@ export default function UsersPage() {
                     "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                     selectedRole === role
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                      : "bg-white/5 text-slate-400 hover:bg-white/10"
+                      : "dark:bg-white/5 bg-slate-100 dark:text-slate-400 text-slate-600 dark:hover:bg-white/10 hover:bg-slate-200"
                   )}
                 >
                   {role === "all" ? "Todos" : roleLabels[role as UserRole]}
@@ -222,26 +222,26 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">Usuário</th>
-                  <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">Função</th>
-                  <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">Status</th>
-                  <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">Último Acesso</th>
-                  <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Ações</th>
+                <tr className="border-b dark:border-white/10 border-slate-200">
+                  <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Usuário</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Função</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Status</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Último Acesso</th>
+                  <th className="text-right py-4 px-6 text-sm font-medium dark:text-slate-400 text-slate-500">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y dark:divide-white/5 divide-slate-100">
                 {filteredUsers.map((user, index) => (
                   <motion.tr
                     key={user.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="hover:bg-white/[0.02] transition-colors"
+                    className="dark:hover:bg-white/[0.02] hover:bg-slate-50 transition-colors"
                   >
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium text-white"
                           style={{
                             background: "linear-gradient(135deg, #10b981, #059669)",
@@ -250,8 +250,8 @@ export default function UsersPage() {
                           {user.avatar}
                         </div>
                         <div>
-                          <p className="font-medium text-white">{user.name}</p>
-                          <p className="text-sm text-slate-400">{user.email}</p>
+                          <p className="font-medium dark:text-white text-slate-900">{user.name}</p>
+                          <p className="text-sm dark:text-slate-400 text-slate-500">{user.email}</p>
                         </div>
                       </div>
                     </td>
@@ -266,28 +266,28 @@ export default function UsersPage() {
                           "w-2 h-2 rounded-full",
                           user.status === "active" ? "bg-emerald-500" : "bg-slate-500"
                         )} />
-                        <span className="text-slate-300 text-sm capitalize">
+                        <span className="dark:text-slate-300 text-slate-700 text-sm capitalize">
                           {user.status === "active" ? "Ativo" : "Offline"}
                         </span>
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="text-slate-400 text-sm">{user.lastActive}</span>
+                      <span className="dark:text-slate-400 text-slate-500 text-sm">{user.lastActive}</span>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => handleEditPermissions(user.id, user.role)}
-                          className="p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                          className="p-2 rounded-lg dark:text-slate-400 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
                           title="Editar Permissões"
                         >
                           <Shield className="w-4 h-4" />
                         </button>
-                        <button className="p-2 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                        <button className="p-2 rounded-lg dark:text-slate-400 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                           <Edit className="w-4 h-4" />
                         </button>
                         {isCompanyAdmin() && user.role !== "CLIENT_ADMIN" && (
-                          <button className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                          <button className="p-2 rounded-lg dark:text-slate-400 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
@@ -309,7 +309,7 @@ export default function UsersPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+              className="fixed inset-0 dark:bg-black/80 bg-slate-900/60 backdrop-blur-sm z-50"
               onClick={() => setEditingUser(null)}
             />
             <motion.div
@@ -322,14 +322,14 @@ export default function UsersPage() {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h2 className="text-xl font-bold text-white">Gerenciar Permissões</h2>
-                      <p className="text-slate-400 text-sm">
+                      <h2 className="text-xl font-bold dark:text-white text-slate-900">Gerenciar Permissões</h2>
+                      <p className="dark:text-slate-400 text-slate-500 text-sm">
                         Configure as permissões de acesso do usuário
                       </p>
                     </div>
                     <button
                       onClick={() => setEditingUser(null)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                      className="p-2 rounded-lg dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/10 hover:bg-slate-100 transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -337,7 +337,7 @@ export default function UsersPage() {
 
                   {/* Quick Templates */}
                   <div className="mb-6">
-                    <p className="text-sm font-medium text-slate-300 mb-3">Templates Rápidos</p>
+                    <p className="text-sm font-medium dark:text-slate-300 text-slate-700 mb-3">Templates Rápidos</p>
                     <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => handleSetAllPermissions(editingUser, "CLIENT_ADMIN")}
@@ -353,7 +353,7 @@ export default function UsersPage() {
                       </button>
                       <button
                         onClick={() => handleSetAllPermissions(editingUser, "CLIENT_AGENT")}
-                        className="px-3 py-1.5 rounded-lg bg-slate-500/20 text-slate-400 text-sm hover:bg-slate-500/30 transition-colors"
+                        className="px-3 py-1.5 rounded-lg dark:bg-slate-500/20 bg-slate-200 dark:text-slate-400 text-slate-600 text-sm dark:hover:bg-slate-500/30 hover:bg-slate-300 transition-colors"
                       >
                         Agente (Básico)
                       </button>
@@ -371,7 +371,7 @@ export default function UsersPage() {
                             "flex items-center justify-between p-4 rounded-lg border transition-all cursor-pointer",
                             isEnabled
                               ? "bg-emerald-500/10 border-emerald-500/30"
-                              : "bg-white/5 border-white/10 hover:bg-white/[0.07]"
+                              : "dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 dark:hover:bg-white/[0.07] hover:bg-slate-200"
                           )}
                           onClick={() => handlePermissionChange(editingUser, perm.key, !isEnabled)}
                         >
@@ -381,22 +381,22 @@ export default function UsersPage() {
                                 <Check className="w-3 h-3 text-white" />
                               </div>
                             ) : (
-                              <div className="w-5 h-5 rounded border border-slate-500" />
+                              <div className="w-5 h-5 rounded border dark:border-slate-500 border-slate-400" />
                             )}
                             <div>
                               <p className={cn(
                                 "font-medium",
-                                isEnabled ? "text-emerald-400" : "text-slate-300"
+                                isEnabled ? "text-emerald-400" : "dark:text-slate-300 text-slate-700"
                               )}>
                                 {perm.label}
                               </p>
-                              <p className="text-xs text-slate-500">{perm.description}</p>
+                              <p className="text-xs dark:text-slate-500 text-slate-400">{perm.description}</p>
                             </div>
                           </div>
                           {isEnabled ? (
                             <ToggleRight className="w-6 h-6 text-emerald-400" />
                           ) : (
-                            <ToggleLeft className="w-6 h-6 text-slate-500" />
+                            <ToggleLeft className="w-6 h-6 dark:text-slate-500 text-slate-400" />
                           )}
                         </div>
                       );
@@ -407,7 +407,7 @@ export default function UsersPage() {
                   <div className="flex justify-end gap-3">
                     <button
                       onClick={() => setEditingUser(null)}
-                      className="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                      className="px-4 py-2 rounded-lg dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/10 hover:bg-slate-100 transition-colors"
                     >
                       Cancelar
                     </button>

@@ -55,10 +55,10 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-2">
             <GlowBadge variant="green">Configurações</GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Configurações do Sistema
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Personalize suas preferências e configurações
           </p>
         </div>
@@ -100,7 +100,7 @@ export default function SettingsPage() {
                       "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all",
                       activeSection === section.id
                         ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                        : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                        : "dark:text-slate-400 text-slate-600 dark:hover:bg-white/5 hover:bg-slate-100 dark:hover:text-slate-200 hover:text-slate-900"
                     )}
                   >
                     <Icon className="w-5 h-5" />
@@ -118,7 +118,7 @@ export default function SettingsPage() {
             {activeSection === "general" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Configurações Gerais</h3>
+                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">Configurações Gerais</h3>
                   <div className="space-y-4">
                     <AnimatedInput
                       label="Nome da Empresa"
@@ -134,8 +134,8 @@ export default function SettingsPage() {
                     />
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <p className="text-white font-medium">Fuso Horário</p>
-                        <p className="text-sm text-slate-400">América/São Paulo (GMT-3)</p>
+                        <p className="dark:text-white text-slate-900 font-medium">Fuso Horário</p>
+                        <p className="text-sm dark:text-slate-400 text-slate-500">América/São Paulo (GMT-3)</p>
                       </div>
                       <GlowBadge variant="default">Auto-detectado</GlowBadge>
                     </div>
@@ -147,7 +147,7 @@ export default function SettingsPage() {
             {activeSection === "notifications" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Preferências de Notificação</h3>
+                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">Preferências de Notificação</h3>
                   <div className="space-y-4">
                     {[
                       { label: "Novos atendimentos", desc: "Receber notificação quando um novo atendimento for iniciado", defaultChecked: true },
@@ -156,14 +156,14 @@ export default function SettingsPage() {
                       { label: "Relatórios semanais", desc: "Enviar relatório de performance toda segunda", defaultChecked: false },
                       { label: "Novos usuários", desc: "Notificar quando um novo usuário for adicionado", defaultChecked: false },
                     ].map((item) => (
-                      <div key={item.label} className="flex items-start justify-between py-3 border-b border-white/5 last:border-0">
+                      <div key={item.label} className="flex items-start justify-between py-3 border-b dark:border-white/5 border-slate-200 last:border-0">
                         <div>
-                          <p className="text-white font-medium">{item.label}</p>
-                          <p className="text-sm text-slate-400">{item.desc}</p>
+                          <p className="dark:text-white text-slate-900 font-medium">{item.label}</p>
+                          <p className="text-sm dark:text-slate-400 text-slate-500">{item.desc}</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input type="checkbox" defaultChecked={item.defaultChecked} className="sr-only peer" />
-                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                          <div className="w-11 h-6 dark:bg-slate-700 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                         </label>
                       </div>
                     ))}
@@ -175,7 +175,7 @@ export default function SettingsPage() {
             {activeSection === "security" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Segurança da Conta</h3>
+                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">Segurança da Conta</h3>
                   <div className="space-y-4">
                     <AnimatedInput
                       label="Senha Atual"
@@ -193,14 +193,14 @@ export default function SettingsPage() {
                       placeholder="••••••••"
                     />
                     <div className="pt-4">
-                      <p className="text-white font-medium mb-3">Autenticação de Dois Fatores</p>
-                      <div className="flex items-center gap-4 p-4 rounded-lg bg-white/5">
+                      <p className="dark:text-white text-slate-900 font-medium mb-3">Autenticação de Dois Fatores</p>
+                      <div className="flex items-center gap-4 p-4 rounded-lg dark:bg-white/5 bg-slate-100">
                         <Shield className="w-8 h-8 text-emerald-400" />
                         <div className="flex-1">
-                          <p className="text-white font-medium">2FA Desativado</p>
-                          <p className="text-sm text-slate-400">Adicione uma camada extra de segurança</p>
+                          <p className="dark:text-white text-slate-900 font-medium">2FA Desativado</p>
+                          <p className="text-sm dark:text-slate-400 text-slate-500">Adicione uma camada extra de segurança</p>
                         </div>
-                        <button className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm">
+                        <button className="px-4 py-2 rounded-lg dark:bg-white/10 bg-slate-200 dark:text-white text-slate-700 dark:hover:bg-white/20 hover:bg-slate-300 transition-colors text-sm">
                           Ativar
                         </button>
                       </div>
@@ -213,27 +213,27 @@ export default function SettingsPage() {
             {activeSection === "appearance" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Aparência</h3>
+                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">Aparência</h3>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-white font-medium mb-3">Tema</p>
+                      <p className="dark:text-white text-slate-900 font-medium mb-3">Tema</p>
                       <div className="grid grid-cols-3 gap-4">
                         <button className="p-4 rounded-lg bg-emerald-500/20 border-2 border-emerald-500 text-center">
                           <Moon className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
-                          <span className="text-sm text-white">Escuro</span>
+                          <span className="text-sm dark:text-white text-slate-900">Escuro</span>
                         </button>
-                        <button className="p-4 rounded-lg bg-white/5 border border-white/10 text-center opacity-50">
-                          <Sun className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                          <span className="text-sm text-slate-400">Claro</span>
+                        <button className="p-4 rounded-lg dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 border text-center opacity-50">
+                          <Sun className="w-6 h-6 dark:text-slate-400 text-slate-500 mx-auto mb-2" />
+                          <span className="text-sm dark:text-slate-400 text-slate-500">Claro</span>
                         </button>
-                        <button className="p-4 rounded-lg bg-white/5 border border-white/10 text-center opacity-50">
-                          <Palette className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                          <span className="text-sm text-slate-400">Sistema</span>
+                        <button className="p-4 rounded-lg dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 border text-center opacity-50">
+                          <Palette className="w-6 h-6 dark:text-slate-400 text-slate-500 mx-auto mb-2" />
+                          <span className="text-sm dark:text-slate-400 text-slate-500">Sistema</span>
                         </button>
                       </div>
                     </div>
                     <div className="pt-4">
-                      <p className="text-white font-medium mb-3">Cor de Destaque</p>
+                      <p className="dark:text-white text-slate-900 font-medium mb-3">Cor de Destaque</p>
                       <div className="flex gap-3">
                         {["#00f0ff", "#8b5cf6", "#d946ef", "#10b981", "#f59e0b"].map((color) => (
                           <button
@@ -255,7 +255,7 @@ export default function SettingsPage() {
             {activeSection === "integrations" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Integrações</h3>
+                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">Integrações</h3>
                   <div className="space-y-4">
                     {[
                       { name: "WhatsApp Business", icon: MessageSquare, status: "connected", color: "#25D366" },
@@ -264,22 +264,22 @@ export default function SettingsPage() {
                     ].map((integration) => {
                       const Icon = integration.icon;
                       return (
-                        <div key={integration.name} className="flex items-center justify-between p-4 rounded-lg bg-white/5">
+                        <div key={integration.name} className="flex items-center justify-between p-4 rounded-lg dark:bg-white/5 bg-slate-100">
                           <div className="flex items-center gap-4">
-                            <div 
+                            <div
                               className="w-10 h-10 rounded-lg flex items-center justify-center"
                               style={{ backgroundColor: `${integration.color}20` }}
                             >
                               <Icon className="w-5 h-5" style={{ color: integration.color }} />
                             </div>
                             <div>
-                              <p className="text-white font-medium">{integration.name}</p>
-                              <p className="text-sm text-slate-400">
+                              <p className="dark:text-white text-slate-900 font-medium">{integration.name}</p>
+                              <p className="text-sm dark:text-slate-400 text-slate-500">
                                 {integration.status === "connected" ? "Conectado" : "Desconectado"}
                               </p>
                             </div>
                           </div>
-                          <GlowBadge 
+                          <GlowBadge
                             variant={integration.status === "connected" ? "emerald" : "default"}
                           >
                             {integration.status === "connected" ? "Ativo" : "Inativo"}
@@ -295,19 +295,19 @@ export default function SettingsPage() {
             {activeSection === "data" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Gerenciamento de Dados</h3>
+                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">Gerenciamento de Dados</h3>
                   <div className="space-y-4">
-                    <div className="p-4 rounded-lg bg-white/5">
-                      <p className="text-white font-medium mb-2">Exportar Dados</p>
-                      <p className="text-sm text-slate-400 mb-4">Faça download de todos os seus dados</p>
+                    <div className="p-4 rounded-lg dark:bg-white/5 bg-slate-100">
+                      <p className="dark:text-white text-slate-900 font-medium mb-2">Exportar Dados</p>
+                      <p className="text-sm dark:text-slate-400 text-slate-500 mb-4">Faça download de todos os seus dados</p>
                       <div className="flex gap-3">
-                        <button className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm">Exportar CSV</button>
-                        <button className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm">Exportar JSON</button>
+                        <button className="px-4 py-2 rounded-lg dark:bg-white/10 bg-slate-200 dark:text-white text-slate-700 dark:hover:bg-white/20 hover:bg-slate-300 transition-colors text-sm">Exportar CSV</button>
+                        <button className="px-4 py-2 rounded-lg dark:bg-white/10 bg-slate-200 dark:text-white text-slate-700 dark:hover:bg-white/20 hover:bg-slate-300 transition-colors text-sm">Exportar JSON</button>
                       </div>
                     </div>
                     <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                       <p className="text-red-400 font-medium mb-2">Zona de Perigo</p>
-                      <p className="text-sm text-slate-400 mb-4">Ações irreversíveis para sua conta</p>
+                      <p className="text-sm dark:text-slate-400 text-slate-500 mb-4">Ações irreversíveis para sua conta</p>
                       <button className="px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors text-sm">Excluir Conta</button>
                     </div>
                   </div>

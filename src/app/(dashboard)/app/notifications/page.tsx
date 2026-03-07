@@ -128,17 +128,17 @@ export default function NotificationsPage() {
               {unreadCount} não lidas
             </GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Notificações
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Gerencie suas notificações e alertas do sistema
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={markAllAsRead}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg dark:bg-white/10 bg-slate-200 dark:text-white text-slate-700 dark:hover:bg-white/20 hover:bg-slate-300 transition-colors text-sm"
           >
             <CheckCheck className="w-4 h-4" />
             Marcar todas como lidas
@@ -163,7 +163,7 @@ export default function NotificationsPage() {
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1",
                 filter === "all"
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-transparent text-slate-400 hover:bg-white/5"
+                  : "bg-transparent dark:text-slate-400 text-slate-600 dark:hover:bg-white/5 hover:bg-slate-100"
               )}
             >
               Todas
@@ -174,7 +174,7 @@ export default function NotificationsPage() {
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1",
                 filter === "unread"
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-transparent text-slate-400 hover:bg-white/5"
+                  : "bg-transparent dark:text-slate-400 text-slate-600 dark:hover:bg-white/5 hover:bg-slate-100"
               )}
             >
               Não Lidas
@@ -188,7 +188,7 @@ export default function NotificationsPage() {
         <GlassCard className="overflow-hidden" hover={false}>
           <AnimatePresence mode="popLayout">
             {filteredNotifications.length > 0 ? (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y dark:divide-white/5 divide-slate-100">
                 {filteredNotifications.map((notification, index) => {
                   const Icon = notification.icon;
                   const config = typeConfig[notification.type as keyof typeof typeConfig];
@@ -202,8 +202,8 @@ export default function NotificationsPage() {
                       exit={{ opacity: 0, x: -100 }}
                       transition={{ delay: index * 0.05 }}
                       className={cn(
-                        "p-4 hover:bg-white/[0.02] transition-colors group",
-                        !notification.read && "bg-emerald-500/5"
+                        "p-4 dark:hover:bg-white/[0.02] hover:bg-slate-50 transition-colors group",
+                        !notification.read && "dark:bg-emerald-500/5 bg-emerald-500/3"
                       )}
                     >
                       <div className="flex items-start gap-4">
@@ -221,14 +221,14 @@ export default function NotificationsPage() {
                             <div>
                               <p className={cn(
                                 "font-medium",
-                                !notification.read ? "text-white" : "text-slate-300"
+                                !notification.read ? "dark:text-white text-slate-900" : "dark:text-slate-300 text-slate-700"
                               )}>
                                 {notification.title}
                               </p>
-                              <p className="text-sm text-slate-400 mt-0.5">
+                              <p className="text-sm dark:text-slate-400 text-slate-500 mt-0.5">
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-slate-500 mt-2">
+                              <p className="text-xs dark:text-slate-500 text-slate-400 mt-2">
                                 {notification.time}
                               </p>
                             </div>
@@ -238,7 +238,7 @@ export default function NotificationsPage() {
                               {!notification.read && (
                                 <button
                                     onClick={() => markAsRead(notification.id)}
-                                    className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors"
+                                    className="p-2 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-emerald-400 transition-colors"
                                     title="Marcar como lida"
                                   >
                                   <Check className="w-4 h-4" />
@@ -246,7 +246,7 @@ export default function NotificationsPage() {
                               )}
                               <button
                                 onClick={() => deleteNotification(notification.id)}
-                                className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-red-400 transition-colors"
+                                className="p-2 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-red-400 transition-colors"
                                 title="Excluir"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -270,10 +270,10 @@ export default function NotificationsPage() {
                 animate={{ opacity: 1 }}
                 className="py-16 text-center"
               >
-                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                  <Bell className="w-8 h-8 text-slate-500" />
+                <div className="w-16 h-16 rounded-full dark:bg-white/5 bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <Bell className="w-8 h-8 dark:text-slate-500 text-slate-400" />
                 </div>
-                <p className="text-slate-400">Nenhuma notificação encontrada</p>
+                <p className="dark:text-slate-400 text-slate-500">Nenhuma notificação encontrada</p>
               </motion.div>
             )}
           </AnimatePresence>

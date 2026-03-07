@@ -31,7 +31,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <motion.header 
-      className="sticky top-0 z-30 h-16 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl"
+      className="sticky top-0 z-30 h-16 border-b dark:border-white/10 border-slate-200 dark:bg-black/80 bg-white/80 backdrop-blur-xl"
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -41,7 +41,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex items-center gap-4">
           <motion.button
             onClick={onMenuClick}
-            className="hidden lg:flex p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="hidden lg:flex p-2 rounded-lg dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors"
             whileTap={{ scale: 0.95 }}
             title="Colapsar sidebar"
           >
@@ -55,13 +55,13 @@ export function Header({ onMenuClick }: HeaderProps) {
                 background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.3))",
               }}
             >
-              <Sparkles className="w-4 h-4 text-white" />
+              <Sparkles className="w-4 h-4 text-emerald-500" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">
+              <h1 className="text-lg font-semibold dark:text-white text-slate-900">
                 {getPageTitle()}
               </h1>
-              <p className="text-xs text-slate-500 hidden sm:block">
+              <p className="text-xs dark:text-slate-500 text-slate-400 hidden sm:block">
                 LIDIA CRM Futuristic Edition
               </p>
             </div>
@@ -73,11 +73,11 @@ export function Header({ onMenuClick }: HeaderProps) {
           {/* Search */}
           <div className="hidden md:flex items-center">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 dark:text-slate-500 text-slate-400" />
               <input
                 type="text"
                 placeholder="Buscar..."
-                className="w-64 bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                className="w-64 dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 border rounded-lg pl-9 pr-4 py-2 text-sm dark:text-slate-200 text-slate-700 dark:placeholder:text-slate-500 placeholder:text-slate-400 focus:outline-none dark:focus:border-emerald-500/50 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
               />
             </div>
           </div>
@@ -89,7 +89,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               "relative p-2 rounded-lg transition-colors",
               pathname === "/app/attendances"
                 ? "bg-emerald-500/10 text-emerald-400"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
+                : "dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100"
             )}
           >
             <Bell className="h-5 w-5" />
@@ -99,7 +99,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           {/* User Avatar */}
           <Link
             href="/app/settings"
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+            className="flex items-center gap-2 p-1.5 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 transition-colors"
           >
             <div 
               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"

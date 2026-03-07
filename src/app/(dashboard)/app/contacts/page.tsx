@@ -90,10 +90,10 @@ export default function ContactsPage() {
           <div className="flex items-center gap-2 mb-2">
             <GlowBadge variant="green">Contatos</GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Gerenciamento de Contatos
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Organize e gerencie seus contatos e clientes
           </p>
         </div>
@@ -119,12 +119,12 @@ export default function ContactsPage() {
             <motion.div key={stat.label} variants={fadeInUp} custom={index}>
               <GlassCard className="p-4" glow="green">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/5">
+                  <div className="p-2 rounded-lg dark:bg-white/5 bg-slate-100">
                     <Icon className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs">{stat.label}</p>
-                    <p className="text-xl font-bold text-white">{stat.value}</p>
+                    <p className="dark:text-slate-400 text-slate-500 text-xs">{stat.label}</p>
+                    <p className="text-xl font-bold dark:text-white text-slate-900">{stat.value}</p>
                   </div>
                 </div>
               </GlassCard>
@@ -142,7 +142,7 @@ export default function ContactsPage() {
                 placeholder="Buscar contatos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                icon={<Search className="w-5 h-5 text-slate-400" />}
+                icon={<Search className="w-5 h-5 dark:text-slate-400 text-slate-500" />}
               />
             </div>
             <NeonButton variant="ghost" size="sm">
@@ -171,21 +171,21 @@ export default function ContactsPage() {
                     {contact.name.split(" ").map(n => n[0]).join("")}
                   </div>
                   <div>
-                    <h3 className="font-medium text-white">{contact.name}</h3>
-                    <p className="text-sm text-slate-400">{contact.company}</p>
+                    <h3 className="font-medium dark:text-white text-slate-900">{contact.name}</h3>
+                    <p className="text-sm dark:text-slate-400 text-slate-500">{contact.company}</p>
                   </div>
                 </div>
-                <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 opacity-0 group-hover:opacity-100 transition-all">
+                <button className="p-2 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 opacity-0 group-hover:opacity-100 transition-all">
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </div>
               
               <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-sm dark:text-slate-400 text-slate-500">
                   <Mail className="w-4 h-4" />
                   <span className="truncate">{contact.email}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-sm dark:text-slate-400 text-slate-500">
                   <Phone className="w-4 h-4" />
                   <span>{contact.phone}</span>
                 </div>
@@ -196,13 +196,13 @@ export default function ContactsPage() {
                   {contact.tags.map(tag => (
                     <span 
                       key={tag} 
-                      className={cn("text-xs px-2 py-0.5 rounded-full", tagColors[tag] || "bg-white/10 text-slate-400")}
+                      className={cn("text-xs px-2 py-0.5 rounded-full", tagColors[tag] || "dark:bg-white/10 bg-slate-200 dark:text-slate-400 text-slate-600")}
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
-                <span className="text-xs text-slate-500">{contact.lastContact}</span>
+                <span className="text-xs dark:text-slate-500 text-slate-400">{contact.lastContact}</span>
               </div>
             </GlassCard>
           </motion.div>

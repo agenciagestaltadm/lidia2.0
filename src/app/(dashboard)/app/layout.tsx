@@ -13,7 +13,7 @@ export default function AppLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-[#020617] overflow-hidden">
+    <div className="flex h-screen dark:bg-black bg-white overflow-hidden">
       <Sidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}

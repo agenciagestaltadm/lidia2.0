@@ -106,20 +106,20 @@ function AccessDenied({ message, requiredRoles, onBack }: AccessDeniedProps) {
             <Shield className="w-8 h-8 text-red-400" />
           </div>
           
-          <h2 className="text-xl font-bold text-white mb-2">
+          <h2 className="text-xl font-bold dark:text-white text-slate-900 mb-2">
             Acesso Restrito
           </h2>
           
-          <p className="text-slate-400 mb-4">
+          <p className="dark:text-slate-400 text-slate-500 mb-4">
             {message}
           </p>
 
           {requiredRoles && requiredRoles.length > 0 && (
-            <div className="mb-4 p-3 rounded-lg bg-white/5">
-              <p className="text-xs text-slate-500 mb-2">Requer um dos seguintes papéis:</p>
+            <div className="mb-4 p-3 rounded-lg dark:bg-white/5 bg-slate-100">
+              <p className="text-xs dark:text-slate-500 text-slate-400 mb-2">Requer um dos seguintes papéis:</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {requiredRoles.map(role => (
-                  <span 
+                  <span
                     key={role}
                     className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs"
                   >

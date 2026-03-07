@@ -101,10 +101,10 @@ export default function AttendancesPage() {
           <div className="flex items-center gap-2 mb-2">
             <GlowBadge variant="green">Atendimentos</GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Central de Atendimentos
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Gerencie todas as conversas com seus clientes
           </p>
         </div>
@@ -115,7 +115,7 @@ export default function AttendancesPage() {
       </motion.div>
 
       {/* Stats */}
-      <motion.div 
+      <motion.div
         variants={staggerContainer}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
@@ -123,19 +123,19 @@ export default function AttendancesPage() {
           { label: "Em Aberto", value: "12", icon: MessageSquare, color: "text-emerald-400" },
           { label: "Aguardando", value: "5", icon: Clock, color: "text-amber-400" },
           { label: "Fechados Hoje", value: "24", icon: CheckCircle, color: "text-emerald-400" },
-          { label: "Total", value: "156", icon: User, color: "text-slate-400" },
+          { label: "Total", value: "156", icon: User, color: "dark:text-slate-400 text-slate-500" },
         ].map((stat, index) => {
           const Icon = stat.icon;
           return (
             <motion.div key={stat.label} variants={fadeInUp} custom={index}>
               <GlassCard className="p-4" glow="green">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/5">
+                  <div className="p-2 rounded-lg dark:bg-white/5 bg-slate-100">
                     <Icon className={cn("w-5 h-5", stat.color)} />
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs">{stat.label}</p>
-                    <p className="text-xl font-bold text-white">{stat.value}</p>
+                    <p className="dark:text-slate-400 text-slate-500 text-xs">{stat.label}</p>
+                    <p className="text-xl font-bold dark:text-white text-slate-900">{stat.value}</p>
                   </div>
                 </div>
               </GlassCard>
@@ -153,7 +153,7 @@ export default function AttendancesPage() {
                 placeholder="Buscar atendimentos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                icon={<Search className="w-5 h-5 text-slate-400" />}
+                icon={<Search className="w-5 h-5 dark:text-slate-400 text-slate-500" />}
               />
             </div>
             <div className="flex gap-2">
@@ -165,7 +165,7 @@ export default function AttendancesPage() {
                     "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                     filter === status
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                      : "bg-white/5 text-slate-400 hover:bg-white/10"
+                      : "dark:bg-white/5 bg-slate-100 dark:text-slate-400 text-slate-600 dark:hover:bg-white/10 hover:bg-slate-200"
                   )}
                 >
                   {status === "all" ? "Todos" : status === "open" ? "Abertos" : status === "waiting" ? "Aguardando" : "Fechados"}
@@ -179,7 +179,7 @@ export default function AttendancesPage() {
       {/* Attendances List */}
       <motion.div variants={fadeInUp}>
         <GlassCard className="overflow-hidden" hover={false}>
-          <div className="divide-y divide-white/5">
+          <div className="divide-y dark:divide-white/5 divide-slate-100">
             {filteredAttendances.map((attendance, index) => {
               const status = statusConfig[attendance.status as keyof typeof statusConfig];
               const priority = priorityConfig[attendance.priority as keyof typeof priorityConfig];
@@ -190,7 +190,7 @@ export default function AttendancesPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="p-4 hover:bg-white/[0.02] transition-colors group cursor-pointer"
+                  className="p-4 dark:hover:bg-white/[0.02] hover:bg-slate-50 transition-colors group cursor-pointer"
                 >
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
@@ -203,16 +203,16 @@ export default function AttendancesPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-medium text-white">{attendance.customer}</h3>
-                            <span className={cn("text-xs px-2 py-0.5 rounded-full", status.textColor, "bg-white/5")}>
+                            <h3 className="font-medium dark:text-white text-slate-900">{attendance.customer}</h3>
+                            <span className={cn("text-xs px-2 py-0.5 rounded-full", status.textColor, "dark:bg-white/5 bg-slate-100")}>
                               {status.label}
                             </span>
                             <span className={cn("w-2 h-2 rounded-full", priority.color)} title={`Prioridade: ${priority.label}`} />
                           </div>
-                          <p className="text-sm text-slate-400 mt-1 truncate">
+                          <p className="text-sm dark:text-slate-400 text-slate-500 mt-1 truncate">
                             {attendance.lastMessage}
                           </p>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                          <div className="flex items-center gap-3 mt-2 text-xs dark:text-slate-500 text-slate-400">
                             <span className="flex items-center gap-1">
                               {attendance.channel === "WhatsApp" ? <MessageSquare className="w-3 h-3" /> :
                                attendance.channel === "Email" ? <Mail className="w-3 h-3" /> :
@@ -229,7 +229,7 @@ export default function AttendancesPage() {
                               {attendance.unread}
                             </span>
                           )}
-                          <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 opacity-0 group-hover:opacity-100 transition-all">
+                          <button className="p-2 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 opacity-0 group-hover:opacity-100 transition-all">
                             <MoreVertical className="w-4 h-4" />
                           </button>
                         </div>

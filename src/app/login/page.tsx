@@ -159,11 +159,11 @@ function LoginForm() {
         </form>
 
         {/* Footer */}
-        <motion.div 
+        <motion.div
           variants={fadeIn}
-          className="mt-8 pt-6 border-t border-white/10 text-center"
+          className="mt-8 pt-6 border-t dark:border-white/10 border-slate-200 text-center"
         >
-          <p className="text-xs text-slate-500">
+          <p className="text-xs dark:text-slate-500 text-slate-400">
             CRM Inteligente para Gestão de Relacionamentos
           </p>
           <div className="flex justify-center gap-2 mt-3">
@@ -179,7 +179,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-black">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden dark:bg-black bg-slate-50">
       {/* Animated Background */}
       <GradientMesh />
       

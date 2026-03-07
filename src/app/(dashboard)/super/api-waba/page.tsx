@@ -39,10 +39,10 @@ export default function SuperApiWabaPage() {
           <div className="flex items-center gap-2 mb-2">
             <GlowBadge variant="green">Integração</GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             API WABA: Canal de Conexão
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Gerencie as configurações da API WhatsApp Business
           </p>
         </div>
@@ -72,8 +72,8 @@ export default function SuperApiWabaPage() {
                     <Icon className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs">{stat.label}</p>
-                    <p className="text-xl font-bold text-white">{stat.value}</p>
+                    <p className="dark:text-slate-400 text-slate-500 text-xs">{stat.label}</p>
+                    <p className="text-xl font-bold dark:text-white text-slate-900">{stat.value}</p>
                   </div>
                 </div>
               </GlassCard>
@@ -90,7 +90,7 @@ export default function SuperApiWabaPage() {
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-white">{config.company}</h3>
+                    <h3 className="text-lg font-semibold dark:text-white text-slate-900">{config.company}</h3>
                     {config.status === "connected" ? (
                       <GlowBadge variant="green">
                         <CheckCircle className="w-3 h-3 mr-1" />
@@ -106,18 +106,18 @@ export default function SuperApiWabaPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-slate-500">Phone Number ID</p>
-                      <p className="text-slate-300 font-mono">{config.phoneNumberId}</p>
+                      <p className="dark:text-slate-500 text-slate-400">Phone Number ID</p>
+                      <p className="dark:text-slate-300 text-slate-700 font-mono">{config.phoneNumberId}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Business Account ID</p>
-                      <p className="text-slate-300 font-mono">{config.businessAccountId}</p>
+                      <p className="dark:text-slate-500 text-slate-400">Business Account ID</p>
+                      <p className="dark:text-slate-300 text-slate-700 font-mono">{config.businessAccountId}</p>
                     </div>
                     <div className="md:col-span-2">
-                      <p className="text-slate-500">Webhook URL</p>
+                      <p className="dark:text-slate-500 text-slate-400">Webhook URL</p>
                       <div className="flex items-center gap-2">
                         <p className="text-emerald-400 font-mono text-xs">{config.webhookUrl}</p>
-                        <button className="p-1 rounded hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors">
+                        <button className="p-1 rounded dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-emerald-400 transition-colors">
                           <Copy className="w-3 h-3" />
                         </button>
                       </div>
@@ -126,12 +126,12 @@ export default function SuperApiWabaPage() {
                 </div>
 
                 <div className="flex items-center gap-2 lg:flex-col lg:items-end">
-                  <p className="text-xs text-slate-500">Última sincronização: {config.lastSync}</p>
+                  <p className="text-xs dark:text-slate-500 text-slate-400">Última sincronização: {config.lastSync}</p>
                   <div className="flex gap-2">
-                    <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors">
+                    <button className="p-2 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-emerald-400 transition-colors">
                       <RefreshCw className="w-4 h-4" />
                     </button>
-                    <button className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors">
+                    <button className="p-2 rounded-lg dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-emerald-400 transition-colors">
                       <Key className="w-4 h-4" />
                     </button>
                   </div>
@@ -139,17 +139,17 @@ export default function SuperApiWabaPage() {
               </div>
 
               {/* Token Section */}
-              <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="mt-4 pt-4 border-t dark:border-white/10 border-slate-200">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-slate-500">Access Token</p>
+                  <p className="text-sm dark:text-slate-500 text-slate-400">Access Token</p>
                   <button
                     onClick={() => toggleToken(config.id)}
-                    className="p-1 rounded hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors"
+                    className="p-1 rounded dark:hover:bg-white/5 hover:bg-slate-100 dark:text-slate-400 text-slate-500 hover:text-emerald-400 transition-colors"
                   >
                     {showTokens[config.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-sm font-mono text-slate-300 mt-1">
+                <p className="text-sm font-mono dark:text-slate-300 text-slate-700 mt-1">
                   {showTokens[config.id] 
                     ? "EAAH2KZBX0J...8J9K0L1M2N3O4P5Q6R7S8T9U0V1W2X3Y4Z5"
                     : "••••••••••••••••••••••••••••••••••••••••••••••••••"

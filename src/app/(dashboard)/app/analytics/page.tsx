@@ -69,8 +69,8 @@ const stats = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900/90 border border-white/10 rounded-lg p-3 backdrop-blur-xl">
-        <p className="text-slate-300 text-sm mb-1">{label}</p>
+      <div className="dark:bg-slate-900/90 bg-white/95 dark:border-white/10 border-slate-200 border rounded-lg p-3 backdrop-blur-xl shadow-lg">
+        <p className="dark:text-slate-300 text-slate-700 text-sm mb-1">{label}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
             {entry.name}: {entry.value}
@@ -96,10 +96,10 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-2 mb-2">
             <GlowBadge variant="green">Analytics</GlowBadge>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white">
+          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
             Dashboard de Analytics
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="dark:text-slate-400 text-slate-500 mt-1">
             Acompanhe métricas e indicadores de performance
           </p>
         </div>
@@ -127,11 +127,11 @@ export default function AnalyticsPage() {
               <GlassCard className="p-6" glow="green">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
-                    <h3 className="text-2xl font-bold text-white">{stat.value}</h3>
+                    <p className="dark:text-slate-400 text-slate-500 text-sm mb-1">{stat.label}</p>
+                    <h3 className="text-2xl font-bold dark:text-white text-slate-900">{stat.value}</h3>
                     <p className="text-emerald-400 text-sm mt-1">{stat.change}</p>
                   </div>
-                  <div className="p-2 rounded-lg bg-white/5">
+                  <div className="p-2 rounded-lg dark:bg-white/5 bg-slate-100">
                     <Icon className="w-5 h-5 text-emerald-400" />
                   </div>
                 </div>
@@ -146,7 +146,7 @@ export default function AnalyticsPage() {
         <motion.div variants={fadeInUp}>
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h3 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-emerald-400" />
                 Atendimentos vs Convertidos
               </h3>
@@ -155,7 +155,7 @@ export default function AnalyticsPage() {
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.15)" />
                   <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
                   <YAxis stroke="#64748b" fontSize={12} />
                   <Tooltip content={<CustomTooltip />} />
@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
         <motion.div variants={fadeInUp}>
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h3 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-400" />
                 Evolução de Receita
               </h3>
@@ -185,7 +185,7 @@ export default function AnalyticsPage() {
                       <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.15)" />
                   <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
                   <YAxis stroke="#64748b" fontSize={12} />
                   <Tooltip content={<CustomTooltip />} />
@@ -209,7 +209,7 @@ export default function AnalyticsPage() {
         <motion.div variants={fadeInUp} className="lg:col-span-1">
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h3 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-emerald-400" />
                 Canais de Comunicação
               </h3>
@@ -241,8 +241,8 @@ export default function AnalyticsPage() {
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: channel.color }}
                   />
-                  <span className="text-sm text-slate-400">{channel.name}</span>
-                  <span className="text-sm text-white font-medium">{channel.value}%</span>
+                  <span className="text-sm dark:text-slate-400 text-slate-500">{channel.name}</span>
+                  <span className="text-sm dark:text-white text-slate-900 font-medium">{channel.value}%</span>
                 </div>
               ))}
             </div>
@@ -252,7 +252,7 @@ export default function AnalyticsPage() {
         <motion.div variants={fadeInUp} className="lg:col-span-2">
           <GlassCard className="p-6" hover={false}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h3 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
                 <Filter className="w-5 h-5 text-emerald-400" />
                 Performance por Período
               </h3>
@@ -269,10 +269,10 @@ export default function AnalyticsPage() {
               ].map((metric) => (
                 <div key={metric.label}>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-300">{metric.label}</span>
-                    <span className="text-white font-medium">{metric.value}%</span>
+                    <span className="dark:text-slate-300 text-slate-700">{metric.label}</span>
+                    <span className="dark:text-white text-slate-900 font-medium">{metric.value}%</span>
                   </div>
-                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-2 dark:bg-white/10 bg-slate-200 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${metric.value}%` }}
