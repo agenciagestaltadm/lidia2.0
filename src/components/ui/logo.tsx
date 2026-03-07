@@ -38,7 +38,7 @@ export function Logo({
         alt="LIDIA"
         width={currentSize.width}
         height={currentSize.height}
-        className="object-contain"
+        className="object-contain logo-image"
         priority
       />
       {showText && variant !== "full" && (
@@ -60,7 +60,7 @@ export function SidebarLogo({ collapsed = false }: { collapsed?: boolean }) {
           alt="LIDIA"
           width={40}
           height={40}
-          className="object-contain"
+          className="object-contain logo-image"
           priority
         />
       </div>
@@ -75,7 +75,7 @@ export function SidebarLogo({ collapsed = false }: { collapsed?: boolean }) {
           alt="LIDIA"
           width={52}
           height={52}
-          className="object-contain"
+          className="object-contain logo-image"
           priority
         />
       </div>
@@ -93,7 +93,7 @@ export function LoginLogo() {
           alt="LIDIA"
           width={80}
           height={80}
-          className="object-contain"
+          className="object-contain logo-image"
           priority
         />
       </div>

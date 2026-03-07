@@ -80,7 +80,7 @@ function LoginForm() {
               alt="LIDIA"
               width={64}
               height={64}
-              className="object-contain"
+              className="object-contain logo-image"
               priority
             />
           </motion.div>

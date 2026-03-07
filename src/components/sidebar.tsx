@@ -119,7 +119,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               alt="LIDIA"
               width={40}
               height={40}
-              className="object-contain"
+              className="object-contain logo-image"
               priority
             />
           </div>

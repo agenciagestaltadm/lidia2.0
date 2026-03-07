@@ -107,7 +107,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
                 alt="LIDIA"
                 width={isOpen ? 200 : 40}
                 height={isOpen ? 60 : 40}
-                className="object-contain"
+                className="object-contain logo-image"
                 priority
               />
             </motion.div>
@@ -288,7 +288,7 @@ export function SuperSidebar({ isOpen, onToggle }: SuperSidebarProps) {
                     alt="LIDIA"
                     width={28}
                     height={28}
-                    className="object-contain"
+                    className="object-contain logo-image"
                     priority
                   />
                 </div>
