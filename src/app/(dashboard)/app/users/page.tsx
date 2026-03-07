@@ -231,13 +231,17 @@ export default function UsersPage() {
 
   // Handlers
   const handleAddUser = () => {
+    console.log("[UsersPage] handleAddUser called");
     setEditingUser(null);
     setIsModalOpen(true);
+    console.log("[UsersPage] isModalOpen set to true");
   };
 
   const handleEditUser = (user: CompanyUser) => {
+    console.log("[UsersPage] handleEditUser called", user);
     setEditingUser(user);
     setIsModalOpen(true);
+    console.log("[UsersPage] isModalOpen set to true for editing");
   };
 
   const handleSaveUser = async (userData: Parameters<typeof createUser>[0]) => {

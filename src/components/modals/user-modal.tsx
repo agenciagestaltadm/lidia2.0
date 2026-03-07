@@ -146,6 +146,8 @@ export function UserModal({
     label: company.name,
   }));
 
+  console.log("[UserModal] Rendering - isOpen:", isOpen, "isEditing:", isEditing, "user:", user);
+
   return (
     <AnimatePresence>
       {isOpen && (
