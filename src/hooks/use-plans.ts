@@ -40,7 +40,7 @@ interface PlansState {
 
 interface PlanFormData {
   name: string;
-  description?: string;
+  description?: string | null;
   price?: number;
   is_active?: boolean;
   is_trial?: boolean;

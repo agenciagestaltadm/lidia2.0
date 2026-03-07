@@ -99,11 +99,18 @@ export function PlanModal({ isOpen, onClose, onSave, plan, mode }: PlanModalProp
     if (!validateForm()) return;
 
     setLoading(true);
+    setErrors({});
+    
     try {
       await onSave(formData);
       onClose();
     } catch (error) {
       console.error("Error saving plan:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar plano. Tente novamente.";
+      setErrors({
+        name: errorMessage
+      });
+      alert("Erro ao salvar plano: " + errorMessage);
     } finally {
       setLoading(false);
     }

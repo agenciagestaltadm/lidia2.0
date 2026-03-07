@@ -159,8 +159,8 @@ export default function SuperCompaniesPage() {
   const handleSaveCompany = async (formData: CompanyFormData) => {
     const companyData = {
       name: formData.name,
-      document: formData.document,
-      identity: formData.identity,
+      document: formData.document || null,
+      identity: formData.identity || null,
       plan_id: formData.plan_id || null,
       max_users: formData.max_users,
       max_connections: formData.max_connections,
@@ -169,16 +169,21 @@ export default function SuperCompaniesPage() {
       trial_period: formData.trial_period,
     };
 
-    if (modalMode === "create") {
-      const result = await createCompany(companyData);
-      if (!result.success) {
-        throw new Error(result.error);
+    try {
+      if (modalMode === "create") {
+        const result = await createCompany(companyData);
+        if (!result.success) {
+          throw new Error(result.error || "Erro ao criar empresa");
+        }
+      } else if (selectedCompany) {
+        const result = await updateCompany(selectedCompany.id, companyData);
+        if (!result.success) {
+          throw new Error(result.error || "Erro ao atualizar empresa");
+        }
       }
-    } else if (selectedCompany) {
-      const result = await updateCompany(selectedCompany.id, companyData);
-      if (!result.success) {
-        throw new Error(result.error);
-      }
+    } catch (err) {
+      console.error("Error in handleSaveCompany:", err);
+      throw err;
     }
   };
 

@@ -23,8 +23,8 @@ interface CompanyModalProps {
 
 export interface CompanyFormData {
   name: string;
-  document: string;
-  identity: string;
+  document: string | null;
+  identity: string | null;
   plan_id: string | null;
   max_users: number;
   max_connections: number;
@@ -109,11 +109,18 @@ export function CompanyModal({ isOpen, onClose, onSave, company, plans, mode }: 
     if (!validateForm()) return;
 
     setLoading(true);
+    setErrors({});
+    
     try {
       await onSave(formData);
       onClose();
     } catch (error) {
       console.error("Error saving company:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar empresa. Tente novamente.";
+      setErrors({
+        name: errorMessage
+      });
+      alert("Erro ao salvar empresa: " + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -169,14 +176,14 @@ export function CompanyModal({ isOpen, onClose, onSave, company, plans, mode }: 
             <AnimatedInput
               label="CNPJ/Documento"
               placeholder="00.000.000/0000-00"
-              value={formData.document}
-              onChange={(e) => updateField("document", e.target.value)}
+              value={formData.document || ""}
+              onChange={(e) => updateField("document", e.target.value || null)}
             />
             <AnimatedInput
               label="Identidade"
               placeholder="Nome fantasia ou identificador"
-              value={formData.identity}
-              onChange={(e) => updateField("identity", e.target.value)}
+              value={formData.identity || ""}
+              onChange={(e) => updateField("identity", e.target.value || null)}
             />
           </div>
 

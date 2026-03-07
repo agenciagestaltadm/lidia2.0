@@ -35,12 +35,12 @@ interface CompaniesState {
 
 interface CompanyFormData {
   name: string;
-  document?: string;
+  document?: string | null;
   plan_id?: string | null;
   is_active?: boolean;
   max_users?: number;
   max_connections?: number;
-  identity?: string;
+  identity?: string | null;
   is_trial?: boolean;
   trial_period?: number;
   settings?: Record<string, unknown>;

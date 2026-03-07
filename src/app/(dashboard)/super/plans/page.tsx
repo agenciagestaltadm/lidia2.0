@@ -266,7 +266,7 @@ export default function SuperPlansPage() {
   const handleSave = async (formData: PlanFormData) => {
     const planData = {
       name: formData.name,
-      description: formData.description,
+      description: formData.description || null,
       price: formData.price,
       is_active: formData.is_active,
       is_trial: formData.is_trial,
@@ -281,16 +281,21 @@ export default function SuperPlansPage() {
       features: [],
     };
 
-    if (modalMode === "create") {
-      const result = await createPlan(planData);
-      if (!result.success) {
-        throw new Error(result.error);
+    try {
+      if (modalMode === "create") {
+        const result = await createPlan(planData);
+        if (!result.success) {
+          throw new Error(result.error || "Erro ao criar plano");
+        }
+      } else if (selectedPlan) {
+        const result = await updatePlan(selectedPlan.id, planData);
+        if (!result.success) {
+          throw new Error(result.error || "Erro ao atualizar plano");
+        }
       }
-    } else if (selectedPlan) {
-      const result = await updatePlan(selectedPlan.id, planData);
-      if (!result.success) {
-        throw new Error(result.error);
-      }
+    } catch (err) {
+      console.error("Error in handleSave:", err);
+      throw err;
     }
   };
 
