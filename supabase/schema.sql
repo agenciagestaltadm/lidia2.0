@@ -27,6 +27,12 @@ CREATE TABLE companies (
     plan_id UUID,
     settings JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT true,
+    max_users INTEGER DEFAULT 1,
+    max_connections INTEGER DEFAULT 1,
+    identity TEXT,
+    is_trial BOOLEAN DEFAULT false,
+    trial_period INTEGER DEFAULT 3,
+    trial_end_date TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -35,9 +41,13 @@ CREATE TABLE companies (
 CREATE TABLE plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
+    description TEXT,
     price DECIMAL(10, 2),
     limits JSONB DEFAULT '{"max_users": 1, "max_channels": 1, "max_bulk_messages_per_day": 100}',
+    features JSONB DEFAULT '[]',
     is_active BOOLEAN DEFAULT true,
+    is_trial BOOLEAN DEFAULT false,
+    trial_days INTEGER DEFAULT 3,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

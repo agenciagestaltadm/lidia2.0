@@ -87,6 +87,7 @@ export function Dialog({
               className={cn(
                 "relative overflow-hidden rounded-2xl",
                 "border backdrop-blur-xl",
+                "max-h-[90vh] flex flex-col",
                 // Dark mode
                 "dark:bg-slate-900/90 dark:border-white/10",
                 // Light mode
@@ -164,7 +165,11 @@ interface DialogContentProps {
 }
 
 export function DialogContent({ children, className }: DialogContentProps) {
-  return <div className={cn("px-6 py-4", className)}>{children}</div>;
+  return (
+    <div className={cn("px-6 py-4 overflow-y-auto", className)} style={{ maxHeight: "calc(90vh - 140px)" }}>
+      {children}
+    </div>
+  );
 }
 
 export default Dialog;

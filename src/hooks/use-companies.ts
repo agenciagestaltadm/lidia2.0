@@ -112,16 +112,24 @@ export function useCompanies() {
   const createCompany = useCallback(
     async (companyData: CompanyFormData): Promise<{ success: boolean; data?: Company; error?: string }> => {
       try {
+        // Remove campos undefined/null que podem causar erro
+        const cleanData = Object.fromEntries(
+          Object.entries(companyData).filter(([_, v]) => v !== undefined)
+        );
+
         const { data, error } = await supabase
           .from("companies")
-          .insert(companyData)
+          .insert(cleanData)
           .select(`
             *,
             plan:plan_id (id, name, price)
           `)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase error creating company:", error);
+          throw new Error(error.message || error.code || "Erro ao criar empresa");
+        }
 
         await fetchCompanies();
         return { success: true, data: data as Company };

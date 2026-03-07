@@ -91,24 +91,35 @@ export function usePlans() {
         const { data: userData } = await supabase.auth.getUser();
         const userId = userData.user?.id;
 
+        // Garante que campos obrigatórios tenham valores padrão
+        const insertData = {
+          name: planData.name,
+          description: planData.description,
+          price: planData.price ?? 0,
+          is_active: planData.is_active ?? true,
+          is_trial: planData.is_trial ?? false,
+          trial_days: planData.trial_days ?? 3,
+          limits: {
+            max_users: 1,
+            max_channels: 1,
+            max_bulk_messages_per_day: 100,
+            max_contacts: 1000,
+            max_attendances_per_month: 1000,
+            ...planData.limits,
+          },
+          features: planData.features || [],
+        };
+
         const { data, error } = await supabase
           .from("plans")
-          .insert({
-            ...planData,
-            limits: {
-              max_users: 1,
-              max_channels: 1,
-              max_bulk_messages_per_day: 100,
-              max_contacts: 1000,
-              max_attendances_per_month: 1000,
-              ...planData.limits,
-            },
-            features: planData.features || [],
-          })
+          .insert(insertData)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Supabase error creating plan:", error);
+          throw new Error(error.message || error.code || "Erro ao criar plano");
+        }
 
         // Add to history
         await supabase.from("plan_history").insert({
