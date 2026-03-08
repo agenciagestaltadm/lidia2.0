@@ -24,16 +24,10 @@ export default function AppLayout({
       />
 
       {/* Main content area with seamless integration */}
-      <motion.div
-        className="flex flex-col flex-1 min-w-0 relative"
-        initial={false}
-        animate={{
+      <div
+        className="flex flex-col flex-1 min-w-0 relative transition-all duration-300 ease-in-out"
+        style={{
           marginLeft: isSidebarOpen ? SIDEBAR_WIDTH : 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 30,
         }}
       >
         <Header
@@ -50,7 +44,7 @@ export default function AppLayout({
             </PageTransition>
           </div>
         </main>
-      </motion.div>
+      </div>
 
       {/* Background gradient effects - ambient lighting */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">

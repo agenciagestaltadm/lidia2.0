@@ -110,31 +110,27 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
   const sidebarContent = (
     <div className="flex flex-col h-full dark:bg-black/90 bg-white backdrop-blur-xl border-r dark:border-emerald-500/10 border-slate-200">
-      {/* Logo - Matching Super Sidebar Style */}
+      {/* Logo Only - Medium Size with Dark Mode Support */}
       <div className="flex items-center justify-between p-4 border-b dark:border-emerald-500/10 border-slate-200">
-        <Link href="/app/central" className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+        <Link href="/app/central" className="flex items-center justify-center flex-1">
           <motion.div
-            className="flex items-center justify-center shrink-0 overflow-hidden"
+            className="flex items-center justify-center overflow-hidden"
             style={{
-              width: 40,
-              height: 40,
+              width: 120,
+              height: 48,
             }}
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
           >
             <Image
               src="/3.png"
               alt="LIDIA"
-              width={40}
-              height={40}
-              className="object-contain logo-image"
+              width={120}
+              height={48}
+              className="object-contain dark:invert dark:brightness-0 dark:contrast-200 transition-all duration-300"
               priority
             />
           </motion.div>
-          <div className="flex flex-col">
-            <h1 className="dark:text-white text-slate-900 font-bold text-lg tracking-tight">LIDIA</h1>
-            <p className="text-xs text-emerald-500/80 font-medium">CRM</p>
-          </div>
         </Link>
         <button
           onClick={onToggle}
