@@ -130,7 +130,7 @@ export function Select({
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
               className={cn(
-                "absolute z-50 w-full mt-2",
+                "absolute z-[100] w-full mt-2",
                 "rounded-lg border overflow-hidden",
                 "shadow-xl",
                 "dark:bg-slate-900 dark:border-white/10",

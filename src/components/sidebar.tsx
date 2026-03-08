@@ -110,10 +110,18 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
   const sidebarContent = (
     <div className="flex flex-col h-full dark:bg-black/90 bg-white backdrop-blur-xl border-r dark:border-emerald-500/10 border-slate-200">
-      {/* Logo */}
+      {/* Logo - Matching Super Sidebar Style */}
       <div className="flex items-center justify-between p-4 border-b dark:border-emerald-500/10 border-slate-200">
-        <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/20">
+        <Link href="/app/central" className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+          <motion.div
+            className="flex items-center justify-center shrink-0 overflow-hidden"
+            style={{
+              width: 40,
+              height: 40,
+            }}
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          >
             <Image
               src="/3.png"
               alt="LIDIA"
@@ -122,12 +130,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               className="object-contain logo-image"
               priority
             />
-          </div>
-          <div>
+          </motion.div>
+          <div className="flex flex-col">
             <h1 className="dark:text-white text-slate-900 font-bold text-lg tracking-tight">LIDIA</h1>
             <p className="text-xs text-emerald-500/80 font-medium">CRM</p>
           </div>
-        </div>
+        </Link>
         <button
           onClick={onToggle}
           className="lg:hidden p-2 rounded-lg dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors"
@@ -186,15 +194,17 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   return (
     <>
       {/* Mobile Toggle */}
-      <button
+      <motion.button
         onClick={onToggle}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg dark:bg-black/80 bg-white/90 backdrop-blur-sm dark:border-white/10 border-slate-200 border dark:text-slate-400 text-slate-600 dark:hover:text-white hover:text-slate-900 transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl dark:bg-[#0a0a0a]/90 bg-white/90 border dark:border-emerald-500/30 border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/10"
+        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.05 }}
       >
-        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
+        <Menu className="h-5 w-5" />
+      </motion.button>
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:block fixed left-0 top-0 h-screen w-64 z-40">
+      {/* Desktop Sidebar with higher z-index to prevent collision */}
+      <aside className="hidden lg:block fixed left-0 top-0 h-screen w-64 z-50">
         {sidebarContent}
       </aside>
 
@@ -203,18 +213,18 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         {isOpen && (
           <>
             <motion.div
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              variants={overlayFade}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               onClick={onToggle}
-              className="lg:hidden fixed inset-0 dark:bg-black/80 bg-slate-900/50 backdrop-blur-sm z-40"
+              className="lg:hidden fixed inset-0 z-40 dark:bg-black/70 bg-slate-900/70 backdrop-blur-sm"
             />
             <motion.aside
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              variants={drawerSlide}
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="lg:hidden fixed left-0 top-0 h-screen w-72 z-50"
             >
               {sidebarContent}

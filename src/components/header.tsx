@@ -5,6 +5,7 @@ import { Menu, Bell, Search, Sparkles } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { ThemeToggleSwitch } from "./theme-toggle-switch";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -70,6 +71,11 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         {/* Right Section */}
         <div className="flex items-center gap-3">
+          {/* Theme Toggle */}
+          <div className="hidden sm:flex items-center gap-2 mr-2">
+            <ThemeToggleSwitch />
+          </div>
+
           {/* Search */}
           <div className="hidden md:flex items-center">
             <div className="relative">
