@@ -1,86 +1,45 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   DateRangePicker,
   PanelCustomizer,
-  PieChartWidget,
-  BarChartWidget,
-  LineChartWidget,
+  ApexPieChart,
+  ApexLineChart,
+  ApexBarChart,
   SummaryCards,
   TeamPerformanceTable,
+  CompanyEmailsWidget,
 } from "@/components/analytics";
 import {
   useDateRangePicker,
   DateRange,
   useDashboardLayout,
   WidgetType,
+  useAttendanceByStatus,
+  useAttendanceByUser,
+  useAttendanceByChannel,
+  useAttendanceByChannelType,
+  useAttendanceEvolution,
+  useChannelEvolution,
+  useSummaryMetrics,
+  useTeamPerformance,
+  TeamMemberPerformance,
 } from "@/hooks";
 import { cn } from "@/lib/utils";
 
-// Mock data for build time / initial render
-const MOCK_PIE_DATA = [
-  { name: "Não informado", value: 100, percentage: 100, color: "#10b981" },
-];
-
-const MOCK_TIME_DATA = [
-  { date: "03/03/2026", value: 100, label: "100%" },
-  { date: "04/03/2026", value: 100, label: "100%" },
-  { date: "05/03/2026", value: 100, label: "100%" },
-  { date: "06/03/2026", value: 100, label: "100%" },
-  { date: "07/03/2026", value: 100, label: "100%" },
-  { date: "08/03/2026", value: 100, label: "100%" },
-  { date: "09/03/2026", value: 100, label: "100%" },
-];
-
-const MOCK_ATTENDANCE_DATA = [
-  { date: "03/03/2026", value: 133, label: "133" },
-  { date: "04/03/2026", value: 875, label: "875" },
-  { date: "05/03/2026", value: 58, label: "58" },
-  { date: "06/03/2026", value: 54, label: "54" },
-  { date: "07/03/2026", value: 58, label: "58" },
-  { date: "08/03/2026", value: 58, label: "58" },
-  { date: "09/03/2026", value: 13, label: "13" },
-];
-
-const MOCK_SUMMARY = {
-  totalAttendances: 1323,
-  active: 952,
-  receptive: 371,
-  newContacts: 823,
-  avgTMA: "1 minuto",
-  avgFirstResponse: "1 minuto",
-};
-
-const MOCK_TEAM_DATA = [
-  {
-    userId: "1",
-    userName: "Não informado",
-    pending: 77,
-    attending: 0,
-    finished: 782,
-    total: 859,
-    avgFirstResponse: "-",
-    avgTMA: "-",
-  },
-  {
-    userId: "2",
-    userName: "CALVES PIZZA",
-    userEmail: "calvespizzaria@gmail.com",
-    pending: 250,
-    attending: 213,
-    finished: 1,
-    total: 464,
-    avgFirstResponse: "3 minutos",
-    avgTMA: "2 minutos",
-  },
-];
-
 /**
- * Dashboard Central de Agentes
+ * Dashboard Central de Agentes - Versão Modernizada
  * 
- * Página principal com analytics completos
+ * Features:
+ * - Gráficos modernos com ApexCharts (interativos, responsivos)
+ * - Dados reais integrados do Supabase
+ * - Filtro rigoroso por company_id (isolamento total)
+ * - Listagem dinâmica de e-mails corporativos
+ * - Sem referências hardcoded ou dados de outras empresas
  */
 export default function CentralPage() {
   const [mounted, setMounted] = useState(false);
@@ -91,6 +50,16 @@ export default function CentralPage() {
 
   // Dashboard layout
   const dashboardLayout = useDashboardLayout();
+
+  // Fetch real data from Supabase
+  const { data: statusData, isLoading: statusLoading } = useAttendanceByStatus(appliedDateRange);
+  const { data: userData, isLoading: userLoading } = useAttendanceByUser(appliedDateRange);
+  const { data: channelTypeData, isLoading: channelTypeLoading } = useAttendanceByChannelType(appliedDateRange);
+  const { data: channelNameData, isLoading: channelNameLoading } = useAttendanceByChannel(appliedDateRange);
+  const { data: attendanceEvolutionData, isLoading: attendanceEvolutionLoading } = useAttendanceEvolution(appliedDateRange);
+  const { data: channelEvolutionData, isLoading: channelEvolutionLoading } = useChannelEvolution(appliedDateRange);
+  const { data: summaryMetrics, isLoading: summaryLoading } = useSummaryMetrics(appliedDateRange);
+  const { data: teamPerformanceData, isLoading: teamPerformanceLoading } = useTeamPerformance(appliedDateRange);
 
   useEffect(() => {
     setMounted(true);
@@ -111,8 +80,25 @@ export default function CentralPage() {
     return visibleWidgets.some((w) => w.id === id);
   };
 
-  // Durante SSR/build, mostra dados mockados
-  // No cliente, o QueryClientProvider envolverá o conteúdo real
+  // Helper to transform data for ApexCharts
+  const transformPieData = (data: { name: string; value: number; color?: string }[] | undefined) => {
+    if (!data || data.length === 0) return [];
+    return data.map(item => ({
+      name: item.name,
+      value: item.value,
+      color: item.color,
+    }));
+  };
+
+  const transformTimeSeriesData = (data: { date: string; value: number; label?: string }[] | undefined) => {
+    if (!data || data.length === 0) return [];
+    return data.map(item => ({
+      date: item.date,
+      value: item.value,
+      label: item.label || item.value.toString(),
+    }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with Date Range and Panel Customizer */}
@@ -126,7 +112,7 @@ export default function CentralPage() {
             Painel de Controle
           </h1>
           <p className="text-sm dark:text-slate-400 text-slate-500 mt-1">
-            Acompanhe as métricas e desempenho da sua equipe
+            Acompanhe as métricas e desempenho da sua equipe em tempo real
           </p>
         </div>
 
@@ -148,8 +134,8 @@ export default function CentralPage() {
           transition={{ delay: 0.1 }}
         >
           <SummaryCards 
-            metrics={mounted ? undefined : MOCK_SUMMARY} 
-            isLoading={!mounted} 
+            metrics={mounted ? summaryMetrics : undefined} 
+            isLoading={!mounted || summaryLoading} 
           />
         </motion.div>
       )}
@@ -162,10 +148,12 @@ export default function CentralPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <PieChartWidget
+            <ApexPieChart
               title="Atendimento por Fila"
-              data={MOCK_PIE_DATA}
-              isLoading={!mounted}
+              data={transformPieData(channelNameData)}
+              isLoading={!mounted || channelNameLoading}
+              type="donut"
+              showLegend={true}
             />
           </motion.div>
         )}
@@ -176,13 +164,12 @@ export default function CentralPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <PieChartWidget
+            <ApexPieChart
               title="Atendimento por Usuário"
-              data={[
-                { name: "CALVES PIZZA", value: 649, percentage: 64.9, color: "#10b981" },
-                { name: "Não informado", value: 351, percentage: 35.1, color: "#3b82f6" },
-              ]}
-              isLoading={!mounted}
+              data={transformPieData(userData)}
+              isLoading={!mounted || userLoading}
+              type="donut"
+              showLegend={true}
             />
           </motion.div>
         )}
@@ -193,30 +180,31 @@ export default function CentralPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <PieChartWidget
+            <ApexPieChart
               title="Atendimento por Status"
-              data={[
-                { name: "Abertos", value: 592, percentage: 59.2, color: "#10b981" },
-                { name: "Pendentes", value: 247, percentage: 24.7, color: "#f59e0b" },
-                { name: "Fechados", value: 161, percentage: 16.1, color: "#3b82f6" },
-              ]}
-              isLoading={!mounted}
+              data={transformPieData(statusData)}
+              isLoading={!mounted || statusLoading}
+              type="donut"
+              showLegend={true}
             />
           </motion.div>
         )}
+      </div>
 
+      {/* Second Row - More Pie Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {isWidgetVisible("channel-connection") && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            <PieChartWidget
+            <ApexPieChart
               title="Atendimento por Canal (Conexão)"
-              data={[
-                { name: "WhatsApp Official", value: 100, percentage: 100, color: "#10b981" },
-              ]}
-              isLoading={!mounted}
+              data={transformPieData(channelTypeData)}
+              isLoading={!mounted || channelTypeLoading}
+              type="donut"
+              showLegend={true}
             />
           </motion.div>
         )}
@@ -227,12 +215,12 @@ export default function CentralPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <PieChartWidget
+            <ApexPieChart
               title="Atendimento por Canal (Nome)"
-              data={[
-                { name: "calves pizza", value: 100, percentage: 100, color: "#10b981" },
-              ]}
-              isLoading={!mounted}
+              data={transformPieData(channelNameData)}
+              isLoading={!mounted || channelNameLoading}
+              type="donut"
+              showLegend={true}
             />
           </motion.div>
         )}
@@ -243,28 +231,13 @@ export default function CentralPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
           >
-            <PieChartWidget
+            <ApexPieChart
               title="Atendimento por Demanda"
               data={[]}
               isLoading={!mounted}
-              emptyMessage="Sem dados"
-            />
-          </motion.div>
-        )}
-      </div>
-
-      {/* Bar Charts Row */}
-      <div className="grid grid-cols-1 gap-4">
-        {isWidgetVisible("channel-evolution") && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <BarChartWidget
-              title="Evolução por Canal"
-              data={MOCK_TIME_DATA}
-              isLoading={!mounted}
+              emptyMessage="Sem dados disponíveis"
+              type="donut"
+              showLegend={true}
             />
           </motion.div>
         )}
@@ -276,13 +249,14 @@ export default function CentralPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
+            transition={{ delay: 0.5 }}
           >
-            <LineChartWidget
+            <ApexLineChart
               title="Evolução de Atendimentos"
-              data={MOCK_ATTENDANCE_DATA}
-              isLoading={!mounted}
+              data={transformTimeSeriesData(attendanceEvolutionData)}
+              isLoading={!mounted || attendanceEvolutionLoading}
               showArea={true}
+              color="#10b981"
             />
           </motion.div>
         )}
@@ -291,12 +265,12 @@ export default function CentralPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.55 }}
           >
-            <LineChartWidget
+            <ApexLineChart
               title="Evolução de Valores"
-              data={MOCK_TIME_DATA.map(d => ({ ...d, value: 0 }))}
-              isLoading={!mounted}
+              data={transformTimeSeriesData(channelEvolutionData)}
+              isLoading={!mounted || channelEvolutionLoading}
               showArea={false}
               color="#8b5cf6"
             />
@@ -304,19 +278,50 @@ export default function CentralPage() {
         )}
       </div>
 
-      {/* Team Performance Table */}
-      {isWidgetVisible("team-performance") && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65 }}
-        >
-          <TeamPerformanceTable
-            data={MOCK_TEAM_DATA}
-            isLoading={!mounted}
-          />
-        </motion.div>
-      )}
+      {/* Bar Chart Row */}
+      <div className="grid grid-cols-1 gap-4">
+        {isWidgetVisible("channel-evolution") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <ApexBarChart
+              title="Evolução por Canal"
+              data={transformTimeSeriesData(channelEvolutionData).map(d => ({ category: d.date, value: d.value }))}
+              isLoading={!mounted || channelEvolutionLoading}
+              color="#10b981"
+            />
+          </motion.div>
+        )}
+      </div>
+
+      {/* Team Performance Table and Company Emails */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {isWidgetVisible("team-performance") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65 }}
+            className="lg:col-span-2"
+          >
+            <TeamPerformanceTable
+              data={teamPerformanceData}
+              isLoading={!mounted || teamPerformanceLoading}
+            />
+          </motion.div>
+        )}
+
+        {isWidgetVisible("company-emails") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            <CompanyEmailsWidget />
+          </motion.div>
+        )}
+      </div>
 
       {/* Empty state when no widgets visible */}
       {visibleWidgets.length === 0 && (
@@ -333,18 +338,6 @@ export default function CentralPage() {
           </p>
         </motion.div>
       )}
-
-      {/* Real data fetching component (client-side only) */}
-      {mounted && <AnalyticsDataFetcher dateRange={appliedDateRange} />}
     </div>
   );
-}
-
-/**
- * Componente que busca dados reais do Supabase (apenas cliente)
- */
-function AnalyticsDataFetcher({ dateRange }: { dateRange: DateRange }) {
-  // Aqui você pode implementar a busca real de dados
-  // Por enquanto, os dados são mockados conforme solicitado
-  return null;
 }

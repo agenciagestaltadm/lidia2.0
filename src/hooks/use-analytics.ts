@@ -424,33 +424,7 @@ export function useTeamPerformance(dateRange: DateRange) {
         }
       });
 
-      // Add sample data for demonstration
-      if (Object.keys(userStats).length === 0) {
-        return [
-          {
-            userId: "1",
-            userName: "Não informado",
-            pending: 77,
-            attending: 0,
-            finished: 782,
-            total: 859,
-            avgFirstResponse: "-",
-            avgTMA: "-",
-          },
-          {
-            userId: "2",
-            userName: "CALVES PIZZA",
-            userEmail: "calvespizzaria@gmail.com",
-            pending: 250,
-            attending: 213,
-            finished: 1,
-            total: 464,
-            avgFirstResponse: "3 minutos",
-            avgTMA: "2 minutos",
-          },
-        ];
-      }
-
+      // Retorna dados reais ou array vazio se não houver dados
       return Object.values(userStats).sort((a, b) => b.total - a.total);
     },
     enabled: !!user?.companyId,

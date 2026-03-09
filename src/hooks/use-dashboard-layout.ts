@@ -15,7 +15,8 @@ export type WidgetType =
   | "attendance-evolution"
   | "values-evolution"
   | "summary-cards"
-  | "team-performance";
+  | "team-performance"
+  | "company-emails";
 
 export interface WidgetConfig {
   id: WidgetType;
@@ -41,6 +42,7 @@ const DEFAULT_LAYOUT: DashboardLayout = {
     { id: "values-evolution", title: "Evolução de Valores", visible: true, order: 9 },
     { id: "summary-cards", title: "Resumo", visible: true, order: 0 },
     { id: "team-performance", title: "Desempenho da Equipe", visible: true, order: 10 },
+    { id: "company-emails", title: "E-mails Corporativos", visible: true, order: 11 },
   ],
 };
 

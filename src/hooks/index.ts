@@ -8,6 +8,7 @@ export { useCompanyUsers } from "./use-company-users";
 export { useAuditLogs } from "./use-audit-logs";
 export { useChannels } from "./use-channels";
 export { useSystemSettings } from "./use-system-settings";
+export { useCompanyEmails, type CompanyEmail } from "./use-company-emails";
 export {
   useSidebarState, 
   SIDEBAR_WIDTHS, 
