@@ -577,3 +577,153 @@ body {
 .light .logo-image {
   filter: none;
 }
+
+/* ========================================
+   SIDEBAR COLLAPSE STYLES
+   ======================================== */
+
+/* Transition for sidebar width changes */
+.sidebar-transition {
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+/* Content area transition */
+.sidebar-content-transition {
+  transition: margin-left 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: margin-left;
+}
+
+/* Prevent text wrapping during collapse animation */
+.sidebar-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tooltip animation for collapsed sidebar items */
+.sidebar-tooltip {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-4px);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 200ms ease;
+}
+
+.group:hover .sidebar-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+/* Logo transition effects */
+.sidebar-logo {
+  transition: all 150ms ease;
+}
+
+/* Active indicator animation */
+.sidebar-active-indicator {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Z-index management for sidebar layers */
+.sidebar-layer {
+  z-index: 50;
+}
+
+.sidebar-overlay {
+  z-index: 40;
+}
+
+.sidebar-tooltip-layer {
+  z-index: 60;
+}
+
+/* Prevent layout shift on content area */
+.main-content-area {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Smooth fade for content during sidebar transition */
+@keyframes sidebar-content-fade {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.sidebar-collapsing .sidebar-fade-content {
+  animation: sidebar-content-fade 300ms ease;
+}
+
+/* Icon-only button styles for collapsed state */
+.sidebar-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  transition: all 200ms ease;
+}
+
+.sidebar-icon-button:hover {
+  transform: scale(1.05);
+}
+
+/* Toggle button positioning */
+.sidebar-toggle-button {
+  position: absolute;
+  right: -12px;
+  top: 16px;
+  z-index: 51;
+}
+
+/* Mobile drawer specific styles */
+@media (max-width: 1023px) {
+  .sidebar-desktop {
+    display: none;
+  }
+  
+  .sidebar-mobile-drawer {
+    width: 288px !important;
+  }
+}
+
+/* Desktop collapsed state */
+@media (min-width: 1024px) {
+  .sidebar-collapsed {
+    width: 80px !important;
+  }
+  
+  .sidebar-expanded {
+    width: 256px !important;
+  }
+  
+  /* Hide scrollbar in collapsed state for cleaner look */
+  .sidebar-collapsed .sidebar-scroll-area {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .sidebar-collapsed .sidebar-scroll-area::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-transition,
+  .sidebar-content-transition,
+  .sidebar-logo,
+  .sidebar-active-indicator {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .sidebar-tooltip {
+    transition: opacity 0.01ms ease, visibility 0.01ms ease;
+  }
+}

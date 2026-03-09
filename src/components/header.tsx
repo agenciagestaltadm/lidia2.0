@@ -1,17 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Menu, Bell, Search, Sparkles } from "lucide-react";
+import { Menu, Bell, Search, Sparkles, PanelLeftClose, PanelLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ThemeToggleSwitch } from "./theme-toggle-switch";
 
 interface HeaderProps {
+  /** Callback para alternar colapso da sidebar no desktop */
   onMenuClick: () => void;
+  /** Estado atual de colapso da sidebar */
+  isSidebarCollapsed: boolean;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, isSidebarCollapsed }: HeaderProps) {
   const pathname = usePathname();
   
   // Get page title from pathname
@@ -44,9 +47,13 @@ export function Header({ onMenuClick }: HeaderProps) {
             onClick={onMenuClick}
             className="hidden lg:flex p-2 rounded-lg dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors"
             whileTap={{ scale: 0.95 }}
-            title="Colapsar sidebar"
+            title={isSidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
           >
-            <Menu className="h-5 w-5" />
+            {isSidebarCollapsed ? (
+              <PanelLeft className="h-5 w-5" />
+            ) : (
+              <PanelLeftClose className="h-5 w-5" />
+            )}
           </motion.button>
 
           <div className="flex items-center gap-3">

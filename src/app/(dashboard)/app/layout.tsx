@@ -1,37 +1,66 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { PageTransition } from "@/components/animations/page-transition";
+import { useSidebarState, SIDEBAR_WIDTHS, SIDEBAR_TRANSITIONS } from "@/hooks/use-sidebar-state";
 
-// Width constants matching sidebar (w-64 = 256px)
-const SIDEBAR_WIDTH = 256;
-
+/**
+ * Layout principal do dashboard de agentes.
+ * 
+ * Features:
+ * - Sidebar colapsável no desktop com persistência de estado
+ * - Drawer mobile para telas pequenas
+ * - Transições suaves entre estados
+ * - Background effects futuristas
+ * 
+ * @param children - Conteúdo da página atual
+ */
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { 
+    isCollapsed, 
+    isMobileOpen, 
+    toggleCollapse, 
+    closeMobile,
+    isHydrated,
+  } = useSidebarState();
+
+  // Largura dinâmica baseada no estado de colapso
+  // Durante a hidratação, usa a largura expandida para evitar flash
+  const sidebarWidth = !isHydrated || !isCollapsed 
+    ? SIDEBAR_WIDTHS.EXPANDED 
+    : SIDEBAR_WIDTHS.COLLAPSED;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar - Colapsável no desktop, Drawer no mobile */}
       <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        isCollapsed={isCollapsed}
+        isMobileOpen={isMobileOpen}
+        onToggleCollapse={toggleCollapse}
+        onCloseMobile={closeMobile}
       />
 
-      {/* Main content area with seamless integration */}
-      <div
-        className="flex flex-col flex-1 min-w-0 relative transition-all duration-300 ease-in-out"
-        style={{
-          marginLeft: isSidebarOpen ? SIDEBAR_WIDTH : 0,
+      {/* Main content area com margin dinâmica */}
+      <motion.div
+        className="flex flex-col flex-1 min-w-0 relative"
+        initial={false}
+        animate={{
+          marginLeft: sidebarWidth,
+        }}
+        transition={{
+          duration: SIDEBAR_TRANSITIONS.WIDTH / 1000,
+          ease: [0.4, 0, 0.2, 1],
         }}
       >
         <Header
-          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          onMenuClick={toggleCollapse}
+          isSidebarCollapsed={isCollapsed}
         />
 
         <main className="flex-1 overflow-y-auto relative">
@@ -44,7 +73,7 @@ export default function AppLayout({
             </PageTransition>
           </div>
         </main>
-      </div>
+      </motion.div>
 
       {/* Background gradient effects - ambient lighting */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
