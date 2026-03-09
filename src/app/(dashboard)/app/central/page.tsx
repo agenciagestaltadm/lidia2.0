@@ -1,322 +1,350 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  MessageSquare, 
-  Clock, 
-  CheckCircle, 
-  Plus, 
-  Send, 
-  Filter, 
-  Users, 
-  Building,
-  TrendingUp,
-  BarChart3,
-  ArrowUpRight,
-  ArrowDownRight,
-  Sparkles
-} from "lucide-react";
-import { GlassCard } from "@/components/ui/glass-card";
-import { GlowBadge } from "@/components/ui/glow-badge";
-import { NeonButton } from "@/components/ui/neon-button";
-import { staggerContainer, fadeInUp, cardHover } from "@/lib/animations";
-import Link from "next/link";
+import {
+  DateRangePicker,
+  PanelCustomizer,
+  PieChartWidget,
+  BarChartWidget,
+  LineChartWidget,
+  SummaryCards,
+  TeamPerformanceTable,
+} from "@/components/analytics";
+import {
+  useDateRangePicker,
+  DateRange,
+  useDashboardLayout,
+  WidgetType,
+} from "@/hooks";
+import { cn } from "@/lib/utils";
 
-// Mock data for dashboard
-const stats = [
-  { 
-    label: "Atendimentos Abertos", 
-    value: "24", 
-    change: "+12%", 
-    trend: "up",
-    icon: MessageSquare,
-    glow: "emerald" as const,
+// Mock data for build time / initial render
+const MOCK_PIE_DATA = [
+  { name: "Não informado", value: 100, percentage: 100, color: "#10b981" },
+];
+
+const MOCK_TIME_DATA = [
+  { date: "03/03/2026", value: 100, label: "100%" },
+  { date: "04/03/2026", value: 100, label: "100%" },
+  { date: "05/03/2026", value: 100, label: "100%" },
+  { date: "06/03/2026", value: 100, label: "100%" },
+  { date: "07/03/2026", value: 100, label: "100%" },
+  { date: "08/03/2026", value: 100, label: "100%" },
+  { date: "09/03/2026", value: 100, label: "100%" },
+];
+
+const MOCK_ATTENDANCE_DATA = [
+  { date: "03/03/2026", value: 133, label: "133" },
+  { date: "04/03/2026", value: 875, label: "875" },
+  { date: "05/03/2026", value: 58, label: "58" },
+  { date: "06/03/2026", value: 54, label: "54" },
+  { date: "07/03/2026", value: 58, label: "58" },
+  { date: "08/03/2026", value: 58, label: "58" },
+  { date: "09/03/2026", value: 13, label: "13" },
+];
+
+const MOCK_SUMMARY = {
+  totalAttendances: 1323,
+  active: 952,
+  receptive: 371,
+  newContacts: 823,
+  avgTMA: "1 minuto",
+  avgFirstResponse: "1 minuto",
+};
+
+const MOCK_TEAM_DATA = [
+  {
+    userId: "1",
+    userName: "Não informado",
+    pending: 77,
+    attending: 0,
+    finished: 782,
+    total: 859,
+    avgFirstResponse: "-",
+    avgTMA: "-",
   },
-  { 
-    label: "Aguardando Resposta", 
-    value: "8", 
-    change: "-5%", 
-    trend: "down",
-    icon: Clock,
-    glow: "emerald" as const,
-  },
-  { 
-    label: "Fechados Hoje", 
-    value: "16", 
-    change: "+23%", 
-    trend: "up",
-    icon: CheckCircle,
-    glow: "emerald" as const,
-  },
-  { 
-    label: "Taxa de Conversão", 
-    value: "68%", 
-    change: "+8%", 
-    trend: "up",
-    icon: TrendingUp,
-    glow: "emerald" as const,
+  {
+    userId: "2",
+    userName: "CALVES PIZZA",
+    userEmail: "calvespizzaria@gmail.com",
+    pending: 250,
+    attending: 213,
+    finished: 1,
+    total: 464,
+    avgFirstResponse: "3 minutos",
+    avgTMA: "2 minutos",
   },
 ];
 
-const quickActions = [
-  { 
-    label: "Novo Contato", 
-    href: "/app/contacts/new", 
-    icon: Plus,
-    color: "from-emerald-500 to-emerald-600",
-    description: "Adicionar cliente"
-  },
-  { 
-    label: "Novo Negócio", 
-    href: "/app/funnel/new", 
-    icon: Filter,
-    color: "from-emerald-600 to-green-600",
-    description: "Criar oportunidade"
-  },
-  { 
-    label: "Disparo Bulk", 
-    href: "/app/bulk/new", 
-    icon: Send,
-    color: "from-green-500 to-emerald-500",
-    description: "Enviar mensagens"
-  },
-  { 
-    label: "Relatórios", 
-    href: "/app/analytics", 
-    icon: BarChart3,
-    color: "from-emerald-400 to-green-500",
-    description: "Ver métricas"
-  },
-];
-
-const recentActivities = [
-  { id: 1, text: "Novo atendimento iniciado", time: "2 min atrás", type: "info" },
-  { id: 2, text: "Contato 'Maria Silva' atualizado", time: "15 min atrás", type: "success" },
-  { id: 3, text: "Negócio 'Projeto Alpha' fechado", time: "1 hora atrás", type: "success" },
-  { id: 4, text: "Campanha 'Promoção Verão' enviada", time: "2 horas atrás", type: "info" },
-  { id: 5, text: "Novo usuário adicionado", time: "3 horas atrás", type: "info" },
-];
-
-function StatCard({ stat, index }: { stat: typeof stats[0]; index: number }) {
-  const Icon = stat.icon;
-  
-  return (
-    <motion.div
-      variants={fadeInUp}
-      custom={index}
-      whileHover="hover"
-      initial="rest"
-    >
-      <GlassCard glow="green" className="p-6 h-full">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="dark:text-slate-400 text-slate-500 text-sm mb-1">{stat.label}</p>
-            <h3 className="text-3xl font-bold dark:text-white text-slate-900">{stat.value}</h3>
-            <div className="flex items-center gap-1 mt-2">
-              {stat.trend === "up" ? (
-                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-              ) : (
-                <ArrowDownRight className="w-4 h-4 text-red-400" />
-              )}
-              <span className={`text-sm ${stat.trend === "up" ? "text-emerald-400" : "text-red-400"}`}>
-                {stat.change}
-              </span>
-              <span className="dark:text-slate-500 text-slate-400 text-sm ml-1">vs ontem</span>
-            </div>
-          </div>
-          <div 
-            className={`p-3 rounded-xl`}
-            style={{
-              background: `linear-gradient(135deg, rgba(16,185,129,0.2), transparent)`,
-              border: `1px solid rgba(16,185,129,0.3)`,
-            }}
-          >
-            <Icon className="w-5 h-5 text-emerald-400" />
-          </div>
-        </div>
-      </GlassCard>
-    </motion.div>
-  );
-}
-
-function QuickActionCard({ action, index }: { action: typeof quickActions[0]; index: number }) {
-  const Icon = action.icon;
-  
-  return (
-    <motion.div
-      variants={fadeInUp}
-      custom={index}
-    >
-      <Link href={action.href}>
-        <GlassCard className="p-5 h-full group cursor-pointer" glow="green">
-          <div className="flex flex-col h-full">
-            <div 
-              className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
-            >
-              <Icon className="w-6 h-6 text-white" />
-            </div>
-            <h4 className="dark:text-white text-slate-900 font-semibold mb-1">{action.label}</h4>
-            <p className="dark:text-slate-400 text-slate-500 text-sm">{action.description}</p>
-          </div>
-        </GlassCard>
-      </Link>
-    </motion.div>
-  );
-}
-
+/**
+ * Dashboard Central de Agentes
+ * 
+ * Página principal com analytics completos
+ */
 export default function CentralPage() {
+  const [mounted, setMounted] = useState(false);
+  
+  // Date range state
+  const { dateRange, setDateRange, handleGenerate } = useDateRangePicker(7);
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(dateRange);
+
+  // Dashboard layout
+  const dashboardLayout = useDashboardLayout();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleDateRangeChange = (newRange: DateRange) => {
+    setDateRange(newRange);
+  };
+
+  const handleGenerateClick = () => {
+    setAppliedDateRange(dateRange);
+    handleGenerate();
+  };
+
+  const visibleWidgets = dashboardLayout.getVisibleWidgets();
+
+  const isWidgetVisible = (id: WidgetType) => {
+    return visibleWidgets.some((w) => w.id === id);
+  };
+
+  // Durante SSR/build, mostra dados mockados
+  // No cliente, o QueryClientProvider envolverá o conteúdo real
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={staggerContainer}
-      className="space-y-8"
-    >
-      {/* Welcome Section */}
-      <motion.div variants={fadeInUp} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* Header with Date Range and Panel Customizer */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <GlowBadge variant="green" pulse>
-              <Sparkles className="w-3 h-3 mr-1" />
-              Sistema Ativo
-            </GlowBadge>
-            <span className="dark:text-slate-500 text-slate-400 text-sm">•</span>
-            <span className="dark:text-slate-400 text-slate-500 text-sm">{new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold dark:text-white text-slate-900">
-            Bem-vindo de volta!
+          <h1 className="text-2xl font-bold dark:text-white text-slate-900">
+            Painel de Controle
           </h1>
-          <p className="dark:text-slate-400 text-slate-500 mt-1">
-            Aqui está o resumo da sua central de atendimentos
+          <p className="text-sm dark:text-slate-400 text-slate-500 mt-1">
+            Acompanhe as métricas e desempenho da sua equipe
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/app/analytics">
-            <NeonButton variant="ghost" size="sm">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Ver Analytics
-            </NeonButton>
-          </Link>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <DateRangePicker
+            value={dateRange}
+            onChange={handleDateRangeChange}
+            onGenerate={handleGenerateClick}
+          />
+          <PanelCustomizer layout={dashboardLayout} />
         </div>
       </motion.div>
 
-      {/* Stats Grid */}
-      <motion.div 
-        variants={staggerContainer}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        {stats.map((stat, index) => (
-          <StatCard key={stat.label} stat={stat} index={index} />
-        ))}
-      </motion.div>
-
-      {/* Bento Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Actions - Takes up 2 columns */}
-        <motion.div variants={fadeInUp} className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
-            <Plus className="w-5 h-5 text-emerald-400" />
-            Ações Rápidas
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <QuickActionCard key={action.label} action={action} index={index} />
-            ))}
-          </div>
-
-          {/* Management Cards */}
-          <h2 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2 mt-8">
-            <Building className="w-5 h-5 text-emerald-400" />
-            Gerenciamento
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link href="/app/companies">
-              <GlassCard className="p-6 group cursor-pointer" glow="green">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Building className="w-7 h-7 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold dark:text-white text-slate-900">Empresas</h3>
-                    <p className="dark:text-slate-400 text-slate-500 text-sm">Gerenciar clientes e fornecedores</p>
-                  </div>
-                </div>
-              </GlassCard>
-            </Link>
-            <Link href="/app/users">
-              <GlassCard className="p-6 group cursor-pointer" glow="green">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="w-7 h-7 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold dark:text-white text-slate-900">Usuários</h3>
-                    <p className="dark:text-slate-400 text-slate-500 text-sm">Gerenciar equipe e permissões</p>
-                  </div>
-                </div>
-              </GlassCard>
-            </Link>
-          </div>
+      {/* Summary Cards */}
+      {isWidgetVisible("summary-cards") && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <SummaryCards 
+            metrics={mounted ? undefined : MOCK_SUMMARY} 
+            isLoading={!mounted} 
+          />
         </motion.div>
+      )}
 
-        {/* Activity Feed - Takes up 1 column */}
-        <motion.div variants={fadeInUp} className="space-y-4">
-          <h2 className="text-lg font-semibold dark:text-white text-slate-900 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-emerald-400" />
-            Atividade Recente
-          </h2>
-          <GlassCard className="p-0 overflow-hidden" hover={false}>
-            <div className="p-4 border-b dark:border-white/10 border-slate-200">
-              <h3 className="text-sm font-medium dark:text-slate-300 text-slate-700">Últimas ações</h3>
-            </div>
-            <div className="divide-y dark:divide-white/5 divide-slate-100">
-              {recentActivities.map((activity, index) => (
-                <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="p-4 dark:hover:bg-white/[0.02] hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <div 
-                      className={`w-2 h-2 rounded-full mt-2 ${
-                        activity.type === "success" ? "bg-emerald-400" : "bg-emerald-500"
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm dark:text-slate-300 text-slate-700 truncate">{activity.text}</p>
-                      <p className="text-xs dark:text-slate-500 text-slate-400 mt-1">{activity.time}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            <div className="p-3 border-t dark:border-white/10 border-slate-200">
-              <Link 
-                href="/app/notifications"
-                className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors flex items-center justify-center gap-1"
-              >
-                Ver todas as atividades
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </GlassCard>
+      {/* Pie Charts Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {isWidgetVisible("queue") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <PieChartWidget
+              title="Atendimento por Fila"
+              data={MOCK_PIE_DATA}
+              isLoading={!mounted}
+            />
+          </motion.div>
+        )}
 
-          {/* Tips Card */}
-          <GlassCard className="p-5" glow="green">
-            <h3 className="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Dica do Dia
-            </h3>
-            <p className="text-sm dark:text-slate-300 text-slate-600">
-              Use filtros avançados no funil de vendas para identificar oportunidades com maior probabilidade de conversão.
-            </p>
-          </GlassCard>
-        </motion.div>
+        {isWidgetVisible("user") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <PieChartWidget
+              title="Atendimento por Usuário"
+              data={[
+                { name: "CALVES PIZZA", value: 649, percentage: 64.9, color: "#10b981" },
+                { name: "Não informado", value: 351, percentage: 35.1, color: "#3b82f6" },
+              ]}
+              isLoading={!mounted}
+            />
+          </motion.div>
+        )}
+
+        {isWidgetVisible("status") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <PieChartWidget
+              title="Atendimento por Status"
+              data={[
+                { name: "Abertos", value: 592, percentage: 59.2, color: "#10b981" },
+                { name: "Pendentes", value: 247, percentage: 24.7, color: "#f59e0b" },
+                { name: "Fechados", value: 161, percentage: 16.1, color: "#3b82f6" },
+              ]}
+              isLoading={!mounted}
+            />
+          </motion.div>
+        )}
+
+        {isWidgetVisible("channel-connection") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <PieChartWidget
+              title="Atendimento por Canal (Conexão)"
+              data={[
+                { name: "WhatsApp Official", value: 100, percentage: 100, color: "#10b981" },
+              ]}
+              isLoading={!mounted}
+            />
+          </motion.div>
+        )}
+
+        {isWidgetVisible("channel-name") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <PieChartWidget
+              title="Atendimento por Canal (Nome)"
+              data={[
+                { name: "calves pizza", value: 100, percentage: 100, color: "#10b981" },
+              ]}
+              isLoading={!mounted}
+            />
+          </motion.div>
+        )}
+
+        {isWidgetVisible("demand") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <PieChartWidget
+              title="Atendimento por Demanda"
+              data={[]}
+              isLoading={!mounted}
+              emptyMessage="Sem dados"
+            />
+          </motion.div>
+        )}
       </div>
-    </motion.div>
+
+      {/* Bar Charts Row */}
+      <div className="grid grid-cols-1 gap-4">
+        {isWidgetVisible("channel-evolution") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <BarChartWidget
+              title="Evolução por Canal"
+              data={MOCK_TIME_DATA}
+              isLoading={!mounted}
+            />
+          </motion.div>
+        )}
+      </div>
+
+      {/* Line Charts Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {isWidgetVisible("attendance-evolution") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+          >
+            <LineChartWidget
+              title="Evolução de Atendimentos"
+              data={MOCK_ATTENDANCE_DATA}
+              isLoading={!mounted}
+              showArea={true}
+            />
+          </motion.div>
+        )}
+
+        {isWidgetVisible("values-evolution") && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <LineChartWidget
+              title="Evolução de Valores"
+              data={MOCK_TIME_DATA.map(d => ({ ...d, value: 0 }))}
+              isLoading={!mounted}
+              showArea={false}
+              color="#8b5cf6"
+            />
+          </motion.div>
+        )}
+      </div>
+
+      {/* Team Performance Table */}
+      {isWidgetVisible("team-performance") && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65 }}
+        >
+          <TeamPerformanceTable
+            data={MOCK_TEAM_DATA}
+            isLoading={!mounted}
+          />
+        </motion.div>
+      )}
+
+      {/* Empty state when no widgets visible */}
+      {visibleWidgets.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-20"
+        >
+          <p className="text-lg dark:text-slate-400 text-slate-500 mb-2">
+            Nenhum painel visível
+          </p>
+          <p className="text-sm dark:text-slate-500 text-slate-400">
+            Use o botão "Personalizar Painéis" para ativar os widgets
+          </p>
+        </motion.div>
+      )}
+
+      {/* Real data fetching component (client-side only) */}
+      {mounted && <AnalyticsDataFetcher dateRange={appliedDateRange} />}
+    </div>
   );
+}
+
+/**
+ * Componente que busca dados reais do Supabase (apenas cliente)
+ */
+function AnalyticsDataFetcher({ dateRange }: { dateRange: DateRange }) {
+  // Aqui você pode implementar a busca real de dados
+  // Por enquanto, os dados são mockados conforme solicitado
+  return null;
 }

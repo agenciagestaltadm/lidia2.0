@@ -19,8 +19,6 @@ import {
   X,
   ChevronDown,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -322,32 +320,7 @@ function SidebarContent({
           </AnimatePresence>
         </Link>
 
-        {/* Toggle Button - Desktop only */}
-        {!isMobile && (
-          <motion.button
-            onClick={onToggleCollapse}
-            className={cn(
-              "p-1.5 rounded-lg transition-all duration-200 shrink-0",
-              isCollapsed 
-                ? "absolute -right-3 top-4 dark:bg-emerald-500/20 bg-emerald-100 dark:border-emerald-500/30 border-emerald-200 border shadow-lg" 
-                : "dark:text-slate-400 text-slate-500 dark:hover:text-white hover:text-slate-900 dark:hover:bg-white/5 hover:bg-slate-100"
-            )}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            title={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-          >
-            <motion.div
-              animate={{ rotate: isCollapsed ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              {isCollapsed ? (
-                <ChevronRight className="w-4 h-4 dark:text-emerald-400 text-emerald-600" />
-              ) : (
-                <ChevronLeft className="w-4 h-4" />
-              )}
-            </motion.div>
-          </motion.button>
-        )}
+
 
         {/* Close Button - Mobile only */}
         {isMobile && (

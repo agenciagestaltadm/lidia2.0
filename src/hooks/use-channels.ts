@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export interface Channel {
@@ -35,10 +35,19 @@ export function useChannels() {
     totalCount: 0,
   });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const supabase = useMemo(() => createClient(), []);
+  // Lazy initialization of Supabase client - only on client side
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
+  
+  useEffect(() => {
+    // Only create client on browser
+    if (typeof window !== "undefined") {
+      setSupabase(createClient());
+    }
+  }, []);
 
   const fetchChannels = useCallback(async () => {
+    if (!supabase) return;
+    
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
@@ -76,6 +85,8 @@ export function useChannels() {
 
   const updateChannelStatus = useCallback(
     async (channelId: string, status: Channel["status"]): Promise<{ success: boolean; error?: string }> => {
+      if (!supabase) return { success: false, error: "Cliente não inicializado" };
+      
       try {
         const { error } = await supabase
           .from("channels")
@@ -102,6 +113,8 @@ export function useChannels() {
 
   const deleteChannel = useCallback(
     async (channelId: string): Promise<{ success: boolean; error?: string }> => {
+      if (!supabase) return { success: false, error: "Cliente não inicializado" };
+      
       try {
         const { error } = await supabase
           .from("channels")
@@ -124,6 +137,8 @@ export function useChannels() {
   );
 
   useEffect(() => {
+    if (!supabase) return;
+    
     fetchChannels();
 
     // Subscribe to channels changes
