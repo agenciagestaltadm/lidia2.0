@@ -499,6 +499,24 @@ body {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
+/* ========================================
+   LOGO WHATSLEDIA - DARK MODE INVERSION
+   ======================================== */
+
+/* Inverter a logo para branco no modo escuro */
+.dark .logo-image,
+.dark .whatslidia-logo,
+.dark [alt*="Curionópolis"],
+.dark [alt*="WhatsLidia"] {
+  filter: brightness(0) invert(1);
+}
+
+/* Transição suave para a inversão */
+.logo-image,
+.whatslidia-logo {
+  transition: filter 0.3s ease;
+}
+
 .light .hover-lift:hover {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }

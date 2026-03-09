@@ -16,6 +16,9 @@ interface ConversationListProps {
   isDarkMode: boolean;
   onToggleTheme: () => void;
   wabaStatus: "connected" | "disconnected" | "connecting";
+  onForceClose?: (id: string) => void;
+  onPreview?: (id: string) => void;
+  onOpenConversation?: (id: string) => void;
 }
 
 type FilterTab = "open" | "pending" | "resolved";
@@ -28,6 +31,9 @@ export function ConversationList({
   isDarkMode,
   onToggleTheme,
   wabaStatus,
+  onForceClose,
+  onPreview,
+  onOpenConversation,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("open");
@@ -95,7 +101,7 @@ export function ConversationList({
               src="/Curionópolis - Logo 2021.pdf.png"
               alt="Curionópolis"
               fill
-              className="object-contain"
+              className="object-contain logo-image"
               priority
             />
           </div>
@@ -240,6 +246,10 @@ export function ConversationList({
                   isSelected={selectedId === conversation.id}
                   onClick={() => onSelect(conversation.id)}
                   isDarkMode={isDarkMode}
+                  activeTab={activeTab}
+                  onForceClose={onForceClose}
+                  onPreview={onPreview}
+                  onOpenConversation={onOpenConversation}
                 />
               </motion.div>
             ))}

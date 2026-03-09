@@ -121,6 +121,44 @@ export function WhatsLidiaLayout() {
     handleSelectConversation(newConversation.id);
   };
 
+  // Handle force close conversation (move to resolved)
+  const handleForceClose = (id: string) => {
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status: 'resolved' as const } : c))
+    );
+    // If the closed conversation was selected, deselect it
+    if (selectedConversationId === id) {
+      setSelectedConversationId(null);
+      if (isMobile) {
+        setShowChat(false);
+      }
+    }
+  };
+
+  // Handle preview conversation (view without marking as read)
+  const handlePreview = (id: string) => {
+    setSelectedConversationId(id);
+    if (isMobile) {
+      setShowChat(true);
+    }
+    // Note: Not clearing unread count - this is the "preview" behavior
+  };
+
+  // Handle open conversation from pending (move to open)
+  const handleOpenConversation = (id: string) => {
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, status: 'open' as const, unreadCount: 0 }
+          : c
+      )
+    );
+    setSelectedConversationId(id);
+    if (isMobile) {
+      setShowChat(true);
+    }
+  };
+
   // Apply dark mode class to body
   useEffect(() => {
     if (isDarkMode) {
@@ -152,6 +190,9 @@ export function WhatsLidiaLayout() {
                   isDarkMode={isDarkMode}
                   onToggleTheme={handleToggleTheme}
                   wabaStatus={wabaStatus}
+                  onForceClose={handleForceClose}
+                  onPreview={handlePreview}
+                  onOpenConversation={handleOpenConversation}
                 />
               </motion.div>
             ) : (
@@ -183,6 +224,9 @@ export function WhatsLidiaLayout() {
             isDarkMode={isDarkMode}
             onToggleTheme={handleToggleTheme}
             wabaStatus={wabaStatus}
+            onForceClose={handleForceClose}
+            onPreview={handlePreview}
+            onOpenConversation={handleOpenConversation}
           />
           <ChatWindow
             conversation={selectedConversation}

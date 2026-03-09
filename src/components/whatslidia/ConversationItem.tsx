@@ -3,13 +3,17 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Conversation } from "@/types/chat";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, XCircle, Eye, ExternalLink } from "lucide-react";
 
 interface ConversationItemProps {
   conversation: Conversation;
   isSelected: boolean;
   onClick: () => void;
   isDarkMode?: boolean;
+  activeTab?: 'open' | 'pending' | 'resolved';
+  onForceClose?: (id: string) => void;
+  onPreview?: (id: string) => void;
+  onOpenConversation?: (id: string) => void;
 }
 
 export function ConversationItem({
@@ -17,6 +21,10 @@ export function ConversationItem({
   isSelected,
   onClick,
   isDarkMode = true,
+  activeTab = 'open',
+  onForceClose,
+  onPreview,
+  onOpenConversation,
 }: ConversationItemProps) {
   const { contact, lastMessage, unreadCount, priority, isTyping } = conversation;
 
@@ -71,13 +79,28 @@ export function ConversationItem({
     }
   };
 
+  const handleForceClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onForceClose?.(conversation.id);
+  };
+
+  const handlePreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPreview?.(conversation.id);
+  };
+
+  const handleOpenConversation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenConversation?.(conversation.id);
+  };
+
   return (
     <motion.button
       onClick={onClick}
       whileHover={{ scale: 1.005 }}
       whileTap={{ scale: 0.995 }}
       className={cn(
-        "w-full p-3 flex items-start gap-3 transition-all duration-200 border-b",
+        "w-full p-3 flex items-start gap-3 transition-all duration-200 border-b group",
         isDarkMode ? "border-[#2a2a2a]" : "border-gray-200",
         isSelected
           ? isDarkMode 
@@ -131,14 +154,65 @@ export function ConversationItem({
           )}>
             {contact.name}
           </h3>
-          <span className={cn(
-            "text-xs shrink-0",
-            unreadCount > 0 
-              ? isDarkMode ? "text-[#00a884] font-medium" : "text-emerald-600 font-medium"
-              : isDarkMode ? "text-[#8696a0]" : "text-gray-400"
-          )}>
-            {lastMessage && formatTime(lastMessage.timestamp)}
-          </span>
+          <div className="flex items-center gap-1">
+            <span className={cn(
+              "text-xs shrink-0",
+              unreadCount > 0 
+                ? isDarkMode ? "text-[#00a884] font-medium" : "text-emerald-600 font-medium"
+                : isDarkMode ? "text-[#8696a0]" : "text-gray-400"
+            )}>
+              {lastMessage && formatTime(lastMessage.timestamp)}
+            </span>
+            
+            {/* Action Icons - Only show on hover */}
+            {activeTab === 'open' && onForceClose && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileHover={{ scale: 1.1 }}
+                onClick={handleForceClose}
+                className={cn(
+                  "p-1 rounded-full transition-all opacity-0 group-hover:opacity-100",
+                  "hover:bg-red-500/20 text-red-500"
+                )}
+                title="Fechar conversa"
+              >
+                <XCircle className="w-4 h-4" />
+              </motion.button>
+            )}
+            
+            {activeTab === 'pending' && (onPreview || onOpenConversation) && (
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onPreview && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileHover={{ scale: 1.1 }}
+                    onClick={handlePreview}
+                    className={cn(
+                      "p-1 rounded-full transition-all",
+                      "hover:bg-blue-500/20 text-blue-500"
+                    )}
+                    title="Espiar conversa"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </motion.button>
+                )}
+                {onOpenConversation && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileHover={{ scale: 1.1 }}
+                    onClick={handleOpenConversation}
+                    className={cn(
+                      "p-1 rounded-full transition-all",
+                      "hover:bg-emerald-500/20 text-emerald-500"
+                    )}
+                    title="Abrir conversa"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </motion.button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Message Preview */}
