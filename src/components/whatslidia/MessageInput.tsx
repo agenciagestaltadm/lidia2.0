@@ -20,12 +20,14 @@ interface MessageInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   isWithin24Hours?: boolean;
+  isDarkMode?: boolean;
 }
 
 export function MessageInput({
   onSend,
   disabled = false,
   isWithin24Hours = true,
+  isDarkMode = true,
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [showAttachments, setShowAttachments] = useState(false);
@@ -99,8 +101,16 @@ export function MessageInput({
 
   if (!isWithin24Hours) {
     return (
-      <div className="h-16 px-4 flex items-center justify-center bg-[#1f2c33] border-t border-[#2a2a2a]">
-        <div className="flex items-center gap-3 text-[#8696a0]">
+      <div className={cn(
+        "h-16 px-4 flex items-center justify-center border-t transition-colors duration-300",
+        isDarkMode 
+          ? "bg-[#1f2c33] border-[#2a2a2a]" 
+          : "bg-white border-gray-200"
+      )}>
+        <div className={cn(
+          "flex items-center gap-3",
+          isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+        )}>
           <Clock className="w-5 h-5" />
           <span className="text-sm">
             Janela de 24h fechada. Use um template para contatar.
@@ -114,7 +124,12 @@ export function MessageInput({
   }
 
   return (
-    <div className="bg-[#1f2c33] border-t border-[#2a2a2a]">
+    <div className={cn(
+      "border-t transition-colors duration-300",
+      isDarkMode 
+        ? "bg-[#1f2c33] border-[#2a2a2a]" 
+        : "bg-white border-gray-200"
+    )}>
       {/* Attachment Menu */}
       <AnimatePresence>
         {showAttachments && (
@@ -122,7 +137,10 @@ export function MessageInput({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="px-4 py-3 border-b border-[#2a2a2a]"
+            className={cn(
+              "px-4 py-3 border-b",
+              isDarkMode ? "border-[#2a2a2a]" : "border-gray-200"
+            )}
           >
             <div className="flex items-center gap-4">
               {attachmentOptions.map((option, index) => (
@@ -141,7 +159,10 @@ export function MessageInput({
                   >
                     <option.icon className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-xs text-[#8696a0]">{option.label}</span>
+                  <span className={cn(
+                    "text-xs",
+                    isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+                  )}>{option.label}</span>
                 </motion.button>
               ))}
             </div>
@@ -159,7 +180,9 @@ export function MessageInput({
             "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
             showAttachments
               ? "bg-[#00a884] text-white"
-              : "text-[#aebac1] hover:bg-[#2a3942]"
+              : isDarkMode 
+                ? "text-[#aebac1] hover:bg-[#2a3942]"
+                : "text-gray-600 hover:bg-gray-100"
           )}
         >
           {showAttachments ? (
@@ -172,7 +195,12 @@ export function MessageInput({
         {/* Emoji Button */}
         <motion.button
           whileTap={{ scale: 0.9 }}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-[#aebac1] hover:bg-[#2a3942] transition-colors"
+          className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+            isDarkMode 
+              ? "text-[#aebac1] hover:bg-[#2a3942]" 
+              : "text-gray-600 hover:bg-gray-100"
+          )}
         >
           <Smile className="w-5 h-5" />
         </motion.button>
@@ -181,7 +209,10 @@ export function MessageInput({
         {isRecording ? (
           <div className="flex-1 flex items-center justify-center gap-3">
             <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[#e9edef] font-medium">
+            <span className={cn(
+              "font-medium",
+              isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+            )}>
               Gravando {formatRecordingTime(recordingTime)}
             </span>
           </div>
@@ -196,7 +227,10 @@ export function MessageInput({
               disabled={disabled}
               rows={1}
               className={cn(
-                "w-full min-h-[44px] max-h-[120px] px-4 py-2.5 bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] text-sm rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#00a884]/50 transition-all scrollbar-thin scrollbar-thumb-[#374045]",
+                "w-full min-h-[44px] max-h-[120px] px-4 py-2.5 text-sm rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#00a884]/50 transition-all",
+                isDarkMode 
+                  ? "bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] scrollbar-thin scrollbar-thumb-[#374045]"
+                  : "bg-gray-100 text-gray-900 placeholder-gray-500 scrollbar-thin scrollbar-thumb-gray-300",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
             />
@@ -219,7 +253,9 @@ export function MessageInput({
               ? "bg-[#00a884] text-white hover:bg-[#00a884]/90"
               : isRecording
               ? "bg-red-500 text-white"
-              : "text-[#aebac1] hover:bg-[#2a3942]"
+              : isDarkMode 
+                ? "text-[#aebac1] hover:bg-[#2a3942]"
+                : "text-gray-600 hover:bg-gray-100"
           )}
         >
           {message.trim() ? (

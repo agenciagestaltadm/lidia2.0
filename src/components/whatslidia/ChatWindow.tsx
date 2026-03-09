@@ -14,12 +14,14 @@ interface ChatWindowProps {
   conversation: Conversation | null;
   onBack?: () => void;
   showBackButton?: boolean;
+  isDarkMode?: boolean;
 }
 
 export function ChatWindow({
   conversation,
   onBack,
   showBackButton = false,
+  isDarkMode = true,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -89,8 +91,11 @@ export function ChatWindow({
 
   if (!conversation) {
     return (
-      <div className="flex-1 h-full flex flex-col bg-[#0b141a]">
-        <ChatHeader conversation={null} />
+      <div className={cn(
+        "flex-1 h-full flex flex-col transition-colors duration-300",
+        isDarkMode ? "bg-[#0b141a]" : "bg-gray-50"
+      )}>
+        <ChatHeader conversation={null} isDarkMode={isDarkMode} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center px-8">
             <div className="w-64 h-64 mx-auto mb-8 relative">
@@ -99,7 +104,10 @@ export function ChatWindow({
               <div className="relative w-full h-full flex items-center justify-center">
                 <svg
                   viewBox="0 0 200 200"
-                  className="w-48 h-48 text-[#364147]"
+                  className={cn(
+                    "w-48 h-48",
+                    isDarkMode ? "text-[#364147]" : "text-gray-300"
+                  )}
                   fill="currentColor"
                 >
                   <path d="M100 0C44.8 0 0 44.8 0 100c0 17.6 4.6 34.1 12.7 48.4L2.3 186.7l38.3-10.4C54.9 184.4 76.4 192 100 192c55.2 0 100-44.8 100-100S155.2 0 100 0zm0 180c-21.1 0-40.3-7.5-55.3-20L30 160l10.3-37.5C27.7 108.3 20 91.2 20 72c0-44.1 35.9-80 80-80s80 35.9 80 80-35.9 80-80 80z" />
@@ -107,14 +115,23 @@ export function ChatWindow({
                 </svg>
               </div>
             </div>
-            <h2 className="text-[#e9edef] text-2xl font-light mb-2">
+            <h2 className={cn(
+              "text-2xl font-light mb-2",
+              isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+            )}>
               WhatsLídia Web
             </h2>
-            <p className="text-[#8696a0] text-sm mb-8 max-w-md">
-              Envie e receba mensagens do WhatsApp Business sem precisar manter
+            <p className={cn(
+              "text-sm mb-8 max-w-md",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )}>
+              Envie e receba mensagens do WhatsApp Business sem precisando manter
               seu celular online.
             </p>
-            <div className="flex items-center gap-2 text-[#667781] text-sm">
+            <div className={cn(
+              "flex items-center gap-2 text-sm",
+              isDarkMode ? "text-[#667781]" : "text-gray-400"
+            )}>
               <Lock className="w-4 h-4" />
               <span>Criptografado de ponta a ponta</span>
             </div>
@@ -125,27 +142,44 @@ export function ChatWindow({
   }
 
   return (
-    <div className="flex-1 h-full flex flex-col bg-[#0b141a]">
+    <div className={cn(
+      "flex-1 h-full flex flex-col transition-colors duration-300",
+      isDarkMode ? "bg-[#0b141a]" : "bg-gray-100"
+    )}>
       <ChatHeader
         conversation={conversation}
         onBack={onBack}
         showBackButton={showBackButton}
+        isDarkMode={isDarkMode}
       />
 
       {/* Messages Area */}
       <div
-        className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#374045] scrollbar-track-transparent"
+        className={cn(
+          "flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent",
+          isDarkMode ? "scrollbar-thumb-[#374045]" : "scrollbar-thumb-gray-300"
+        )}
         style={{
-          backgroundImage:
-            "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE5JREFUOE9j/P///38GMgAx2v///2cYmUyMioHRwCgYSMP/////Z0AXZ6SJgWg2/P///3+CpJmINAzNsJGjYOAomDg6hgfEwKgYTQwAqRcjE7aL4TQAAAAASUVORK5CYII=')",
+          backgroundImage: isDarkMode 
+            ? "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE5JREFUOE9j/P///38GMgAx2v///2cYmUyMioHRwCgYSMP/////Z0AXZ6SJgWg2/P///3+CpJmINAzNsJGjYOAomDg6hgfEwKgYTQwAqRcjE7aL4TQAAAAASUVORK5CYII=')"
+            : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAABJREFUOE9j/P///38GBgATiA0BAwMAgCYAl2kHbEUAAAAASUVORK5CYII=')",
           backgroundRepeat: "repeat",
         }}
       >
         {/* Encryption notice */}
         <div className="flex justify-center py-4">
-          <div className="bg-[#1f2c33]/90 px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg">
-            <Lock className="w-3 h-3 text-[#8696a0]" />
-            <span className="text-[#8696a0] text-xs">
+          <div className={cn(
+            "px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg",
+            isDarkMode ? "bg-[#1f2c33]/90" : "bg-white/90"
+          )}>
+            <Lock className={cn(
+              "w-3 h-3",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )} />
+            <span className={cn(
+              "text-xs",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )}>
               Mensagens criptografadas de ponta a ponta
             </span>
           </div>
@@ -153,8 +187,14 @@ export function ChatWindow({
 
         {/* Date separator */}
         <div className="flex justify-center py-4">
-          <div className="bg-[#1f2c33]/90 px-3 py-1 rounded-lg">
-            <span className="text-[#8696a0] text-xs">
+          <div className={cn(
+            "px-3 py-1 rounded-lg",
+            isDarkMode ? "bg-[#1f2c33]/90" : "bg-white/90"
+          )}>
+            <span className={cn(
+              "text-xs",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )}>
               {new Date().toLocaleDateString("pt-BR", {
                 day: "numeric",
                 month: "long",
@@ -175,6 +215,7 @@ export function ChatWindow({
                     message={message}
                     isFirstInGroup={msgIndex === 0}
                     isLastInGroup={msgIndex === group.length - 1}
+                    isDarkMode={isDarkMode}
                   />
                 ))}
               </div>
@@ -185,7 +226,12 @@ export function ChatWindow({
       </div>
 
       {/* Quick Replies */}
-      <div className="bg-[#1f2c33] border-t border-[#2a2a2a] px-4 py-2">
+      <div className={cn(
+        "px-4 py-2 border-t transition-colors duration-300",
+        isDarkMode 
+          ? "bg-[#1f2c33] border-[#2a2a2a]" 
+          : "bg-white border-gray-200"
+      )}>
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
           {[
             "/ola - Olá! Como posso ajudar?",
@@ -197,7 +243,12 @@ export function ChatWindow({
               onClick={() =>
                 handleSendMessage(quickReply.split(" - ")[1] || quickReply)
               }
-              className="shrink-0 px-3 py-1.5 bg-[#2a3942] text-[#e9edef] text-sm rounded-full hover:bg-[#374045] transition-colors whitespace-nowrap"
+              className={cn(
+                "shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap",
+                isDarkMode 
+                  ? "bg-[#2a3942] text-[#e9edef] hover:bg-[#374045]" 
+                  : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+              )}
             >
               {quickReply.split(" - ")[0]}
             </button>
@@ -206,7 +257,7 @@ export function ChatWindow({
       </div>
 
       {/* Input Area */}
-      <MessageInput onSend={handleSendMessage} />
+      <MessageInput onSend={handleSendMessage} isDarkMode={isDarkMode} />
     </div>
   );
 }

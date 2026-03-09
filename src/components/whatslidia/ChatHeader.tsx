@@ -18,19 +18,31 @@ interface ChatHeaderProps {
   conversation: Conversation | null;
   onBack?: () => void;
   showBackButton?: boolean;
+  isDarkMode?: boolean;
 }
 
 export function ChatHeader({
   conversation,
   onBack,
   showBackButton = false,
+  isDarkMode = true,
 }: ChatHeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
 
   if (!conversation) {
     return (
-      <div className="h-16 px-4 flex items-center justify-center bg-[#1f2c33] border-b border-[#2a2a2a]">
-        <p className="text-[#8696a0]">Selecione uma conversa</p>
+      <div className={cn(
+        "h-16 px-4 flex items-center justify-center border-b transition-colors duration-300",
+        isDarkMode 
+          ? "bg-[#1f2c33] border-[#2a2a2a]" 
+          : "bg-white border-gray-200"
+      )}>
+        <p className={cn(
+          "transition-colors duration-300",
+          isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+        )}>
+          Selecione uma conversa
+        </p>
       </div>
     );
   }
@@ -57,14 +69,24 @@ export function ChatHeader({
   ];
 
   return (
-    <div className="h-16 px-4 flex items-center justify-between bg-[#1f2c33] border-b border-[#2a2a2a]">
+    <div className={cn(
+      "h-16 px-4 flex items-center justify-between border-b transition-colors duration-300",
+      isDarkMode 
+        ? "bg-[#1f2c33] border-[#2a2a2a]" 
+        : "bg-white border-gray-200"
+    )}>
       {/* Left Section */}
       <div className="flex items-center gap-3">
         {showBackButton && (
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onBack}
-            className="lg:hidden w-10 h-10 rounded-full flex items-center justify-center text-[#aebac1] hover:bg-[#2a3942]"
+            className={cn(
+              "lg:hidden w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+              isDarkMode 
+                ? "text-[#aebac1] hover:bg-[#2a3942]" 
+                : "text-gray-600 hover:bg-gray-100"
+            )}
           >
             <ArrowLeft className="w-5 h-5" />
           </motion.button>
@@ -89,27 +111,42 @@ export function ChatHeader({
             )}
           </div>
           {contact.isRegistered && (
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#00a884] rounded-full border-2 border-[#1f2c33]" />
+            <div className={cn(
+              "absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#00a884] rounded-full border-2",
+              isDarkMode ? "border-[#1f2c33]" : "border-white"
+            )} />
           )}
         </div>
 
         {/* Contact Info */}
         <div className="flex flex-col">
-          <h2 className="text-[#e9edef] font-medium text-base">
+          <h2 className={cn(
+            "font-medium text-base transition-colors duration-300",
+            isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+          )}>
             {contact.name}
           </h2>
           <div className="flex items-center gap-2">
             {isTyping ? (
               <span className="text-[#00a884] text-xs">digitando...</span>
             ) : (
-              <span className="text-[#8696a0] text-xs">
+              <span className={cn(
+                "text-xs transition-colors duration-300",
+                isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+              )}>
                 {formatPhone(contact.phone)}
               </span>
             )}
             {assignedTo && (
               <>
-                <span className="text-[#374045]">•</span>
-                <span className="text-[#8696a0] text-xs">
+                <span className={cn(
+                  "transition-colors duration-300",
+                  isDarkMode ? "text-[#374045]" : "text-gray-300"
+                )}>•</span>
+                <span className={cn(
+                  "text-xs transition-colors duration-300",
+                  isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+                )}>
                   {assignedTo.name}
                 </span>
               </>
@@ -124,7 +161,12 @@ export function ChatHeader({
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-[#aebac1] hover:bg-[#2a3942] transition-colors"
+          className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+            isDarkMode 
+              ? "text-[#aebac1] hover:bg-[#2a3942]" 
+              : "text-gray-600 hover:bg-gray-100"
+          )}
         >
           <Search className="w-5 h-5" />
         </motion.button>
@@ -133,7 +175,12 @@ export function ChatHeader({
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-[#aebac1] hover:bg-[#2a3942] transition-colors"
+          className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+            isDarkMode 
+              ? "text-[#aebac1] hover:bg-[#2a3942]" 
+              : "text-gray-600 hover:bg-gray-100"
+          )}
         >
           <Info className="w-5 h-5" />
         </motion.button>
@@ -144,7 +191,12 @@ export function ChatHeader({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowMenu(!showMenu)}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-[#aebac1] hover:bg-[#2a3942] transition-colors"
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+              isDarkMode 
+                ? "text-[#aebac1] hover:bg-[#2a3942]" 
+                : "text-gray-600 hover:bg-gray-100"
+            )}
           >
             <MoreVertical className="w-5 h-5" />
           </motion.button>
@@ -155,19 +207,38 @@ export function ChatHeader({
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute right-0 top-full mt-2 w-56 bg-[#2a3942] rounded-lg shadow-xl border border-[#374045] py-2 z-50"
+              className={cn(
+                "absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl border py-2 z-50",
+                isDarkMode 
+                  ? "bg-[#2a3942] border-[#374045]" 
+                  : "bg-white border-gray-200"
+              )}
             >
               {menuOptions.map((option, index) => (
                 <button
                   key={option.label}
-                  className="w-full px-4 py-2.5 text-left text-[#e9edef] hover:bg-[#374045] transition-colors text-sm flex items-center gap-3"
+                  className={cn(
+                    "w-full px-4 py-2.5 text-left transition-colors text-sm flex items-center gap-3",
+                    isDarkMode 
+                      ? "text-[#e9edef] hover:bg-[#374045]" 
+                      : "text-gray-900 hover:bg-gray-100"
+                  )}
                 >
-                  <option.icon className="w-4 h-4 text-[#8696a0]" />
+                  <option.icon className={cn(
+                    "w-4 h-4",
+                    isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+                  )} />
                   {option.label}
                 </button>
               ))}
-              <div className="border-t border-[#374045] my-1" />
-              <button className="w-full px-4 py-2.5 text-left text-red-400 hover:bg-[#374045] transition-colors text-sm">
+              <div className={cn(
+                "border-t my-1",
+                isDarkMode ? "border-[#374045]" : "border-gray-200"
+              )} />
+              <button className={cn(
+                "w-full px-4 py-2.5 text-left text-red-400 transition-colors text-sm",
+                isDarkMode ? "hover:bg-[#374045]" : "hover:bg-gray-100"
+              )}>
                 Fechar conversa
               </button>
             </motion.div>

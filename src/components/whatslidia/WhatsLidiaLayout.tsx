@@ -9,6 +9,7 @@ import { Sidebar } from "./Sidebar";
 import { ConversationList } from "./ConversationList";
 import { ChatWindow } from "./ChatWindow";
 import { NewConversationModal } from "./NewConversationModal";
+import { PreviewConversationModal } from "./PreviewConversationModal";
 import { mockConversations, mockContacts } from "@/lib/mock/chat-data";
 
 export function WhatsLidiaLayout() {
@@ -29,6 +30,10 @@ export function WhatsLidiaLayout() {
   
   // New conversation modal
   const [isNewConversationModalOpen, setIsNewConversationModalOpen] = useState(false);
+  
+  // Preview conversation modal
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewConversationId, setPreviewConversationId] = useState<string | null>(null);
 
   // Load conversations on mount
   useEffect(() => {
@@ -137,12 +142,15 @@ export function WhatsLidiaLayout() {
 
   // Handle preview conversation (view without marking as read)
   const handlePreview = (id: string) => {
-    setSelectedConversationId(id);
-    if (isMobile) {
-      setShowChat(true);
-    }
+    setPreviewConversationId(id);
+    setIsPreviewModalOpen(true);
     // Note: Not clearing unread count - this is the "preview" behavior
   };
+
+  // Get preview conversation
+  const previewConversation = conversations.find(
+    (c) => c.id === previewConversationId
+  ) || null;
 
   // Handle open conversation from pending (move to open)
   const handleOpenConversation = (id: string) => {
@@ -207,6 +215,7 @@ export function WhatsLidiaLayout() {
                   conversation={selectedConversation}
                   onBack={handleBackToList}
                   showBackButton={true}
+                  isDarkMode={isDarkMode}
                 />
               </motion.div>
             )}
@@ -230,6 +239,7 @@ export function WhatsLidiaLayout() {
           />
           <ChatWindow
             conversation={selectedConversation}
+            isDarkMode={isDarkMode}
           />
         </>
       );
@@ -290,6 +300,15 @@ export function WhatsLidiaLayout() {
         onClose={() => setIsNewConversationModalOpen(false)}
         onStartConversation={handleStartNewConversation}
         isDarkMode={isDarkMode}
+      />
+
+      {/* Preview Conversation Modal */}
+      <PreviewConversationModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        conversation={previewConversation}
+        isDarkMode={isDarkMode}
+        onOpenConversation={handleOpenConversation}
       />
     </>
   );

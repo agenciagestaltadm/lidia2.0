@@ -10,12 +10,14 @@ interface MessageBubbleProps {
   message: Message;
   isFirstInGroup?: boolean;
   isLastInGroup?: boolean;
+  isDarkMode?: boolean;
 }
 
 export function MessageBubble({
   message,
   isFirstInGroup = false,
   isLastInGroup = false,
+  isDarkMode = true,
 }: MessageBubbleProps) {
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -150,10 +152,14 @@ export function MessageBubble({
     >
       <div
         className={cn(
-          "max-w-[75%] min-w-[80px] relative",
+          "max-w-[75%] min-w-[80px] relative transition-colors duration-300",
           message.isFromMe
-            ? "bg-[#005c4b] rounded-l-2xl rounded-tr-2xl rounded-br-md"
-            : "bg-[#202c33] rounded-r-2xl rounded-tl-2xl rounded-bl-md",
+            ? isDarkMode 
+              ? "bg-[#005c4b] rounded-l-2xl rounded-tr-2xl rounded-br-md"
+              : "bg-emerald-100 rounded-l-2xl rounded-tr-2xl rounded-br-md"
+            : isDarkMode
+              ? "bg-[#202c33] rounded-r-2xl rounded-tl-2xl rounded-bl-md"
+              : "bg-white rounded-r-2xl rounded-tl-2xl rounded-bl-md shadow-sm",
           isFirstInGroup && (message.isFromMe ? "rounded-tr-none" : "rounded-tl-none"),
           isLastInGroup && (message.isFromMe ? "rounded-br-md" : "rounded-bl-md")
         )}
@@ -169,11 +175,17 @@ export function MessageBubble({
 
           {/* Reply preview */}
           {message.replyTo && (
-            <div className="border-l-4 border-[#00a884] pl-2 mb-2 py-1 bg-black/10 rounded-r">
+            <div className={cn(
+              "border-l-4 border-[#00a884] pl-2 mb-2 py-1 rounded-r",
+              isDarkMode ? "bg-black/10" : "bg-gray-100"
+            )}>
               <p className="text-xs text-[#00a884] font-medium">
                 {message.replyTo.sender}
               </p>
-              <p className="text-xs text-[#8696a0] truncate">
+              <p className={cn(
+                "text-xs truncate",
+                isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+              )}>
                 {message.replyTo.content}
               </p>
             </div>
@@ -186,7 +198,10 @@ export function MessageBubble({
 
           {/* Text content */}
           {(message.type === "text" || message.metadata?.caption) && (
-            <p className="text-[#e9edef] text-sm whitespace-pre-wrap break-words">
+            <p className={cn(
+              "text-sm whitespace-pre-wrap break-words",
+              isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+            )}>
               {message.type === "text" ? message.content : message.metadata?.caption}
             </p>
           )}
@@ -195,14 +210,20 @@ export function MessageBubble({
           {message.type === "template" && (
             <div className="border border-[#00a884]/30 rounded-lg p-2 bg-[#00a884]/5">
               <p className="text-xs text-[#00a884] mb-1">Template</p>
-              <p className="text-[#e9edef] text-sm">{message.content}</p>
+              <p className={cn(
+                "text-sm",
+                isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+              )}>{message.content}</p>
             </div>
           )}
         </div>
 
         {/* Footer: Time and Status */}
         <div className="flex items-center justify-end gap-1 px-3 pb-1 -mt-1">
-          <span className="text-[10px] text-[#8696a0]">
+          <span className={cn(
+            "text-[10px]",
+            isDarkMode ? "text-[#8696a0]" : "text-gray-400"
+          )}>
             {formatTime(message.timestamp)}
           </span>
           {getStatusIcon()}
@@ -214,8 +235,12 @@ export function MessageBubble({
             className={cn(
               "absolute top-0 w-3 h-3",
               message.isFromMe
-                ? "right-[-4px] bg-[#005c4b]"
-                : "left-[-4px] bg-[#202c33]"
+                ? isDarkMode 
+                  ? "right-[-4px] bg-[#005c4b]"
+                  : "right-[-4px] bg-emerald-100"
+                : isDarkMode
+                  ? "left-[-4px] bg-[#202c33]"
+                  : "left-[-4px] bg-white"
             )}
             style={{
               clipPath: message.isFromMe
