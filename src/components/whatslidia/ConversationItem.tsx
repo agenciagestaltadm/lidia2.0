@@ -3,20 +3,22 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Conversation } from "@/types/chat";
-import { Check, CheckCheck, VolumeX, Pin } from "lucide-react";
+import { Check, CheckCheck } from "lucide-react";
 
 interface ConversationItemProps {
   conversation: Conversation;
   isSelected: boolean;
   onClick: () => void;
+  isDarkMode?: boolean;
 }
 
 export function ConversationItem({
   conversation,
   isSelected,
   onClick,
+  isDarkMode = true,
 }: ConversationItemProps) {
-  const { contact, lastMessage, unreadCount, status, priority, isTyping } = conversation;
+  const { contact, lastMessage, unreadCount, priority, isTyping } = conversation;
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -46,9 +48,9 @@ export function ConversationItem({
 
     switch (lastMessage.status) {
       case "sent":
-        return <Check className="w-3.5 h-3.5 text-[#8696a0]" />;
+        return <Check className={cn("w-3.5 h-3.5", isDarkMode ? "text-[#8696a0]" : "text-gray-400")} />;
       case "delivered":
-        return <CheckCheck className="w-3.5 h-3.5 text-[#8696a0]" />;
+        return <CheckCheck className={cn("w-3.5 h-3.5", isDarkMode ? "text-[#8696a0]" : "text-gray-400")} />;
       case "read":
         return <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />;
       default:
@@ -72,15 +74,22 @@ export function ConversationItem({
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+      whileHover={{ scale: 1.005 }}
+      whileTap={{ scale: 0.995 }}
       className={cn(
-        "w-full p-3 flex items-start gap-3 transition-all duration-200 border-b border-[#2a2a2a]",
+        "w-full p-3 flex items-start gap-3 transition-all duration-200 border-b",
+        isDarkMode ? "border-[#2a2a2a]" : "border-gray-200",
         isSelected
-          ? "bg-[#2a3942] hover:bg-[#2a3942]"
+          ? isDarkMode 
+            ? "bg-[#2a3942]" 
+            : "bg-emerald-50"
           : unreadCount > 0
-          ? "bg-[#1a1a1a] hover:bg-[#202c33]"
-          : "bg-transparent hover:bg-[#202c33]"
+          ? isDarkMode 
+            ? "bg-[#1a1a1a]" 
+            : "bg-white"
+          : isDarkMode 
+            ? "bg-transparent hover:bg-[#202c33]" 
+            : "bg-transparent hover:bg-gray-50"
       )}
     >
       {/* Avatar */}
@@ -104,7 +113,8 @@ export function ConversationItem({
         {/* Priority indicator */}
         <div
           className={cn(
-            "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#111b21]",
+            "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2",
+            isDarkMode ? "border-[#111b21]" : "border-white",
             getPriorityColor()
           )}
           title={`Prioridade: ${priority}`}
@@ -115,20 +125,18 @@ export function ConversationItem({
       <div className="flex-1 min-w-0 text-left">
         {/* Header: Name and Time */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <h3
-            className={cn(
-              "font-medium truncate",
-              isSelected ? "text-[#e9edef]" : "text-[#e9edef]"
-            )}
-          >
+          <h3 className={cn(
+            "font-medium truncate",
+            isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+          )}>
             {contact.name}
           </h3>
-          <span
-            className={cn(
-              "text-xs shrink-0",
-              unreadCount > 0 ? "text-[#00a884] font-medium" : "text-[#8696a0]"
-            )}
-          >
+          <span className={cn(
+            "text-xs shrink-0",
+            unreadCount > 0 
+              ? isDarkMode ? "text-[#00a884] font-medium" : "text-emerald-600 font-medium"
+              : isDarkMode ? "text-[#8696a0]" : "text-gray-400"
+          )}>
             {lastMessage && formatTime(lastMessage.timestamp)}
           </span>
         </div>
@@ -142,21 +150,22 @@ export function ConversationItem({
           {isTyping ? (
             <span className="text-[#00a884] text-sm italic">digitando...</span>
           ) : (
-            <p
-              className={cn(
-                "text-sm truncate flex-1",
-                unreadCount > 0
-                  ? "text-[#e9edef] font-medium"
-                  : "text-[#8696a0]"
-              )}
-            >
+            <p className={cn(
+              "text-sm truncate flex-1",
+              unreadCount > 0
+                ? isDarkMode ? "text-[#e9edef] font-medium" : "text-gray-900 font-medium"
+                : isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )}>
               {lastMessage?.content || "Sem mensagens"}
             </p>
           )}
 
           {/* Unread Badge */}
           {unreadCount > 0 && (
-            <span className="shrink-0 bg-[#00a884] text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+            <span className={cn(
+              "shrink-0 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center",
+              isDarkMode ? "bg-[#00a884]" : "bg-emerald-500"
+            )}>
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
@@ -168,13 +177,21 @@ export function ConversationItem({
             {conversation.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a3942] text-[#8696a0]"
+                className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded",
+                  isDarkMode 
+                    ? "bg-[#2a3942] text-[#8696a0]" 
+                    : "bg-gray-100 text-gray-600"
+                )}
               >
                 {tag}
               </span>
             ))}
             {conversation.tags.length > 2 && (
-              <span className="text-[10px] text-[#8696a0]">
+              <span className={cn(
+                "text-[10px]",
+                isDarkMode ? "text-[#8696a0]" : "text-gray-400"
+              )}>
                 +{conversation.tags.length - 2}
               </span>
             )}

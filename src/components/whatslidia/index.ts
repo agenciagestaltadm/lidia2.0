@@ -6,3 +6,4 @@ export { ChatHeader } from "./ChatHeader";
 export { MessageBubble } from "./MessageBubble";
 export { MessageInput } from "./MessageInput";
 export { WhatsLidiaLayout } from "./WhatsLidiaLayout";
+export { NewConversationModal } from "./NewConversationModal";

@@ -2,15 +2,20 @@
 
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Conversation, ConversationStatus } from "@/types/chat";
 import { ConversationItem } from "./ConversationItem";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Plus, Filter, Moon, Sun, Wifi, WifiOff } from "lucide-react";
 
 interface ConversationListProps {
   conversations: Conversation[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onNewConversation: () => void;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
+  wabaStatus: "connected" | "disconnected" | "connecting";
 }
 
 type FilterTab = "open" | "pending" | "resolved";
@@ -19,6 +24,10 @@ export function ConversationList({
   conversations,
   selectedId,
   onSelect,
+  onNewConversation,
+  isDarkMode,
+  onToggleTheme,
+  wabaStatus,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("open");
@@ -47,22 +56,66 @@ export function ConversationList({
     { id: "resolved", label: "Resolvidas" },
   ];
 
+  const getWabaStatusColor = () => {
+    switch (wabaStatus) {
+      case "connected":
+        return "text-emerald-400";
+      case "connecting":
+        return "text-yellow-400";
+      case "disconnected":
+        return "text-red-400";
+    }
+  };
+
+  const getWabaStatusText = () => {
+    switch (wabaStatus) {
+      case "connected":
+        return "WABA Conectado";
+      case "connecting":
+        return "Conectando...";
+      case "disconnected":
+        return "WABA Desconectado";
+    }
+  };
+
   return (
-    <div className="w-[380px] h-full flex flex-col bg-[#111b21] border-r border-[#2a2a2a] shrink-0">
+    <div className={cn(
+      "w-[380px] h-full flex flex-col border-r shrink-0 transition-colors duration-300",
+      isDarkMode ? "bg-[#111b21] border-[#2a2a2a]" : "bg-white border-gray-200"
+    )}>
       {/* Header */}
-      <div className="h-16 px-4 flex items-center justify-between bg-[#1f2c33] border-b border-[#2a2a2a]">
+      <div className={cn(
+        "h-16 px-4 flex items-center justify-between border-b",
+        isDarkMode ? "bg-[#1f2c33] border-[#2a2a2a]" : "bg-[#f0f2f5] border-gray-200"
+      )}>
         <div className="flex items-center gap-2">
-          <h1 className="text-[#e9edef] font-semibold text-lg tracking-tight">
-            WhatsLídia
-          </h1>
-          <span className="text-[10px] px-1.5 py-0.5 bg-[#00a884]/20 text-[#00a884] rounded-full font-medium">
+          {/* Logo Curionópolis */}
+          <div className="relative w-32 h-10">
+            <Image
+              src="/Curionópolis - Logo 2021.pdf.png"
+              alt="Curionópolis"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <span className={cn(
+            "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+            isDarkMode ? "bg-[#00a884]/20 text-[#00a884]" : "bg-emerald-100 text-emerald-600"
+          )}>
             BETA
           </span>
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-[#aebac1] hover:bg-[#2a3942] transition-colors"
+          onClick={onNewConversation}
+          className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+            isDarkMode 
+              ? "text-[#aebac1] hover:bg-[#2a3942]" 
+              : "text-gray-600 hover:bg-gray-200"
+          )}
           title="Nova Conversa"
         >
           <Plus className="w-5 h-5" />
@@ -70,22 +123,36 @@ export function ConversationList({
       </div>
 
       {/* Search Bar */}
-      <div className="p-3 bg-[#111b21]">
+      <div className={cn(
+        "p-3 transition-colors duration-300",
+        isDarkMode ? "bg-[#111b21]" : "bg-white"
+      )}>
         <div className="relative">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 text-[#8696a0]" />
+            <Search className={cn(
+              "w-4 h-4",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-400"
+            )} />
           </div>
           <input
             type="text"
             placeholder="Pesquisar conversas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 bg-[#1f2c33] text-[#e9edef] placeholder-[#8696a0] text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a884]/50 transition-all"
+            className={cn(
+              "w-full h-10 pl-10 pr-4 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a884]/50 transition-all",
+              isDarkMode 
+                ? "bg-[#1f2c33] text-[#e9edef] placeholder-[#8696a0]" 
+                : "bg-[#f0f2f5] text-gray-900 placeholder-gray-500"
+            )}
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute inset-y-0 right-3 flex items-center text-[#8696a0] hover:text-[#e9edef]"
+              className={cn(
+                "absolute inset-y-0 right-3 flex items-center",
+                isDarkMode ? "text-[#8696a0] hover:text-[#e9edef]" : "text-gray-400 hover:text-gray-600"
+              )}
             >
               ×
             </button>
@@ -94,7 +161,10 @@ export function ConversationList({
       </div>
 
       {/* Filter Tabs */}
-      <div className="px-3 pb-2 bg-[#111b21] border-b border-[#2a2a2a]">
+      <div className={cn(
+        "px-3 pb-2 border-b transition-colors duration-300",
+        isDarkMode ? "bg-[#111b21] border-[#2a2a2a]" : "bg-white border-gray-200"
+      )}>
         <div className="flex gap-1">
           {tabs.map((tab) => {
             const unreadCount = getUnreadCount(tab.id);
@@ -105,13 +175,20 @@ export function ConversationList({
                 className={cn(
                   "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
                   activeTab === tab.id
-                    ? "bg-[#2a3942] text-[#00a884]"
-                    : "text-[#8696a0] hover:bg-[#1f2c33] hover:text-[#e9edef]"
+                    ? isDarkMode 
+                      ? "bg-[#2a3942] text-[#00a884]" 
+                      : "bg-emerald-100 text-emerald-600"
+                    : isDarkMode 
+                      ? "text-[#8696a0] hover:bg-[#1f2c33] hover:text-[#e9edef]"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 )}
               >
                 {tab.label}
                 {unreadCount > 0 && (
-                  <span className="bg-[#00a884] text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
+                  <span className={cn(
+                    "text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center",
+                    isDarkMode ? "bg-[#00a884] text-white" : "bg-emerald-500 text-white"
+                  )}>
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -122,10 +199,21 @@ export function ConversationList({
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#374045] scrollbar-track-transparent">
+      <div className={cn(
+        "flex-1 overflow-y-auto scrollbar-thin",
+        isDarkMode 
+          ? "scrollbar-thumb-[#374045] scrollbar-track-transparent" 
+          : "scrollbar-thumb-gray-300 scrollbar-track-transparent"
+      )}>
         {filteredConversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-[#8696a0] px-6">
-            <div className="w-16 h-16 rounded-full bg-[#1f2c33] flex items-center justify-center mb-4">
+          <div className={cn(
+            "flex flex-col items-center justify-center h-full px-6",
+            isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+          )}>
+            <div className={cn(
+              "w-16 h-16 rounded-full flex items-center justify-center mb-4",
+              isDarkMode ? "bg-[#1f2c33]" : "bg-gray-100"
+            )}>
               <Filter className="w-8 h-8 opacity-50" />
             </div>
             <p className="text-center text-sm">
@@ -151,6 +239,7 @@ export function ConversationList({
                   conversation={conversation}
                   isSelected={selectedId === conversation.id}
                   onClick={() => onSelect(conversation.id)}
+                  isDarkMode={isDarkMode}
                 />
               </motion.div>
             ))}
@@ -158,13 +247,63 @@ export function ConversationList({
         )}
       </div>
 
-      {/* Footer Info */}
-      <div className="h-8 px-4 flex items-center justify-between bg-[#1f2c33] border-t border-[#2a2a2a] text-[10px] text-[#8696a0]">
-        <span>{filteredConversations.length} conversas</span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#00a884]" />
-          WABA Conectado
-        </span>
+      {/* Footer com Toggle de Tema e Status WABA */}
+      <div className={cn(
+        "h-14 px-4 flex items-center justify-between border-t transition-colors duration-300",
+        isDarkMode 
+          ? "bg-[#1f2c33] border-[#2a2a2a]" 
+          : "bg-[#f0f2f5] border-gray-200"
+      )}>
+        {/* Status WABA */}
+        <div className="flex items-center gap-2">
+          {wabaStatus === "connected" ? (
+            <Wifi className={cn("w-4 h-4", getWabaStatusColor())} />
+          ) : (
+            <WifiOff className={cn("w-4 h-4", getWabaStatusColor())} />
+          )}
+          <span className={cn(
+            "text-xs font-medium",
+            isDarkMode ? "text-[#e9edef]" : "text-gray-700"
+          )}>
+            {getWabaStatusText()}
+          </span>
+        </div>
+
+        {/* Toggle Tema */}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={onToggleTheme}
+          className={cn(
+            "w-10 h-6 rounded-full relative flex items-center transition-colors duration-300",
+            isDarkMode ? "bg-[#00a884]" : "bg-gray-300"
+          )}
+        >
+          <motion.div
+            initial={false}
+            animate={{ x: isDarkMode ? 16 : 2 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            className={cn(
+              "w-5 h-5 rounded-full flex items-center justify-center shadow-sm",
+              isDarkMode ? "bg-white" : "bg-white"
+            )}
+          >
+            {isDarkMode ? (
+              <Moon className="w-3 h-3 text-[#1f2c33]" />
+            ) : (
+              <Sun className="w-3 h-3 text-yellow-500" />
+            )}
+          </motion.div>
+        </motion.button>
+      </div>
+
+      {/* Contador de conversas */}
+      <div className={cn(
+        "h-7 px-4 flex items-center justify-center text-[10px] transition-colors duration-300",
+        isDarkMode 
+          ? "bg-[#111b21] text-[#8696a0] border-t border-[#2a2a2a]" 
+          : "bg-white text-gray-500 border-t border-gray-200"
+      )}>
+        {filteredConversations.length} conversas
       </div>
     </div>
   );

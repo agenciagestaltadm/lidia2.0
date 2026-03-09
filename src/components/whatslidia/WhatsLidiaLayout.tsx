@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ChatView, Conversation } from "@/types/chat";
+import { cn } from "@/lib/utils";
+import { ChatView, Conversation, Contact } from "@/types/chat";
 import { Sidebar } from "./Sidebar";
 import { ConversationList } from "./ConversationList";
 import { ChatWindow } from "./ChatWindow";
-import { mockConversations } from "@/lib/mock/chat-data";
+import { NewConversationModal } from "./NewConversationModal";
+import { mockConversations, mockContacts } from "@/lib/mock/chat-data";
 
 export function WhatsLidiaLayout() {
   const router = useRouter();
@@ -18,6 +20,15 @@ export function WhatsLidiaLayout() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  
+  // Theme state
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  // WABA Status
+  const [wabaStatus, setWabaStatus] = useState<"connected" | "disconnected" | "connecting">("connected");
+  
+  // New conversation modal
+  const [isNewConversationModalOpen, setIsNewConversationModalOpen] = useState(false);
 
   // Load conversations on mount
   useEffect(() => {
@@ -32,6 +43,12 @@ export function WhatsLidiaLayout() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Check system preference for dark mode
+  useEffect(() => {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setIsDarkMode(prefersDark);
   }, []);
 
   const selectedConversation = conversations.find(
@@ -60,6 +77,59 @@ export function WhatsLidiaLayout() {
     router.push("/app/central");
   };
 
+  const handleToggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  const handleStartNewConversation = (contactData: Contact | { phone: string; name: string }) => {
+    // Extract phone and name from union type
+    const phone = (contactData as any).phone;
+    const name = (contactData as any).name || phone;
+    // Check if conversation already exists
+    const existingConv = conversations.find(
+      (c) => c.contact.phone === phone
+    );
+
+    if (existingConv) {
+      handleSelectConversation(existingConv.id);
+      return;
+    }
+
+    // Create new conversation
+    const newConversation: Conversation = {
+      id: `conv-${Date.now()}`,
+      contact: {
+        id: `new-${Date.now()}`,
+        name: name,
+        phone: phone,
+        avatar: undefined,
+        isRegistered: true,
+        source: "whatsapp",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      status: "open",
+      priority: "medium",
+      unreadCount: 0,
+      tags: [],
+      channel: "whatsapp",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    setConversations((prev) => [newConversation, ...prev]);
+    handleSelectConversation(newConversation.id);
+  };
+
+  // Apply dark mode class to body
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
   // Render different views based on currentView state
   const renderMainContent = () => {
     if (currentView === "conversations") {
@@ -78,6 +148,10 @@ export function WhatsLidiaLayout() {
                   conversations={conversations}
                   selectedId={selectedConversationId}
                   onSelect={handleSelectConversation}
+                  onNewConversation={() => setIsNewConversationModalOpen(true)}
+                  isDarkMode={isDarkMode}
+                  onToggleTheme={handleToggleTheme}
+                  wabaStatus={wabaStatus}
                 />
               </motion.div>
             ) : (
@@ -105,23 +179,35 @@ export function WhatsLidiaLayout() {
             conversations={conversations}
             selectedId={selectedConversationId}
             onSelect={handleSelectConversation}
+            onNewConversation={() => setIsNewConversationModalOpen(true)}
+            isDarkMode={isDarkMode}
+            onToggleTheme={handleToggleTheme}
+            wabaStatus={wabaStatus}
           />
-          <ChatWindow conversation={selectedConversation} />
+          <ChatWindow
+            conversation={selectedConversation}
+          />
         </>
       );
     }
 
     // Placeholder for other views
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#0b141a]">
+      <div className={cn(
+        "flex-1 flex items-center justify-center",
+        isDarkMode ? "bg-[#0b141a]" : "bg-gray-50"
+      )}>
         <div className="text-center">
-          <h2 className="text-[#e9edef] text-2xl font-medium mb-2">
+          <h2 className={cn(
+            "text-2xl font-medium mb-2",
+            isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+          )}>
             {currentView === "contacts" && "Contatos Cadastrados"}
             {currentView === "notes" && "Comentários Internos"}
             {currentView === "tasks" && "Criar Tarefas"}
             {currentView === "settings" && "Configurações"}
           </h2>
-          <p className="text-[#8696a0]">
+          <p className={isDarkMode ? "text-[#8696a0]" : "text-gray-500"}>
             Funcionalidade em desenvolvimento
           </p>
           <button
@@ -136,18 +222,32 @@ export function WhatsLidiaLayout() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-[#0b141a]">
-      {/* Left Sidebar */}
-      <Sidebar
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        onExit={handleExit}
-      />
+    <>
+      <div className={cn(
+        "fixed inset-0 z-50 flex",
+        isDarkMode ? "bg-[#0b141a]" : "bg-white"
+      )}>
+        {/* Left Sidebar */}
+        <Sidebar
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          onExit={handleExit}
+        />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {renderMainContent()}
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden">
+          {renderMainContent()}
+        </div>
       </div>
-    </div>
+
+      {/* New Conversation Modal */}
+      <NewConversationModal
+        isOpen={isNewConversationModalOpen}
+        onClose={() => setIsNewConversationModalOpen(false)}
+        onStartConversation={handleStartNewConversation}
+        isDarkMode={isDarkMode}
+      />
+    </>
   );
 }
+
