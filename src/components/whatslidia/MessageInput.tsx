@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   Plus,
@@ -25,6 +25,8 @@ import {
 } from "./modals";
 import { QuickRepliesDropdown } from "./QuickRepliesDropdown";
 import { useQuickReplies } from "@/hooks/use-quick-replies";
+import { AudioRecorder } from "./AudioRecorder";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 
 interface MessageInputProps {
   onSend: (message: string) => void;
@@ -57,6 +59,12 @@ export function MessageInput({
   const [showQuickRepliesManager, setShowQuickRepliesManager] = useState(false);
   const [showQuickRepliesDropdown, setShowQuickRepliesDropdown] = useState(false);
   const [quickReplySearchTerm, setQuickReplySearchTerm] = useState("");
+  
+  // Emoji picker state
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // Audio recorder state
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
    
   // Modal states
   const [showVideoConf, setShowVideoConf] = useState(false);
@@ -397,19 +405,52 @@ export function MessageInput({
           </motion.button>
 
           {/* Emoji Button */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            disabled={disabled}
-            className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-              isDarkMode 
-                ? "text-[#aebac1] hover:bg-[#2a3942]" 
-                : "text-gray-600 hover:bg-gray-100",
-              disabled && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <Smile className="w-5 h-5" />
-          </motion.button>
+          <div className="relative">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              disabled={disabled}
+              className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                showEmojiPicker
+                  ? "bg-[#00a884] text-white"
+                  : isDarkMode 
+                    ? "text-[#aebac1] hover:bg-[#2a3942]" 
+                    : "text-gray-600 hover:bg-gray-100",
+                disabled && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <Smile className="w-5 h-5" />
+            </motion.button>
+            
+            {/* Emoji Picker */}
+            <AnimatePresence>
+              {showEmojiPicker && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className={cn(
+                    "absolute bottom-12 left-0 z-[102] rounded-xl shadow-2xl overflow-hidden",
+                    isDarkMode ? "border border-[#2a2a2a]" : "border border-gray-200"
+                  )}
+                >
+                  <EmojiPicker
+                    onEmojiClick={(emojiData) => {
+                      setMessage(prev => prev + emojiData.emoji);
+                      setShowEmojiPicker(false);
+                      inputRef.current?.focus();
+                    }}
+                    theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
+                    width={350}
+                    height={400}
+                    lazyLoadEmojis={true}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Input Field */}
           {isRecording ? (
@@ -450,7 +491,7 @@ export function MessageInput({
               if (message.trim()) {
                 handleSend();
               } else {
-                setIsRecording(!isRecording);
+                setShowAudioRecorder(true);
               }
             }}
             disabled={disabled}
@@ -548,6 +589,25 @@ export function MessageInput({
         onUpdate={updateQuickReply}
         onDelete={deleteQuickReply}
       />
+
+      {/* Audio Recorder */}
+      <AnimatePresence>
+        {showAudioRecorder && (
+          <AudioRecorder
+            isDarkMode={isDarkMode}
+            onSend={(audioBlob, duration) => {
+              // Create a message with audio
+              onSendMessage?.('[Áudio]', 'audio', { 
+                audioBlob, 
+                duration,
+                mimeType: 'audio/webm'
+              });
+              setShowAudioRecorder(false);
+            }}
+            onCancel={() => setShowAudioRecorder(false)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

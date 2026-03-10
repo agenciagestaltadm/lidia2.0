@@ -112,19 +112,27 @@ export function QuickRepliesDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose, inputRef]);
 
-  // Calculate position
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+  // Calculate position - show above input or below if no space
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0, placement: 'above' as 'above' | 'below' });
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (isOpen && inputRef.current && dropdownRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
+      const dropdownHeight = Math.min(320, filteredReplies.length * 70 + 80); // Approximate height
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      
+      // If not enough space above, show below
+      const showBelow = spaceAbove < dropdownHeight && spaceBelow > spaceAbove;
+      
       setPosition({
-        top: rect.top - 300, // Position above input
+        top: showBelow ? rect.bottom + 8 : rect.top - dropdownHeight - 8,
         left: rect.left,
-        width: rect.width,
+        width: Math.min(400, rect.width, window.innerWidth - 32),
+        placement: showBelow ? 'below' : 'above',
       });
     }
-  }, [isOpen, inputRef]);
+  }, [isOpen, inputRef, filteredReplies.length]);
 
   if (!isOpen || filteredReplies.length === 0) return null;
 
@@ -156,15 +164,15 @@ export function QuickRepliesDropdown({
       {isOpen && (
         <motion.div
           ref={dropdownRef}
-          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+          initial={{ opacity: 0, y: position.placement === 'below' ? -10 : 10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+          exit={{ opacity: 0, y: position.placement === 'below' ? -10 : 10, scale: 0.95 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
           style={{
             position: "fixed",
             top: Math.max(10, position.top),
             left: position.left,
-            width: Math.min(400, position.width),
+            width: position.width,
             maxWidth: "calc(100vw - 32px)",
           }}
           className={cn(
