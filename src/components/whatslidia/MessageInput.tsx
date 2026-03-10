@@ -10,6 +10,7 @@ import {
   Send,
   X,
   Clock,
+  Zap,
 } from "lucide-react";
 import { AttachmentMenu, AttachmentFile } from "./AttachmentMenu";
 import {
@@ -20,7 +21,10 @@ import {
   CTABuilderModal,
   ReplyButtonsModal,
   LocationModal,
+  QuickRepliesManagerModal,
 } from "./modals";
+import { QuickRepliesDropdown } from "./QuickRepliesDropdown";
+import { useQuickReplies } from "@/hooks/use-quick-replies";
 
 interface MessageInputProps {
   onSend: (message: string) => void;
@@ -46,6 +50,14 @@ export function MessageInput({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   
+  // Quick replies hook
+  const { quickReplies, addQuickReply, updateQuickReply, deleteQuickReply, getByShortcut } = useQuickReplies();
+  
+  // Quick replies UI states
+  const [showQuickRepliesManager, setShowQuickRepliesManager] = useState(false);
+  const [showQuickRepliesDropdown, setShowQuickRepliesDropdown] = useState(false);
+  const [quickReplySearchTerm, setQuickReplySearchTerm] = useState("");
+   
   // Modal states
   const [showVideoConf, setShowVideoConf] = useState(false);
   const [showContactPicker, setShowContactPicker] = useState(false);
@@ -92,7 +104,22 @@ export function MessageInput({
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
-      onSend(message.trim());
+      // Check if message is a quick reply shortcut
+      const trimmedMessage = message.trim();
+      if (trimmedMessage.startsWith("/")) {
+        const shortcut = trimmedMessage.slice(1).toLowerCase();
+        const reply = getByShortcut(shortcut);
+        if (reply) {
+          onSend(reply.content);
+          setMessage("");
+          if (inputRef.current) {
+            inputRef.current.style.height = "auto";
+          }
+          return;
+        }
+      }
+      
+      onSend(trimmedMessage);
       setMessage("");
       if (inputRef.current) {
         inputRef.current.style.height = "auto";
@@ -101,9 +128,62 @@ export function MessageInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Don't send if quick replies dropdown is open (let it handle Enter)
+    if (showQuickRepliesDropdown && e.key === "Enter") {
+      return;
+    }
+    
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  // Handle message change with quick reply detection
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setMessage(value);
+    
+    // Check if user typed "/" to show quick replies dropdown
+    const lastSlashIndex = value.lastIndexOf("/");
+    if (lastSlashIndex !== -1) {
+      const afterSlash = value.slice(lastSlashIndex + 1);
+      // Only show if there's no space after the slash (user is typing a command)
+      if (!afterSlash.includes(" ")) {
+        setQuickReplySearchTerm(afterSlash);
+        setShowQuickRepliesDropdown(true);
+      } else {
+        setShowQuickRepliesDropdown(false);
+      }
+    } else {
+      setShowQuickRepliesDropdown(false);
+    }
+    
+    // Auto-resize
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = `${Math.min(
+        inputRef.current.scrollHeight,
+        120
+      )}px`;
+    }
+  };
+
+  // Handle quick reply selection
+  const handleQuickReplySelect = (reply: { shortcut: string; content: string }) => {
+    // Replace the "/" and search term with the full content
+    const lastSlashIndex = message.lastIndexOf("/");
+    if (lastSlashIndex !== -1) {
+      const beforeSlash = message.slice(0, lastSlashIndex);
+      const newMessage = beforeSlash + reply.content;
+      setMessage(newMessage);
+      setShowQuickRepliesDropdown(false);
+      setQuickReplySearchTerm("");
+      
+      // Focus back on input
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
   };
 
@@ -299,6 +379,23 @@ export function MessageInput({
             )}
           </motion.button>
 
+          {/* Quick Replies Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowQuickRepliesManager(true)}
+            disabled={disabled}
+            title="Mensagens Rápidas"
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+              isDarkMode 
+                ? "text-[#aebac1] hover:bg-[#2a3942]" 
+                : "text-gray-600 hover:bg-gray-100",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <Zap className="w-5 h-5" />
+          </motion.button>
+
           {/* Emoji Button */}
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -330,7 +427,7 @@ export function MessageInput({
               <textarea
                 ref={inputRef}
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={handleMessageChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Digite uma mensagem"
                 disabled={disabled}
@@ -425,6 +522,31 @@ export function MessageInput({
         isDarkMode={isDarkMode}
         onSend={handleSendLocation}
         mode={locationMode}
+      />
+
+      {/* Quick Replies Dropdown */}
+      <QuickRepliesDropdown
+        isOpen={showQuickRepliesDropdown}
+        searchTerm={quickReplySearchTerm}
+        quickReplies={quickReplies}
+        isDarkMode={isDarkMode}
+        onSelect={handleQuickReplySelect}
+        onClose={() => {
+          setShowQuickRepliesDropdown(false);
+          setQuickReplySearchTerm("");
+        }}
+        inputRef={inputRef}
+      />
+
+      {/* Quick Replies Manager Modal */}
+      <QuickRepliesManagerModal
+        isOpen={showQuickRepliesManager}
+        onClose={() => setShowQuickRepliesManager(false)}
+        isDarkMode={isDarkMode}
+        quickReplies={quickReplies}
+        onAdd={addQuickReply}
+        onUpdate={updateQuickReply}
+        onDelete={deleteQuickReply}
       />
     </>
   );

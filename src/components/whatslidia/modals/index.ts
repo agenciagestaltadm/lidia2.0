@@ -5,3 +5,4 @@ export { TemplatePickerModal } from "./TemplatePickerModal";
 export { CTABuilderModal } from "./CTABuilderModal";
 export { ReplyButtonsModal } from "./ReplyButtonsModal";
 export { LocationModal } from "./LocationModal";
+export { QuickRepliesManagerModal } from "./QuickRepliesManagerModal";

@@ -387,39 +387,6 @@ export function ChatWindow({
         </div>
       </div>
 
-      {/* Quick Replies - Only show when not read-only */}
-      {!isReadOnly && (
-        <div className={cn(
-          "px-4 py-2 border-t transition-colors duration-300",
-          isDarkMode
-            ? "bg-[#1f2c33] border-[#2a2a2a]"
-            : "bg-white border-gray-200"
-        )}>
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            {[
-              "/ola - Olá! Como posso ajudar?",
-              "/aguarde - Só um momento...",
-              "/agrad - Obrigado pelo contato!",
-            ].map((quickReply) => (
-              <button
-                key={quickReply}
-                onClick={() =>
-                  handleSendMessage(quickReply.split(" - ")[1] || quickReply)
-                }
-                className={cn(
-                  "shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap",
-                  isDarkMode
-                    ? "bg-[#2a3942] text-[#e9edef] hover:bg-[#374045]"
-                    : "bg-gray-100 text-gray-900 hover:bg-gray-200"
-                )}
-              >
-                {quickReply.split(" - ")[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Input Area - Only show when not read-only */}
       {!isReadOnly && (
         <MessageInput
