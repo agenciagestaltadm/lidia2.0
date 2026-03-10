@@ -12,14 +12,20 @@ import {
   Clock,
 } from "lucide-react";
 import { AttachmentMenu, AttachmentFile } from "./AttachmentMenu";
+import {
+  VideoConfModal,
+  ContactPickerModal,
+  ListBuilderModal,
+  TemplatePickerModal,
+  CTABuilderModal,
+  ReplyButtonsModal,
+  LocationModal,
+} from "./modals";
 
 interface MessageInputProps {
   onSend: (message: string) => void;
   onSendAttachments?: (files: AttachmentFile[], caption?: string) => void;
-  onSendLocation?: (type: "location" | "address" | "request") => void;
-  onSendContact?: () => void;
-  onSendTemplate?: (type: string) => void;
-  onSendFlow?: () => void;
+  onSendMessage?: (content: string, type?: string, metadata?: any) => void;
   disabled?: boolean;
   isWithin24Hours?: boolean;
   isDarkMode?: boolean;
@@ -29,10 +35,7 @@ interface MessageInputProps {
 export function MessageInput({
   onSend,
   onSendAttachments,
-  onSendLocation,
-  onSendContact,
-  onSendTemplate,
-  onSendFlow,
+  onSendMessage,
   disabled = false,
   isWithin24Hours = true,
   isDarkMode = true,
@@ -42,6 +45,17 @@ export function MessageInput({
   const [showAttachments, setShowAttachments] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  
+  // Modal states
+  const [showVideoConf, setShowVideoConf] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [showListBuilder, setShowListBuilder] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [showCTABuilder, setShowCTABuilder] = useState(false);
+  const [showReplyButtons, setShowReplyButtons] = useState(false);
+  const [showLocation, setShowLocation] = useState(false);
+  const [locationMode, setLocationMode] = useState<'send' | 'request'>('send');
+  
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recordingInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -107,6 +121,83 @@ export function MessageInput({
     setShowAttachments(false);
   };
 
+  // Handle video conference
+  const handleOpenVideoConf = () => {
+    setShowVideoConf(true);
+  };
+
+  const handleSendVideoConf = (jitsiLink: string) => {
+    onSendMessage?.(jitsiLink, 'videoconf', { url: jitsiLink, platform: 'jitsi' });
+    window.open(jitsiLink, '_blank');
+  };
+
+  // Handle contact picker
+  const handleOpenContactPicker = () => {
+    setShowContactPicker(true);
+  };
+
+  const handleSendContact = (contact: { name: string; phone: string }) => {
+    onSendMessage?.(`👤 ${contact.name}\n📞 ${contact.phone}`, 'contact', contact);
+  };
+
+  // Handle list builder
+  const handleOpenListBuilder = () => {
+    setShowListBuilder(true);
+  };
+
+  const handleSendList = (listData: { header: string; body: string; footer: string; buttons: string[] }) => {
+    const content = `📋 *${listData.header}*\n\n${listData.body}\n\n${listData.buttons.map((b, i) => `${i + 1}. ${b}`).join('\n')}\n\n_${listData.footer}_`;
+    onSendMessage?.(content, 'list', listData);
+  };
+
+  // Handle template picker
+  const handleOpenTemplatePicker = () => {
+    setShowTemplatePicker(true);
+  };
+
+  const handleSendTemplate = (template: { name: string; content: string }) => {
+    onSendMessage?.(template.content, 'template', { templateName: template.name });
+  };
+
+  // Handle CTA builder
+  const handleOpenCTABuilder = () => {
+    setShowCTABuilder(true);
+  };
+
+  const handleSendCTA = (ctaData: { text: string; buttonText: string; url: string }) => {
+    const content = `${ctaData.text}\n\n[${ctaData.buttonText}](${ctaData.url})`;
+    onSendMessage?.(content, 'cta', ctaData);
+  };
+
+  // Handle reply buttons
+  const handleOpenReplyButtons = () => {
+    setShowReplyButtons(true);
+  };
+
+  const handleSendReplyButtons = (data: { title: string; message: string; buttons: string[] }) => {
+    const content = `*${data.title}*\n\n${data.message}\n\n${data.buttons.map((b, i) => `▫️ ${b}`).join('\n')}`;
+    onSendMessage?.(content, 'replybuttons', data);
+  };
+
+  // Handle location
+  const handleSendLocationRequest = () => {
+    setLocationMode('request');
+    setShowLocation(true);
+  };
+
+  const handleSendLocationAddress = () => {
+    setLocationMode('send');
+    setShowLocation(true);
+  };
+
+  const handleSendLocation = (locationData: { address: string; lat?: number; lng?: number }) => {
+    if (locationMode === 'request') {
+      onSendMessage?.('📍 Por favor, compartilhe sua localização atual.', 'location_request');
+    } else {
+      onSendMessage?.(`📍 ${locationData.address}`, 'location', locationData);
+    }
+  };
+
   // Check if attachments are allowed
   const canSendAttachments = conversationStatus === 'open' && !disabled && isWithin24Hours;
 
@@ -159,125 +250,182 @@ export function MessageInput({
   }
 
   return (
-    <div className={cn(
-      "border-t transition-colors duration-300",
-      isDarkMode 
-        ? "bg-[#1f2c33] border-[#2a2a2a]" 
-        : "bg-white border-gray-200"
-    )}>
-      {/* Attachment Menu */}
-      <AttachmentMenu
-        isOpen={showAttachments}
-        onClose={() => setShowAttachments(false)}
+    <>
+      <div className={cn(
+        "border-t transition-colors duration-300",
+        isDarkMode 
+          ? "bg-[#1f2c33] border-[#2a2a2a]" 
+          : "bg-white border-gray-200"
+      )}>
+        {/* Attachment Menu */}
+        <AttachmentMenu
+          isOpen={showAttachments}
+          onClose={() => setShowAttachments(false)}
+          isDarkMode={isDarkMode}
+          onSendAttachments={handleSendAttachments}
+          onOpenVideoConf={handleOpenVideoConf}
+          onOpenContactPicker={handleOpenContactPicker}
+          onOpenListBuilder={handleOpenListBuilder}
+          onOpenTemplatePicker={handleOpenTemplatePicker}
+          onOpenCTABuilder={handleOpenCTABuilder}
+          onOpenReplyButtons={handleOpenReplyButtons}
+          onSendLocationRequest={handleSendLocationRequest}
+          onSendLocationAddress={handleSendLocationAddress}
+          disabled={!canSendAttachments}
+          maxFileSize={100}
+        />
+
+        {/* Input Area */}
+        <div className="h-16 px-4 flex items-center gap-3">
+          {/* Attachment Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowAttachments(!showAttachments)}
+            disabled={!canSendAttachments}
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+              showAttachments
+                ? "bg-[#00a884] text-white"
+                : isDarkMode 
+                  ? "text-[#aebac1] hover:bg-[#2a3942]"
+                  : "text-gray-600 hover:bg-gray-100",
+              !canSendAttachments && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            {showAttachments ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Plus className="w-5 h-5" />
+            )}
+          </motion.button>
+
+          {/* Emoji Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            disabled={disabled}
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+              isDarkMode 
+                ? "text-[#aebac1] hover:bg-[#2a3942]" 
+                : "text-gray-600 hover:bg-gray-100",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <Smile className="w-5 h-5" />
+          </motion.button>
+
+          {/* Input Field */}
+          {isRecording ? (
+            <div className="flex-1 flex items-center justify-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+              <span className={cn(
+                "font-medium",
+                isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+              )}>
+                Gravando {formatRecordingTime(recordingTime)}
+              </span>
+            </div>
+          ) : (
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Digite uma mensagem"
+                disabled={disabled}
+                rows={1}
+                className={cn(
+                  "w-full min-h-[44px] max-h-[120px] px-4 py-2.5 text-sm rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#00a884]/50 transition-all",
+                  isDarkMode 
+                    ? "bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] scrollbar-thin scrollbar-thumb-[#374045]"
+                    : "bg-gray-100 text-gray-900 placeholder-gray-500 scrollbar-thin scrollbar-thumb-gray-300",
+                  disabled && "opacity-50 cursor-not-allowed"
+                )}
+              />
+            </div>
+          )}
+
+          {/* Send/Record Button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => {
+              if (message.trim()) {
+                handleSend();
+              } else {
+                setIsRecording(!isRecording);
+              }
+            }}
+            disabled={disabled}
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+              message.trim()
+                ? "bg-[#00a884] text-white"
+                : isDarkMode 
+                  ? "text-[#aebac1] hover:bg-[#2a3942]"
+                  : "text-gray-600 hover:bg-gray-100",
+              disabled && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            {message.trim() ? (
+              <Send className="w-5 h-5" />
+            ) : (
+              <Mic className="w-5 h-5" />
+            )}
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <VideoConfModal
+        isOpen={showVideoConf}
+        onClose={() => setShowVideoConf(false)}
         isDarkMode={isDarkMode}
-        onSendAttachments={handleSendAttachments}
-        onSendLocation={onSendLocation || (() => {})}
-        onSendContact={onSendContact || (() => {})}
-        onSendTemplate={onSendTemplate || (() => {})}
-        onSendFlow={onSendFlow || (() => {})}
-        disabled={!canSendAttachments}
-        maxFileSize={100}
+        onSend={handleSendVideoConf}
       />
 
-      {/* Input Area */}
-      <div className="h-16 px-4 flex items-center gap-3">
-        {/* Attachment Button */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowAttachments(!showAttachments)}
-          disabled={!canSendAttachments}
-          className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-            showAttachments
-              ? "bg-[#00a884] text-white"
-              : isDarkMode 
-                ? "text-[#aebac1] hover:bg-[#2a3942]"
-                : "text-gray-600 hover:bg-gray-100",
-            !canSendAttachments && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          {showAttachments ? (
-            <X className="w-5 h-5" />
-          ) : (
-            <Plus className="w-5 h-5" />
-          )}
-        </motion.button>
+      <ContactPickerModal
+        isOpen={showContactPicker}
+        onClose={() => setShowContactPicker(false)}
+        isDarkMode={isDarkMode}
+        onSend={handleSendContact}
+      />
 
-        {/* Emoji Button */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          disabled={disabled}
-          className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-            isDarkMode 
-              ? "text-[#aebac1] hover:bg-[#2a3942]" 
-              : "text-gray-600 hover:bg-gray-100",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <Smile className="w-5 h-5" />
-        </motion.button>
+      <ListBuilderModal
+        isOpen={showListBuilder}
+        onClose={() => setShowListBuilder(false)}
+        isDarkMode={isDarkMode}
+        onSend={handleSendList}
+      />
 
-        {/* Input Field */}
-        {isRecording ? (
-          <div className="flex-1 flex items-center justify-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-            <span className={cn(
-              "font-medium",
-              isDarkMode ? "text-[#e9edef]" : "text-gray-900"
-            )}>
-              Gravando {formatRecordingTime(recordingTime)}
-            </span>
-          </div>
-        ) : (
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Digite uma mensagem"
-              disabled={disabled}
-              rows={1}
-              className={cn(
-                "w-full min-h-[44px] max-h-[120px] px-4 py-2.5 text-sm rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#00a884]/50 transition-all",
-                isDarkMode 
-                  ? "bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] scrollbar-thin scrollbar-thumb-[#374045]"
-                  : "bg-gray-100 text-gray-900 placeholder-gray-500 scrollbar-thin scrollbar-thumb-gray-300",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
-            />
-          </div>
-        )}
+      <TemplatePickerModal
+        isOpen={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+        isDarkMode={isDarkMode}
+        onSend={handleSendTemplate}
+      />
 
-        {/* Send/Record Button */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => {
-            if (message.trim()) {
-              handleSend();
-            } else {
-              setIsRecording(!isRecording);
-            }
-          }}
-          disabled={disabled}
-          className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-            message.trim()
-              ? "bg-[#00a884] text-white"
-              : isDarkMode 
-                ? "text-[#aebac1] hover:bg-[#2a3942]"
-                : "text-gray-600 hover:bg-gray-100",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          {message.trim() ? (
-            <Send className="w-5 h-5" />
-          ) : (
-            <Mic className="w-5 h-5" />
-          )}
-        </motion.button>
-      </div>
-    </div>
+      <CTABuilderModal
+        isOpen={showCTABuilder}
+        onClose={() => setShowCTABuilder(false)}
+        isDarkMode={isDarkMode}
+        onSend={handleSendCTA}
+      />
+
+      <ReplyButtonsModal
+        isOpen={showReplyButtons}
+        onClose={() => setShowReplyButtons(false)}
+        isDarkMode={isDarkMode}
+        onSend={handleSendReplyButtons}
+      />
+
+      <LocationModal
+        isOpen={showLocation}
+        onClose={() => setShowLocation(false)}
+        isDarkMode={isDarkMode}
+        onSend={handleSendLocation}
+        mode={locationMode}
+      />
+    </>
   );
 }

@@ -389,10 +389,7 @@ export function ChatWindow({
         <MessageInput
           onSend={handleSendMessage}
           onSendAttachments={handleSendAttachments}
-          onSendLocation={onSendLocation}
-          onSendContact={onSendContact}
-          onSendTemplate={onSendTemplate}
-          onSendFlow={onSendFlow}
+          onSendMessage={onSendMessage}
           isDarkMode={isDarkMode}
           conversationStatus={conversation?.status || 'open'}
         />

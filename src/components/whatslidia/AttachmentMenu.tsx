@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -8,15 +8,12 @@ import {
   Image,
   FileText,
   User,
-  MousePointerClick,
   List,
   FileType,
   Link,
   MessageSquare,
-  MapPin,
   MapPinned,
   Navigation,
-  GitBranch,
   X,
   Upload,
   Send,
@@ -37,30 +34,31 @@ interface AttachmentMenuProps {
   onClose: () => void;
   isDarkMode: boolean;
   onSendAttachments: (files: AttachmentFile[], caption?: string) => void;
-  onSendLocation: (type: "location" | "address" | "request") => void;
-  onSendContact: () => void;
-  onSendTemplate: (type: string) => void;
-  onSendFlow: () => void;
+  onOpenVideoConf: () => void;
+  onOpenContactPicker: () => void;
+  onOpenListBuilder: () => void;
+  onOpenTemplatePicker: () => void;
+  onOpenCTABuilder: () => void;
+  onOpenReplyButtons: () => void;
+  onSendLocationRequest: () => void;
+  onSendLocationAddress: () => void;
   maxFileSize?: number; // in MB
   disabled?: boolean;
 }
 
 const MAX_FILE_SIZE_DEFAULT = 100; // 100MB default
 
-// Menu items based on the reference image
+// Menu items - removed: flow, address, buttons
 const menuItems = [
   { id: "videoconf", icon: Video, label: "Link Videoconf.", color: "bg-purple-500", category: "media" },
   { id: "gallery", icon: Image, label: "Arquivo Galeria", color: "bg-pink-500", category: "media" },
   { id: "contact", icon: User, label: "Enviar Contato", color: "bg-blue-500", category: "contact" },
-  { id: "buttons", icon: MousePointerClick, label: "Enviar Botões", color: "bg-orange-500", category: "interactive" },
   { id: "lists", icon: List, label: "Enviar Listas", color: "bg-teal-500", category: "interactive" },
   { id: "templates", icon: FileType, label: "Templates", color: "bg-indigo-500", category: "template" },
   { id: "cta", icon: Link, label: "Enviar CTA URL", color: "bg-cyan-500", category: "interactive" },
   { id: "replybuttons", icon: MessageSquare, label: "Botões Resposta", color: "bg-amber-500", category: "interactive" },
-  { id: "address", icon: MapPin, label: "Enviar Endereço", color: "bg-red-500", category: "location" },
   { id: "requestlocation", icon: Navigation, label: "Solicitar Localização", color: "bg-lime-500", category: "location" },
   { id: "location", icon: MapPinned, label: "Enviar Localização", color: "bg-green-500", category: "location" },
-  { id: "flow", icon: GitBranch, label: "Enviar Flow", color: "bg-violet-500", category: "flow" },
 ];
 
 export function AttachmentMenu({
@@ -68,10 +66,14 @@ export function AttachmentMenu({
   onClose,
   isDarkMode,
   onSendAttachments,
-  onSendLocation,
-  onSendContact,
-  onSendTemplate,
-  onSendFlow,
+  onOpenVideoConf,
+  onOpenContactPicker,
+  onOpenListBuilder,
+  onOpenTemplatePicker,
+  onOpenCTABuilder,
+  onOpenReplyButtons,
+  onSendLocationRequest,
+  onSendLocationAddress,
   maxFileSize = MAX_FILE_SIZE_DEFAULT,
   disabled = false,
 }: AttachmentMenuProps) {
@@ -82,6 +84,17 @@ export function AttachmentMenu({
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      selectedFiles.forEach((file) => {
+        if (file.preview) {
+          URL.revokeObjectURL(file.preview);
+        }
+      });
+    };
+  }, []);
 
   // Handle file selection
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,38 +208,38 @@ export function AttachmentMenu({
 
   // Handle menu item click
   const handleMenuItemClick = (itemId: string) => {
+    onClose(); // Close menu first
+    
     switch (itemId) {
       case "gallery":
         fileInputRef.current?.click();
         break;
+      case "videoconf":
+        onOpenVideoConf();
+        break;
       case "contact":
-        onSendContact();
-        onClose();
+        onOpenContactPicker();
         break;
-      case "address":
-        onSendLocation("address");
-        onClose();
-        break;
-      case "requestlocation":
-        onSendLocation("request");
-        onClose();
-        break;
-      case "location":
-        onSendLocation("location");
-        onClose();
+      case "lists":
+        onOpenListBuilder();
         break;
       case "templates":
-        onSendTemplate("template");
-        onClose();
+        onOpenTemplatePicker();
         break;
-      case "flow":
-        onSendFlow();
-        onClose();
+      case "cta":
+        onOpenCTABuilder();
+        break;
+      case "replybuttons":
+        onOpenReplyButtons();
+        break;
+      case "requestlocation":
+        onSendLocationRequest();
+        break;
+      case "location":
+        onSendLocationAddress();
         break;
       default:
-        // For other items, show a placeholder action
         console.log(`Selected: ${itemId}`);
-        onClose();
     }
   };
 
