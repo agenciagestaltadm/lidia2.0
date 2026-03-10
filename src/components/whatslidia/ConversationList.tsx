@@ -19,6 +19,8 @@ interface ConversationListProps {
   onForceClose?: (id: string) => void;
   onPreview?: (id: string) => void;
   onOpenConversation?: (id: string) => void;
+  onReopen?: (id: string) => void;
+  onTabChange?: (tab: 'open' | 'pending' | 'resolved') => void;
 }
 
 type FilterTab = "open" | "pending" | "resolved";
@@ -34,6 +36,8 @@ export function ConversationList({
   onForceClose,
   onPreview,
   onOpenConversation,
+  onReopen,
+  onTabChange,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("open");
@@ -177,7 +181,10 @@ export function ConversationList({
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  onTabChange?.(tab.id);
+                }}
                 className={cn(
                   "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
                   activeTab === tab.id
@@ -250,6 +257,7 @@ export function ConversationList({
                   onForceClose={onForceClose}
                   onPreview={onPreview}
                   onOpenConversation={onOpenConversation}
+                  onReopen={onReopen}
                 />
               </motion.div>
             ))}

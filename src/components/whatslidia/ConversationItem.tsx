@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Conversation } from "@/types/chat";
-import { Check, CheckCheck, XCircle, Eye, ExternalLink } from "lucide-react";
+import { Check, CheckCheck, XCircle, Eye, ExternalLink, RotateCcw } from "lucide-react";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -14,6 +14,7 @@ interface ConversationItemProps {
   onForceClose?: (id: string) => void;
   onPreview?: (id: string) => void;
   onOpenConversation?: (id: string) => void;
+  onReopen?: (id: string) => void;
 }
 
 export function ConversationItem({
@@ -25,6 +26,7 @@ export function ConversationItem({
   onForceClose,
   onPreview,
   onOpenConversation,
+  onReopen,
 }: ConversationItemProps) {
   const { contact, lastMessage, unreadCount, priority, isTyping } = conversation;
 
@@ -92,6 +94,11 @@ export function ConversationItem({
   const handleOpenConversation = (e: React.MouseEvent) => {
     e.stopPropagation();
     onOpenConversation?.(conversation.id);
+  };
+
+  const handleReopen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onReopen?.(conversation.id);
   };
 
   return (
@@ -208,6 +215,39 @@ export function ConversationItem({
                     title="Abrir conversa"
                   >
                     <ExternalLink className="w-4 h-4" />
+                  </motion.button>
+                )}
+              </div>
+            )}
+            
+            {activeTab === 'resolved' && (onPreview || onReopen) && (
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onPreview && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileHover={{ scale: 1.1 }}
+                    onClick={handlePreview}
+                    className={cn(
+                      "p-1 rounded-full transition-all",
+                      "hover:bg-blue-500/20 text-blue-500"
+                    )}
+                    title="Visualizar histórico"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </motion.button>
+                )}
+                {onReopen && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileHover={{ scale: 1.1 }}
+                    onClick={handleReopen}
+                    className={cn(
+                      "p-1 rounded-full transition-all",
+                      "hover:bg-emerald-500/20 text-emerald-500"
+                    )}
+                    title="Reabrir conversa"
+                  >
+                    <RotateCcw className="w-4 h-4" />
                   </motion.button>
                 )}
               </div>

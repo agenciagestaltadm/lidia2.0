@@ -8,13 +8,15 @@ import { ChatHeader } from "./ChatHeader";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { getConversationMessages } from "@/lib/mock/chat-data";
-import { Lock, Shield } from "lucide-react";
+import { Lock, Shield, Eye, RotateCcw, AlertCircle } from "lucide-react";
 
 interface ChatWindowProps {
   conversation: Conversation | null;
   onBack?: () => void;
   showBackButton?: boolean;
   isDarkMode?: boolean;
+  isReadOnly?: boolean;
+  onReopen?: () => void;
 }
 
 export function ChatWindow({
@@ -22,6 +24,8 @@ export function ChatWindow({
   onBack,
   showBackButton = false,
   isDarkMode = true,
+  isReadOnly = false,
+  onReopen,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -143,7 +147,7 @@ export function ChatWindow({
 
   return (
     <div className={cn(
-      "flex-1 h-full flex flex-col transition-colors duration-300",
+      "flex-1 h-full flex flex-col transition-colors duration-300 relative",
       isDarkMode ? "bg-[#0b141a]" : "bg-gray-100"
     )}>
       <ChatHeader
@@ -153,14 +157,74 @@ export function ChatWindow({
         isDarkMode={isDarkMode}
       />
 
+      {/* Read-only Overlay */}
+      {isReadOnly && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={cn(
+              "px-8 py-6 rounded-2xl text-center max-w-md mx-4 shadow-2xl",
+              isDarkMode ? "bg-[#1f2c33] border border-[#2a2a2a]" : "bg-white border border-gray-200"
+            )}
+          >
+            <div className={cn(
+              "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4",
+              isDarkMode ? "bg-[#2a3942]" : "bg-gray-100"
+            )}>
+              {conversation?.status === 'pending' ? (
+                <AlertCircle className="w-8 h-8 text-yellow-500" />
+              ) : (
+                <Lock className="w-8 h-8 text-[#00a884]" />
+              )}
+            </div>
+            <h3 className={cn(
+              "text-lg font-semibold mb-2",
+              isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+            )}>
+              Conversa {conversation?.status === 'pending' ? 'Pendente' : 'Resolvida'}
+            </h3>
+            <p className={cn(
+              "text-sm mb-6",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )}>
+              {conversation?.status === 'pending'
+                ? 'Esta conversa está na fila de pendentes. Use o botão "Abrir Conversa" na lista para habilitar a interação.'
+                : 'Esta conversa foi resolvida. Clique em "Reabrir Conversa" para retomar o atendimento.'}
+            </p>
+            {conversation?.status === 'resolved' && onReopen && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onReopen}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#00a884] text-white rounded-xl font-medium hover:bg-[#00a884]/90 transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reabrir Conversa
+              </motion.button>
+            )}
+            {conversation?.status === 'pending' && (
+              <div className={cn(
+                "flex items-center justify-center gap-2 text-sm",
+                isDarkMode ? "text-[#8696a0]" : "text-gray-400"
+              )}>
+                <Eye className="w-4 h-4" />
+                Modo somente visualização
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+
       {/* Messages Area */}
       <div
         className={cn(
           "flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent",
+          isReadOnly ? "pointer-events-none" : "",
           isDarkMode ? "scrollbar-thumb-[#374045]" : "scrollbar-thumb-gray-300"
         )}
         style={{
-          backgroundImage: isDarkMode 
+          backgroundImage: isDarkMode
             ? "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE5JREFUOE9j/P///38GMgAx2v///2cYmUyMioHRwCgYSMP/////Z0AXZ6SJgWg2/P///3+CpJmINAzNsJGjYOAomDg6hgfEwKgYTQwAqRcjE7aL4TQAAAAASUVORK5CYII=')"
             : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAABJREFUOE9j/P///38GBgATiA0BAwMAgCYAl2kHbEUAAAAASUVORK5CYII=')",
           backgroundRepeat: "repeat",
@@ -225,39 +289,43 @@ export function ChatWindow({
         </div>
       </div>
 
-      {/* Quick Replies */}
-      <div className={cn(
-        "px-4 py-2 border-t transition-colors duration-300",
-        isDarkMode 
-          ? "bg-[#1f2c33] border-[#2a2a2a]" 
-          : "bg-white border-gray-200"
-      )}>
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {[
-            "/ola - Olá! Como posso ajudar?",
-            "/aguarde - Só um momento...",
-            "/agrad - Obrigado pelo contato!",
-          ].map((quickReply) => (
-            <button
-              key={quickReply}
-              onClick={() =>
-                handleSendMessage(quickReply.split(" - ")[1] || quickReply)
-              }
-              className={cn(
-                "shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap",
-                isDarkMode 
-                  ? "bg-[#2a3942] text-[#e9edef] hover:bg-[#374045]" 
-                  : "bg-gray-100 text-gray-900 hover:bg-gray-200"
-              )}
-            >
-              {quickReply.split(" - ")[0]}
-            </button>
-          ))}
+      {/* Quick Replies - Only show when not read-only */}
+      {!isReadOnly && (
+        <div className={cn(
+          "px-4 py-2 border-t transition-colors duration-300",
+          isDarkMode
+            ? "bg-[#1f2c33] border-[#2a2a2a]"
+            : "bg-white border-gray-200"
+        )}>
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            {[
+              "/ola - Olá! Como posso ajudar?",
+              "/aguarde - Só um momento...",
+              "/agrad - Obrigado pelo contato!",
+            ].map((quickReply) => (
+              <button
+                key={quickReply}
+                onClick={() =>
+                  handleSendMessage(quickReply.split(" - ")[1] || quickReply)
+                }
+                className={cn(
+                  "shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors whitespace-nowrap",
+                  isDarkMode
+                    ? "bg-[#2a3942] text-[#e9edef] hover:bg-[#374045]"
+                    : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                )}
+              >
+                {quickReply.split(" - ")[0]}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Input Area */}
-      <MessageInput onSend={handleSendMessage} isDarkMode={isDarkMode} />
+      {/* Input Area - Only show when not read-only */}
+      {!isReadOnly && (
+        <MessageInput onSend={handleSendMessage} isDarkMode={isDarkMode} />
+      )}
     </div>
   );
 }

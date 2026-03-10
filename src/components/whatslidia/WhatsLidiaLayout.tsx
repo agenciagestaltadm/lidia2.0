@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,9 @@ export function WhatsLidiaLayout() {
   // Preview conversation modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewConversationId, setPreviewConversationId] = useState<string | null>(null);
+  
+  // Active tab state for access control
+  const [activeTab, setActiveTab] = useState<'open' | 'pending' | 'resolved'>('open');
 
   // Load conversations on mount
   useEffect(() => {
@@ -157,7 +160,7 @@ export function WhatsLidiaLayout() {
     setConversations((prev) =>
       prev.map((c) =>
         c.id === id
-          ? { ...c, status: 'open' as const, unreadCount: 0 }
+          ? { ...c, status: 'open' as const, unreadCount: 0, updatedAt: new Date() }
           : c
       )
     );
@@ -166,6 +169,38 @@ export function WhatsLidiaLayout() {
       setShowChat(true);
     }
   };
+
+  // Handle reopen conversation from resolved (move to open)
+  const handleReopenConversation = (id: string) => {
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, status: 'open' as const, updatedAt: new Date() }
+          : c
+      )
+    );
+    // Optionally select the reopened conversation
+    setSelectedConversationId(id);
+    if (isMobile) {
+      setShowChat(true);
+    }
+  };
+
+  // Handle tab change
+  const handleTabChange = (tab: 'open' | 'pending' | 'resolved') => {
+    setActiveTab(tab);
+    // Deselect conversation when changing tabs to prevent confusion
+    setSelectedConversationId(null);
+    if (isMobile) {
+      setShowChat(false);
+    }
+  };
+
+  // Determine if the current conversation is read-only
+  const isChatReadOnly = useMemo(() => {
+    if (!selectedConversation) return true;
+    return selectedConversation.status !== 'open';
+  }, [selectedConversation]);
 
   // Apply dark mode class to body
   useEffect(() => {
@@ -201,6 +236,8 @@ export function WhatsLidiaLayout() {
                   onForceClose={handleForceClose}
                   onPreview={handlePreview}
                   onOpenConversation={handleOpenConversation}
+                  onReopen={handleReopenConversation}
+                  onTabChange={handleTabChange}
                 />
               </motion.div>
             ) : (
@@ -216,6 +253,8 @@ export function WhatsLidiaLayout() {
                   onBack={handleBackToList}
                   showBackButton={true}
                   isDarkMode={isDarkMode}
+                  isReadOnly={isChatReadOnly}
+                  onReopen={() => selectedConversationId && handleReopenConversation(selectedConversationId)}
                 />
               </motion.div>
             )}
@@ -236,10 +275,14 @@ export function WhatsLidiaLayout() {
             onForceClose={handleForceClose}
             onPreview={handlePreview}
             onOpenConversation={handleOpenConversation}
+            onReopen={handleReopenConversation}
+            onTabChange={handleTabChange}
           />
           <ChatWindow
             conversation={selectedConversation}
             isDarkMode={isDarkMode}
+            isReadOnly={isChatReadOnly}
+            onReopen={() => selectedConversationId && handleReopenConversation(selectedConversationId)}
           />
         </>
       );
