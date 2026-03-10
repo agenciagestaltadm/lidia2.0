@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Conversation } from "@/types/chat";
-import { Check, CheckCheck, XCircle, Eye, ExternalLink, RotateCcw } from "lucide-react";
+import { Check, CheckCheck, XCircle, Eye, Play, RotateCcw } from "lucide-react";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -171,85 +171,79 @@ export function ConversationItem({
               {lastMessage && formatTime(lastMessage.timestamp)}
             </span>
             
-            {/* Action Icons - Only show on hover */}
-            {activeTab === 'open' && onForceClose && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileHover={{ scale: 1.1 }}
-                onClick={handleForceClose}
-                className={cn(
-                  "p-1 rounded-full transition-all opacity-0 group-hover:opacity-100",
-                  "hover:bg-red-500/20 text-red-500"
-                )}
-                title="Fechar conversa"
-              >
-                <XCircle className="w-4 h-4" />
-              </motion.button>
-            )}
-            
-            {activeTab === 'pending' && (onPreview || onOpenConversation) && (
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Action Icons - Always visible inline */}
+            {activeTab === 'open' && (
+              <div className="flex items-center gap-0.5">
                 {onPreview && (
                   <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
                     whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={handlePreview}
                     className={cn(
-                      "p-1 rounded-full transition-all",
-                      "hover:bg-blue-500/20 text-blue-500"
+                      "p-1.5 rounded-full transition-all",
+                      isDarkMode
+                        ? "text-[#8696a0] hover:bg-blue-500/20 hover:text-blue-400"
+                        : "text-gray-400 hover:bg-blue-100 hover:text-blue-600"
                     )}
-                    title="Espiar conversa"
+                    title="Visualizar conversa"
                   >
                     <Eye className="w-4 h-4" />
                   </motion.button>
                 )}
-                {onOpenConversation && (
+                {onForceClose && (
                   <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
                     whileHover={{ scale: 1.1 }}
-                    onClick={handleOpenConversation}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleForceClose}
                     className={cn(
-                      "p-1 rounded-full transition-all",
-                      "hover:bg-emerald-500/20 text-emerald-500"
+                      "p-1.5 rounded-full transition-all",
+                      isDarkMode
+                        ? "text-[#8696a0] hover:bg-red-500/20 hover:text-red-400"
+                        : "text-gray-400 hover:bg-red-100 hover:text-red-600"
                     )}
-                    title="Abrir conversa"
+                    title="Fechar conversa"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <XCircle className="w-4 h-4" />
                   </motion.button>
                 )}
               </div>
             )}
             
-            {activeTab === 'resolved' && (onPreview || onReopen) && (
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                {onPreview && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    whileHover={{ scale: 1.1 }}
-                    onClick={handlePreview}
-                    className={cn(
-                      "p-1 rounded-full transition-all",
-                      "hover:bg-blue-500/20 text-blue-500"
-                    )}
-                    title="Visualizar histórico"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </motion.button>
-                )}
-                {onReopen && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    whileHover={{ scale: 1.1 }}
-                    onClick={handleReopen}
-                    className={cn(
-                      "p-1 rounded-full transition-all",
-                      "hover:bg-emerald-500/20 text-emerald-500"
-                    )}
-                    title="Reabrir conversa"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </motion.button>
-                )}
+            {activeTab === 'pending' && onOpenConversation && (
+              <div className="flex items-center gap-0.5">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleOpenConversation}
+                  className={cn(
+                    "p-1.5 rounded-full transition-all",
+                    isDarkMode
+                      ? "text-[#8696a0] hover:bg-emerald-500/20 hover:text-emerald-400"
+                      : "text-gray-400 hover:bg-emerald-100 hover:text-emerald-600"
+                  )}
+                  title="Atender conversa"
+                >
+                  <Play className="w-4 h-4" />
+                </motion.button>
+              </div>
+            )}
+            
+            {activeTab === 'resolved' && onReopen && (
+              <div className="flex items-center gap-0.5">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleReopen}
+                  className={cn(
+                    "p-1.5 rounded-full transition-all",
+                    isDarkMode
+                      ? "text-[#8696a0] hover:bg-emerald-500/20 hover:text-emerald-400"
+                      : "text-gray-400 hover:bg-emerald-100 hover:text-emerald-600"
+                  )}
+                  title="Reabrir conversa"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </motion.button>
               </div>
             )}
           </div>
