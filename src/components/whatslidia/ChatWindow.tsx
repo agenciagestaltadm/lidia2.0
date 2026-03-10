@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Conversation, Message } from "@/types/chat";
+import { Conversation, Message, MessageType } from "@/types/chat";
 import { ChatHeader } from "./ChatHeader";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
@@ -72,6 +72,42 @@ export function ChatWindow({
       status: "sent",
       isFromMe: true,
       timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, newMessage]);
+
+    // Simulate message status updates
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === newMessage.id ? { ...m, status: "delivered" } : m
+        )
+      );
+    }, 1000);
+
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === newMessage.id ? { ...m, status: "read" } : m))
+      );
+    }, 2500);
+  };
+
+  // Handle sending messages with type and metadata (for modals)
+  const handleSendMessageWithType = (content: string, type?: string, metadata?: any) => {
+    if (!conversation) return;
+
+    // Call external handler if provided
+    onSendMessage?.(content);
+
+    const newMessage: Message = {
+      id: `msg-${Date.now()}`,
+      conversationId: conversation.id,
+      content,
+      type: (type as MessageType) || "text",
+      status: "sent",
+      isFromMe: true,
+      timestamp: new Date(),
+      metadata,
     };
 
     setMessages((prev) => [...prev, newMessage]);
@@ -389,7 +425,7 @@ export function ChatWindow({
         <MessageInput
           onSend={handleSendMessage}
           onSendAttachments={handleSendAttachments}
-          onSendMessage={onSendMessage}
+          onSendMessage={handleSendMessageWithType}
           isDarkMode={isDarkMode}
           conversationStatus={conversation?.status || 'open'}
         />

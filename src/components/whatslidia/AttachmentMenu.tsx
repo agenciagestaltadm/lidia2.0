@@ -99,6 +99,7 @@ export function AttachmentMenu({
   // Handle file selection
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    console.log('[AttachmentMenu] Files selected:', files.length, files.map(f => f.name));
     setError(null);
 
     const newFiles: AttachmentFile[] = [];
@@ -137,6 +138,7 @@ export function AttachmentMenu({
     }
 
     if (newFiles.length > 0) {
+      console.log('[AttachmentMenu] Showing caption modal with', newFiles.length, 'files');
       setSelectedFiles((prev) => [...prev, ...newFiles]);
       setShowCaptionModal(true);
     }
@@ -208,11 +210,13 @@ export function AttachmentMenu({
 
   // Handle menu item click
   const handleMenuItemClick = (itemId: string) => {
-    onClose(); // Close menu first
-    
     switch (itemId) {
       case "gallery":
-        fileInputRef.current?.click();
+        // Don't close menu immediately - let file picker open first
+        setTimeout(() => {
+          fileInputRef.current?.click();
+        }, 100);
+        onClose();
         break;
       case "videoconf":
         onOpenVideoConf();
@@ -339,7 +343,7 @@ export function AttachmentMenu({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
               onClick={() => !isUploading && setShowCaptionModal(false)}
             />
 
@@ -349,7 +353,7 @@ export function AttachmentMenu({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className={cn(
-                "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+                "fixed z-[101] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
                 "w-[90%] max-w-lg rounded-2xl shadow-2xl overflow-hidden",
                 isDarkMode ? "bg-[#1f2c33]" : "bg-white"
               )}
