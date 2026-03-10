@@ -65,6 +65,7 @@ export function MessageInput({
   
   // Audio recorder state
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [isSendingAudio, setIsSendingAudio] = useState(false);
    
   // Modal states
   const [showVideoConf, setShowVideoConf] = useState(false);
@@ -437,15 +438,23 @@ export function MessageInput({
                   )}
                 >
                   <EmojiPicker
-                    onEmojiClick={(emojiData) => {
-                      setMessage(prev => prev + emojiData.emoji);
+                    onEmojiClick={(emojiObject, event) => {
+                      event?.stopPropagation();
+                      const emoji = emojiObject.emoji;
+                      if (emoji) {
+                        setMessage(prev => prev + emoji);
+                      }
                       setShowEmojiPicker(false);
-                      inputRef.current?.focus();
+                      setTimeout(() => {
+                        inputRef.current?.focus();
+                      }, 0);
                     }}
                     theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
                     width={350}
                     height={400}
                     lazyLoadEmojis={true}
+                    searchPlaceholder="Buscar emoji..."
+                    previewConfig={{ showPreview: false }}
                   />
                 </motion.div>
               )}
@@ -596,15 +605,27 @@ export function MessageInput({
           <AudioRecorder
             isDarkMode={isDarkMode}
             onSend={(audioBlob, duration) => {
+              // Prevent double sending
+              if (isSendingAudio) return;
+              setIsSendingAudio(true);
+              
               // Create a message with audio
-              onSendMessage?.('[Áudio]', 'audio', { 
+              onSendMessage?.('🎤 Áudio', 'audio', { 
                 audioBlob, 
                 duration,
-                mimeType: 'audio/webm'
+                mimeType: audioBlob.type || 'audio/webm'
               });
+              
+              // Close recorder after a small delay to ensure state is updated
+              setTimeout(() => {
+                setShowAudioRecorder(false);
+                setIsSendingAudio(false);
+              }, 100);
+            }}
+            onCancel={() => {
+              setIsSendingAudio(false);
               setShowAudioRecorder(false);
             }}
-            onCancel={() => setShowAudioRecorder(false)}
           />
         )}
       </AnimatePresence>

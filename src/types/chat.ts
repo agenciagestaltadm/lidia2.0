@@ -42,6 +42,7 @@ export interface Message {
     height?: number;
     url?: string;
     thumbnail?: string;
+    audioBlob?: Blob; // For audio messages
   };
   reactions?: {
     emoji: string;

@@ -4,7 +4,149 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Message } from "@/types/chat";
 import { Check, CheckCheck, Clock, AlertCircle, File, Play, Pause } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+
+// Audio Player Component
+function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: boolean }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+  // Create audio URL from blob
+  useEffect(() => {
+    if (message.metadata?.audioBlob) {
+      const url = URL.createObjectURL(message.metadata.audioBlob);
+      setAudioUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+  }, [message.metadata?.audioBlob]);
+
+  // Update current time
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const handleEnded = () => setIsPlaying(false);
+
+    audio.addEventListener("timeupdate", updateTime);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("timeupdate", updateTime);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, [audioUrl]);
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      audio.play().catch(() => {
+        // Auto-play blocked or error
+        setIsPlaying(false);
+      });
+      setIsPlaying(true);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const duration = message.metadata?.duration || 0;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <div className="flex items-center gap-3 min-w-[220px] max-w-[300px]">
+      {audioUrl && (
+        <audio ref={audioRef} src={audioUrl} preload="metadata" />
+      )}
+      
+      {/* Play/Pause Button */}
+      <button
+        onClick={togglePlay}
+        className={cn(
+          "w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors shrink-0",
+          isDarkMode
+            ? "bg-[#00a884] hover:bg-[#00a884]/90"
+            : "bg-[#00a884] hover:bg-[#00a884]/90"
+        )}
+      >
+        {isPlaying ? (
+          <Pause className="w-5 h-5" />
+        ) : (
+          <Play className="w-5 h-5 ml-0.5" />
+        )}
+      </button>
+
+      {/* Progress Bar */}
+      <div className="flex-1 flex flex-col gap-1">
+        {/* Waveform visualization */}
+        <div className="h-6 flex items-center gap-[2px] overflow-hidden">
+          {Array.from({ length: 30 }).map((_, i) => {
+            const isActive = (i / 30) * 100 <= progress;
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "w-[3px] rounded-full transition-colors duration-200",
+                  isActive
+                    ? "bg-[#00a884]"
+                    : isDarkMode
+                      ? "bg-[#374045]"
+                      : "bg-gray-300"
+                )}
+                style={{
+                  height: `${Math.max(20, Math.random() * 100)}%`,
+                }}
+              />
+            );
+          })}
+        </div>
+        
+        {/* Progress slider */}
+        <input
+          type="range"
+          min={0}
+          max={duration || 1}
+          value={currentTime}
+          onChange={(e) => {
+            const newTime = parseFloat(e.target.value);
+            setCurrentTime(newTime);
+            if (audioRef.current) {
+              audioRef.current.currentTime = newTime;
+            }
+          }}
+          className={cn(
+            "w-full h-1 rounded-lg appearance-none cursor-pointer",
+            isDarkMode ? "bg-[#374045]" : "bg-gray-200"
+          )}
+          style={{
+            background: `linear-gradient(to right, #00a884 ${progress}%, ${isDarkMode ? '#374045' : '#e5e7eb'} ${progress}%)`
+          }}
+        />
+      </div>
+
+      {/* Duration */}
+      <span className={cn(
+        "text-xs tabular-nums shrink-0",
+        isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+      )}>
+        {isPlaying ? formatTime(currentTime) : formatTime(duration)}
+      </span>
+    </div>
+  );
+}
 
 interface MessageBubbleProps {
   message: Message;
@@ -80,41 +222,7 @@ export function MessageBubble({
         );
 
       case "audio":
-        return (
-          <div className="flex items-center gap-3 min-w-[200px]">
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-10 h-10 rounded-full bg-[#00a884] flex items-center justify-center text-white hover:bg-[#00a884]/90 transition-colors"
-            >
-              {isPlaying ? (
-                <Pause className="w-5 h-5" />
-              ) : (
-                <Play className="w-5 h-5 ml-0.5" />
-              )}
-            </button>
-            <div className="flex-1">
-              {/* Audio waveform placeholder */}
-              <div className="h-8 flex items-center gap-0.5">
-                {Array.from({ length: 20 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-1 bg-[#00a884]/50 rounded-full"
-                    style={{
-                      height: `${Math.random() * 100}%`,
-                      minHeight: "20%",
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-            {message.metadata?.duration && (
-              <span className="text-xs text-[#8696a0]">
-                {Math.floor(message.metadata.duration / 60)}:
-                {String(message.metadata.duration % 60).padStart(2, "0")}
-              </span>
-            )}
-          </div>
-        );
+        return <AudioPlayer message={message} isDarkMode={isDarkMode} />;
 
       case "document":
         return (
