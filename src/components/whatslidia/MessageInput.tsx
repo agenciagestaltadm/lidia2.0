@@ -1,33 +1,42 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   Plus,
   Smile,
   Mic,
   Send,
-  Paperclip,
-  Image,
-  FileText,
-  Video,
   X,
   Clock,
 } from "lucide-react";
+import { AttachmentMenu, AttachmentFile } from "./AttachmentMenu";
 
 interface MessageInputProps {
   onSend: (message: string) => void;
+  onSendAttachments?: (files: AttachmentFile[], caption?: string) => void;
+  onSendLocation?: (type: "location" | "address" | "request") => void;
+  onSendContact?: () => void;
+  onSendTemplate?: (type: string) => void;
+  onSendFlow?: () => void;
   disabled?: boolean;
   isWithin24Hours?: boolean;
   isDarkMode?: boolean;
+  conversationStatus?: 'open' | 'pending' | 'resolved';
 }
 
 export function MessageInput({
   onSend,
+  onSendAttachments,
+  onSendLocation,
+  onSendContact,
+  onSendTemplate,
+  onSendFlow,
   disabled = false,
   isWithin24Hours = true,
   isDarkMode = true,
+  conversationStatus = 'open',
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [showAttachments, setShowAttachments] = useState(false);
@@ -92,12 +101,14 @@ export function MessageInput({
       .padStart(2, "0")}`;
   };
 
-  const attachmentOptions = [
-    { icon: Image, label: "Foto/Vídeo", color: "bg-[#0073e6]" },
-    { icon: FileText, label: "Documento", color: "bg-[#7f66ff]" },
-    { icon: Video, label: "Câmera", color: "bg-[#ff2e74]" },
-    { icon: Clock, label: "Template", color: "bg-[#009de2]" },
-  ];
+  // Handle attachment send
+  const handleSendAttachments = (files: AttachmentFile[], caption?: string) => {
+    onSendAttachments?.(files, caption);
+    setShowAttachments(false);
+  };
+
+  // Check if attachments are allowed
+  const canSendAttachments = conversationStatus === 'open' && !disabled && isWithin24Hours;
 
   if (!isWithin24Hours) {
     return (
@@ -123,6 +134,30 @@ export function MessageInput({
     );
   }
 
+  // Show blocked message for non-open conversations
+  if (conversationStatus !== 'open') {
+    return (
+      <div className={cn(
+        "h-16 px-4 flex items-center justify-center border-t transition-colors duration-300",
+        isDarkMode 
+          ? "bg-[#1f2c33] border-[#2a2a2a]" 
+          : "bg-white border-gray-200"
+      )}>
+        <div className={cn(
+          "flex items-center gap-3",
+          isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+        )}>
+          <Clock className="w-5 h-5" />
+          <span className="text-sm">
+            {conversationStatus === 'pending' 
+              ? 'Conversa pendente. Abra a conversa para enviar mensagens.' 
+              : 'Conversa resolvida. Reabra para enviar mensagens.'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       "border-t transition-colors duration-300",
@@ -131,44 +166,18 @@ export function MessageInput({
         : "bg-white border-gray-200"
     )}>
       {/* Attachment Menu */}
-      <AnimatePresence>
-        {showAttachments && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className={cn(
-              "px-4 py-3 border-b",
-              isDarkMode ? "border-[#2a2a2a]" : "border-gray-200"
-            )}
-          >
-            <div className="flex items-center gap-4">
-              {attachmentOptions.map((option, index) => (
-                <motion.button
-                  key={option.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="flex flex-col items-center gap-2 group"
-                >
-                  <div
-                    className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center transition-transform group-hover:scale-110",
-                      option.color
-                    )}
-                  >
-                    <option.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <span className={cn(
-                    "text-xs",
-                    isDarkMode ? "text-[#8696a0]" : "text-gray-500"
-                  )}>{option.label}</span>
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AttachmentMenu
+        isOpen={showAttachments}
+        onClose={() => setShowAttachments(false)}
+        isDarkMode={isDarkMode}
+        onSendAttachments={handleSendAttachments}
+        onSendLocation={onSendLocation || (() => {})}
+        onSendContact={onSendContact || (() => {})}
+        onSendTemplate={onSendTemplate || (() => {})}
+        onSendFlow={onSendFlow || (() => {})}
+        disabled={!canSendAttachments}
+        maxFileSize={100}
+      />
 
       {/* Input Area */}
       <div className="h-16 px-4 flex items-center gap-3">
@@ -176,13 +185,15 @@ export function MessageInput({
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowAttachments(!showAttachments)}
+          disabled={!canSendAttachments}
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
             showAttachments
               ? "bg-[#00a884] text-white"
               : isDarkMode 
                 ? "text-[#aebac1] hover:bg-[#2a3942]"
-                : "text-gray-600 hover:bg-gray-100"
+                : "text-gray-600 hover:bg-gray-100",
+            !canSendAttachments && "opacity-50 cursor-not-allowed"
           )}
         >
           {showAttachments ? (
@@ -195,11 +206,13 @@ export function MessageInput({
         {/* Emoji Button */}
         <motion.button
           whileTap={{ scale: 0.9 }}
+          disabled={disabled}
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
             isDarkMode 
               ? "text-[#aebac1] hover:bg-[#2a3942]" 
-              : "text-gray-600 hover:bg-gray-100"
+              : "text-gray-600 hover:bg-gray-100",
+            disabled && "opacity-50 cursor-not-allowed"
           )}
         >
           <Smile className="w-5 h-5" />
@@ -247,21 +260,19 @@ export function MessageInput({
               setIsRecording(!isRecording);
             }
           }}
+          disabled={disabled}
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
             message.trim()
-              ? "bg-[#00a884] text-white hover:bg-[#00a884]/90"
-              : isRecording
-              ? "bg-red-500 text-white"
+              ? "bg-[#00a884] text-white"
               : isDarkMode 
                 ? "text-[#aebac1] hover:bg-[#2a3942]"
-                : "text-gray-600 hover:bg-gray-100"
+                : "text-gray-600 hover:bg-gray-100",
+            disabled && "opacity-50 cursor-not-allowed"
           )}
         >
           {message.trim() ? (
-            <Send className="w-5 h-5 ml-0.5" />
-          ) : isRecording ? (
-            <Send className="w-5 h-5 ml-0.5" />
+            <Send className="w-5 h-5" />
           ) : (
             <Mic className="w-5 h-5" />
           )}

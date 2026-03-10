@@ -4,12 +4,13 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ChatView, Conversation, Contact } from "@/types/chat";
+import { ChatView, Conversation, Contact, Message } from "@/types/chat";
 import { Sidebar } from "./Sidebar";
 import { ConversationList } from "./ConversationList";
 import { ChatWindow } from "./ChatWindow";
 import { NewConversationModal } from "./NewConversationModal";
 import { PreviewConversationModal } from "./PreviewConversationModal";
+import { AttachmentFile } from "./AttachmentMenu";
 import { mockConversations, mockContacts } from "@/lib/mock/chat-data";
 
 export function WhatsLidiaLayout() {
@@ -199,6 +200,162 @@ export function WhatsLidiaLayout() {
     }
   };
 
+  // Handle sending message - ensures conversation stays in 'open' status
+  const handleSendMessage = (content: string) => {
+    if (!selectedConversationId) return;
+    
+    // Update conversation timestamp and ensure it's 'open'
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selectedConversationId
+          ? { ...c, status: 'open' as const, updatedAt: new Date() }
+          : c
+      )
+    );
+  };
+
+  // Handle sending attachments - ensures conversation stays in 'open' status
+  const handleSendAttachments = (files: AttachmentFile[], caption?: string) => {
+    if (!selectedConversationId) return;
+    
+    // Update conversation timestamp, status to 'open', and update last message
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selectedConversationId
+          ? {
+              ...c,
+              status: 'open' as const,
+              updatedAt: new Date(),
+              lastMessage: {
+                content: caption || `${files.length} arquivo(s) enviado(s)`,
+                timestamp: new Date(),
+                type: files[0]?.type || 'document',
+                isFromMe: true,
+                status: 'sent',
+              }
+            }
+          : c
+      )
+    );
+    
+    // Navigate to Open tab if not already there
+    if (activeTab !== 'open') {
+      setActiveTab('open');
+    }
+  };
+
+  // Handle sending location
+  const handleSendLocation = (type: "location" | "address" | "request") => {
+    if (!selectedConversationId) return;
+    
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selectedConversationId
+          ? {
+              ...c,
+              status: 'open' as const,
+              updatedAt: new Date(),
+              lastMessage: {
+                content: type === 'request' ? '📍 Solicitação de localização' : '📍 Localização',
+                timestamp: new Date(),
+                type: 'text',
+                isFromMe: true,
+                status: 'sent',
+              }
+            }
+          : c
+      )
+    );
+    
+    if (activeTab !== 'open') {
+      setActiveTab('open');
+    }
+  };
+
+  // Handle sending contact
+  const handleSendContact = () => {
+    if (!selectedConversationId) return;
+    
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selectedConversationId
+          ? {
+              ...c,
+              status: 'open' as const,
+              updatedAt: new Date(),
+              lastMessage: {
+                content: '👤 Contato',
+                timestamp: new Date(),
+                type: 'text',
+                isFromMe: true,
+                status: 'sent',
+              }
+            }
+          : c
+      )
+    );
+    
+    if (activeTab !== 'open') {
+      setActiveTab('open');
+    }
+  };
+
+  // Handle sending template
+  const handleSendTemplate = (type: string) => {
+    if (!selectedConversationId) return;
+    
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selectedConversationId
+          ? {
+              ...c,
+              status: 'open' as const,
+              updatedAt: new Date(),
+              lastMessage: {
+                content: '📋 Template',
+                timestamp: new Date(),
+                type: 'template',
+                isFromMe: true,
+                status: 'sent',
+              }
+            }
+          : c
+      )
+    );
+    
+    if (activeTab !== 'open') {
+      setActiveTab('open');
+    }
+  };
+
+  // Handle sending flow
+  const handleSendFlow = () => {
+    if (!selectedConversationId) return;
+    
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selectedConversationId
+          ? {
+              ...c,
+              status: 'open' as const,
+              updatedAt: new Date(),
+              lastMessage: {
+                content: '🔀 Flow',
+                timestamp: new Date(),
+                type: 'text',
+                isFromMe: true,
+                status: 'sent',
+              }
+            }
+          : c
+      )
+    );
+    
+    if (activeTab !== 'open') {
+      setActiveTab('open');
+    }
+  };
+
   // Determine if the current conversation is read-only
   const isChatReadOnly = useMemo(() => {
     if (!selectedConversation) return true;
@@ -258,6 +415,12 @@ export function WhatsLidiaLayout() {
                   isDarkMode={isDarkMode}
                   isReadOnly={isChatReadOnly}
                   onReopen={() => selectedConversationId && handleReopenConversation(selectedConversationId)}
+                  onSendMessage={handleSendMessage}
+                  onSendAttachments={handleSendAttachments}
+                  onSendLocation={handleSendLocation}
+                  onSendContact={handleSendContact}
+                  onSendTemplate={handleSendTemplate}
+                  onSendFlow={handleSendFlow}
                 />
               </motion.div>
             )}
@@ -286,6 +449,12 @@ export function WhatsLidiaLayout() {
             isDarkMode={isDarkMode}
             isReadOnly={isChatReadOnly}
             onReopen={() => selectedConversationId && handleReopenConversation(selectedConversationId)}
+            onSendMessage={handleSendMessage}
+            onSendAttachments={handleSendAttachments}
+            onSendLocation={handleSendLocation}
+            onSendContact={handleSendContact}
+            onSendTemplate={handleSendTemplate}
+            onSendFlow={handleSendFlow}
           />
         </>
       );

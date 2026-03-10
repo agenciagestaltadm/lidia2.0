@@ -7,6 +7,7 @@ import { Conversation, Message } from "@/types/chat";
 import { ChatHeader } from "./ChatHeader";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
+import { AttachmentFile } from "./AttachmentMenu";
 import { getConversationMessages } from "@/lib/mock/chat-data";
 import { Lock, Shield, Eye, RotateCcw, AlertCircle } from "lucide-react";
 
@@ -17,6 +18,12 @@ interface ChatWindowProps {
   isDarkMode?: boolean;
   isReadOnly?: boolean;
   onReopen?: () => void;
+  onSendMessage?: (content: string) => void;
+  onSendAttachments?: (files: AttachmentFile[], caption?: string) => void;
+  onSendLocation?: (type: "location" | "address" | "request") => void;
+  onSendContact?: () => void;
+  onSendTemplate?: (type: string) => void;
+  onSendFlow?: () => void;
 }
 
 export function ChatWindow({
@@ -26,6 +33,12 @@ export function ChatWindow({
   isDarkMode = true,
   isReadOnly = false,
   onReopen,
+  onSendMessage,
+  onSendAttachments,
+  onSendLocation,
+  onSendContact,
+  onSendTemplate,
+  onSendFlow,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,6 +60,9 @@ export function ChatWindow({
 
   const handleSendMessage = (content: string) => {
     if (!conversation) return;
+
+    // Call external handler if provided
+    onSendMessage?.(content);
 
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
@@ -72,6 +88,52 @@ export function ChatWindow({
     setTimeout(() => {
       setMessages((prev) =>
         prev.map((m) => (m.id === newMessage.id ? { ...m, status: "read" } : m))
+      );
+    }, 2500);
+  };
+
+  // Handle sending attachments with caption
+  const handleSendAttachments = (files: AttachmentFile[], caption?: string) => {
+    if (!conversation) return;
+
+    // Call external handler if provided
+    onSendAttachments?.(files, caption);
+
+    // Create message for each file
+    files.forEach((file, index) => {
+      const newMessage: Message = {
+        id: `msg-${Date.now()}-${index}`,
+        conversationId: conversation.id,
+        content: index === 0 && caption ? caption : file.file.name,
+        type: file.type,
+        status: "sent",
+        isFromMe: true,
+        timestamp: new Date(Date.now() + index * 100),
+        metadata: {
+          fileName: file.file.name,
+          fileSize: file.size,
+          mimeType: file.file.type,
+          caption: index === 0 ? caption : undefined,
+        },
+      };
+
+      setMessages((prev) => [...prev, newMessage]);
+    });
+
+    // Simulate status updates
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.timestamp > new Date(Date.now() - 5000) ? { ...m, status: "delivered" } : m
+        )
+      );
+    }, 1000);
+
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.timestamp > new Date(Date.now() - 5000) ? { ...m, status: "read" } : m
+        )
       );
     }, 2500);
   };
@@ -324,7 +386,16 @@ export function ChatWindow({
 
       {/* Input Area - Only show when not read-only */}
       {!isReadOnly && (
-        <MessageInput onSend={handleSendMessage} isDarkMode={isDarkMode} />
+        <MessageInput
+          onSend={handleSendMessage}
+          onSendAttachments={handleSendAttachments}
+          onSendLocation={onSendLocation}
+          onSendContact={onSendContact}
+          onSendTemplate={onSendTemplate}
+          onSendFlow={onSendFlow}
+          isDarkMode={isDarkMode}
+          conversationStatus={conversation?.status || 'open'}
+        />
       )}
     </div>
   );

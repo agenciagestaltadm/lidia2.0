@@ -8,3 +8,4 @@ export { MessageInput } from "./MessageInput";
 export { WhatsLidiaLayout } from "./WhatsLidiaLayout";
 export { NewConversationModal } from "./NewConversationModal";
 export { PreviewConversationModal } from "./PreviewConversationModal";
+export { AttachmentMenu, type AttachmentFile } from "./AttachmentMenu";
