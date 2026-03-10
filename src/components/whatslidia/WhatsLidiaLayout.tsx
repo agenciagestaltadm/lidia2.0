@@ -164,6 +164,8 @@ export function WhatsLidiaLayout() {
           : c
       )
     );
+    // Navigate to Open tab automatically
+    setActiveTab('open');
     setSelectedConversationId(id);
     if (isMobile) {
       setShowChat(true);
@@ -179,7 +181,8 @@ export function WhatsLidiaLayout() {
           : c
       )
     );
-    // Optionally select the reopened conversation
+    // Navigate to Open tab automatically
+    setActiveTab('open');
     setSelectedConversationId(id);
     if (isMobile) {
       setShowChat(true);
