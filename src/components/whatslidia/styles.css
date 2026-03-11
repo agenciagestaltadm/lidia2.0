@@ -169,3 +169,90 @@
 .priority-low {
   background-color: #6b7280;
 }
+
+/* Contact Info Modal Specific Styles */
+.contact-info-modal {
+  --modal-width-desktop: min(max(380px, 30vw), 480px);
+  --modal-width-tablet: 50vw;
+}
+
+/* Profile photo zoom animation */
+.profile-photo-zoom {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-photo-zoom:hover {
+  transform: scale(1.05);
+}
+
+.profile-photo-zoom.active {
+  transform: scale(3);
+  z-index: 100;
+}
+
+/* Media grid hover effect */
+.media-grid-item {
+  transition: all 0.2s ease;
+}
+
+.media-grid-item:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Action button hover */
+.action-button {
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  background-color: rgba(0, 168, 132, 0.1);
+}
+
+/* Slide from right animation for modal */
+@keyframes slideFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slide-from-right {
+  animation: slideFromRight 0.3s ease-out forwards;
+}
+
+/* Custom scrollbar for contact info modal */
+.contact-info-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.contact-info-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contact-info-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #374045;
+  border-radius: 20px;
+}
+
+.contact-info-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #4a545a;
+}
+
+/* Fade in animation for backdrop */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
