@@ -1,14 +1,14 @@
 "use client";
 
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useState, useEffect, useMemo } from "react";
 
 export interface AudioAnalyzerConfig {
   fftSize?: number;
   smoothingTimeConstant?: number;
   minDecibels?: number;
   maxDecibels?: number;
-  calibrationDuration?: number; // ms for noise floor calibration
-  emaAlpha?: number; // Exponential Moving Average factor (0-1)
+  calibrationDuration?: number;
+  emaAlpha?: number;
 }
 
 interface AudioAnalyzerState {
@@ -38,13 +38,24 @@ const DEFAULT_CONFIG: Required<AudioAnalyzerConfig> = {
 
 /**
  * Hook for real-time audio analysis using Web Audio API
- * Provides amplitude detection, waveform visualization data,
- * automatic calibration, and exponential smoothing.
+ * Fixed version with proper memoization and stable references
  */
 export function useAudioAnalyzer(
   userConfig: AudioAnalyzerConfig = {}
 ): AudioAnalyzerReturn {
-  const config = { ...DEFAULT_CONFIG, ...userConfig };
+  // Memoize config to prevent recreation
+  const config = useMemo(
+    () => ({ ...DEFAULT_CONFIG, ...userConfig }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      userConfig.fftSize,
+      userConfig.smoothingTimeConstant,
+      userConfig.minDecibels,
+      userConfig.maxDecibels,
+      userConfig.calibrationDuration,
+      userConfig.emaAlpha,
+    ]
+  );
 
   // Audio context refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -52,12 +63,10 @@ export function useAudioAnalyzer(
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  // Data refs for performance
+  // Data refs
   const frequencyDataRef = useRef<Uint8Array>(new Uint8Array(0));
-  const timeDataRef = useRef<Uint8Array>(new Uint8Array(0));
-  const amplitudeHistoryRef = useRef<number[]>([]);
   const smoothedAmplitudeRef = useRef<number>(0);
-  const calibrationDataRef = useRef<number[]>([]);
+  const isRunningRef = useRef<boolean>(false);
 
   // State
   const [state, setState] = useState<AudioAnalyzerState>({
@@ -69,39 +78,12 @@ export function useAudioAnalyzer(
     waveformData: new Array(40).fill(0.1),
   });
 
-  /**
-   * Convert frequency data to amplitude (RMS-like calculation)
-   */
-  const calculateAmplitude = useCallback((frequencyData: Uint8Array): number => {
-    // Use a subset of frequencies that correspond to voice (85Hz - 255Hz roughly)
-    // For fftSize=256 at 48kHz, each bin is ~188Hz, so bins 0-1 cover voice fundamentals
-    const voiceBins = frequencyData.slice(0, Math.floor(frequencyData.length * 0.3));
-
-    let sum = 0;
-    for (let i = 0; i < voiceBins.length; i++) {
-      sum += voiceBins[i] * voiceBins[i];
-    }
-
-    const rms = Math.sqrt(sum / voiceBins.length);
-    // Normalize to 0-1 range
-    return rms / 255;
-  }, []);
+  // Use ref for state access in callbacks
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   /**
-   * Apply exponential moving average smoothing
-   */
-  const smoothAmplitude = useCallback(
-    (newValue: number): number => {
-      const { emaAlpha } = config;
-      smoothedAmplitudeRef.current =
-        emaAlpha * newValue + (1 - emaAlpha) * smoothedAmplitudeRef.current;
-      return smoothedAmplitudeRef.current;
-    },
-    [config]
-  );
-
-  /**
-   * Generate waveform data for visualization
+   * Generate waveform data from frequency data
    */
   const generateWaveformData = useCallback(
     (frequencyData: Uint8Array, barCount: number = 40): number[] => {
@@ -118,9 +100,8 @@ export function useAudioAnalyzer(
         }
 
         const average = sum / (endBin - startBin);
-        // Normalize and apply non-linear scaling for better visual dynamics
         const normalized = average / 255;
-        const enhanced = Math.pow(normalized, 0.7); // Slight boost to lower values
+        const enhanced = Math.pow(normalized, 0.7);
         bars.push(Math.max(0.05, Math.min(1, enhanced)));
       }
 
@@ -129,115 +110,80 @@ export function useAudioAnalyzer(
     []
   );
 
-  // Use ref to store analyze function to avoid circular dependency
-  const analyzeRef = useRef<(() => void) | null>(null);
-
   /**
-   * Main analysis loop
+   * Main analysis loop - defined as a stable function
    */
-  const analyze = useCallback(() => {
+  const runAnalysisLoop = useCallback(() => {
+    if (!isRunningRef.current) {
+      console.log("[AudioAnalyzer] Loop stopped");
+      return;
+    }
+
     const analyser = analyserRef.current;
-    if (!analyser) return;
+    if (!analyser) {
+      console.log("[AudioAnalyzer] No analyser, stopping loop");
+      return;
+    }
 
     const frequencyData = frequencyDataRef.current;
-    const timeData = timeDataRef.current;
-    if (frequencyData.length === 0 || timeData.length === 0) return;
+    if (frequencyData.length === 0) {
+      console.log("[AudioAnalyzer] No frequency data, skipping frame");
+      animationFrameRef.current = requestAnimationFrame(runAnalysisLoop);
+      return;
+    }
 
     // Get frequency data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     analyser.getByteFrequencyData(frequencyData as any);
 
-    // Calculate raw amplitude
-    const rawAmplitude = calculateAmplitude(frequencyData);
-
-    // Apply smoothing
-    const smoothedAmplitude = smoothAmplitude(rawAmplitude);
-
-    // Generate waveform visualization data
-    const newWaveformData = generateWaveformData(frequencyData, 40);
-
-    // Store in history
-    amplitudeHistoryRef.current.push(smoothedAmplitude);
-    if (amplitudeHistoryRef.current.length > 600) {
-      // Keep last 30 seconds at 20fps
-      amplitudeHistoryRef.current.shift();
+    // Calculate amplitude (RMS of first 30% of frequency bins - voice range)
+    const voiceBins = frequencyData.slice(0, Math.floor(frequencyData.length * 0.3));
+    let sum = 0;
+    for (let i = 0; i < voiceBins.length; i++) {
+      sum += voiceBins[i] * voiceBins[i];
     }
+    const rms = Math.sqrt(sum / voiceBins.length);
+    const rawAmplitude = rms / 255;
 
-    // Update state (throttled to every 2 frames for performance)
+    // Apply EMA smoothing
+    const smoothedAmplitude =
+      config.emaAlpha * rawAmplitude +
+      (1 - config.emaAlpha) * smoothedAmplitudeRef.current;
+    smoothedAmplitudeRef.current = smoothedAmplitude;
+
+    // Generate waveform
+    const waveformData = generateWaveformData(frequencyData, 40);
+
+    // Update state
     setState((prev) => ({
       ...prev,
       currentAmplitude: smoothedAmplitude,
-      waveformData: newWaveformData,
+      waveformData,
     }));
 
-    // Continue loop using ref to avoid circular dependency
-    animationFrameRef.current = requestAnimationFrame(() => {
-      analyzeRef.current?.();
-    });
-  }, [calculateAmplitude, smoothAmplitude, generateWaveformData]);
-
-  // Update ref when analyze changes
-  useEffect(() => {
-    analyzeRef.current = analyze;
-  }, [analyze]);
-
-  /**
-   * Calibrate noise floor by measuring ambient sound
-   */
-  const calibrate = useCallback(async (): Promise<void> => {
-    const { calibrationDuration } = config;
-    const startTime = Date.now();
-    calibrationDataRef.current = [];
-
-    setState((prev) => ({ ...prev, isCalibrating: true }));
-
-    // Collect samples during calibration period
-    const collectSamples = () => {
-      const analyser = analyserRef.current;
-      const frequencyData = frequencyDataRef.current;
-      if (!analyser || frequencyData.length === 0) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      analyser.getByteFrequencyData(frequencyData as any);
-      const amplitude = calculateAmplitude(frequencyData);
-      calibrationDataRef.current.push(amplitude);
-
-      if (Date.now() - startTime < calibrationDuration) {
-        requestAnimationFrame(collectSamples);
-      } else {
-        // Calculate noise floor (95th percentile of lowest samples)
-        const sorted = [...calibrationDataRef.current].sort((a, b) => a - b);
-        const noiseFloor = sorted[Math.floor(sorted.length * 0.95)] || 0.01;
-
-        // Calculate peak level (95th percentile of highest samples)
-        const peakLevel = sorted[Math.floor(sorted.length * 0.95)] || 1;
-
-        setState((prev) => ({
-          ...prev,
-          isCalibrating: false,
-          noiseFloor,
-          peakLevel: Math.max(peakLevel, noiseFloor + 0.1),
-        }));
-      }
-    };
-
-    collectSamples();
-  }, [config, calculateAmplitude]);
+    // Continue loop
+    animationFrameRef.current = requestAnimationFrame(runAnalysisLoop);
+  }, [config.emaAlpha, generateWaveformData]);
 
   /**
    * Initialize analyzer with a media stream
    */
   const init = useCallback(
     async (stream: MediaStream): Promise<void> => {
+      console.log("[AudioAnalyzer] Initializing...");
+
       try {
         // Create audio context
         const audioContext = new (window.AudioContext ||
           (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         audioContextRef.current = audioContext;
+        console.log("[AudioAnalyzer] AudioContext created, state:", audioContext.state);
 
-        // Resume audio context (required by browsers' autoplay policy)
+        // Resume if suspended (autoplay policy)
         if (audioContext.state === "suspended") {
+          console.log("[AudioAnalyzer] Resuming suspended AudioContext...");
           await audioContext.resume();
+          console.log("[AudioAnalyzer] AudioContext resumed, state:", audioContext.state);
         }
 
         // Create analyser
@@ -247,70 +193,125 @@ export function useAudioAnalyzer(
         analyser.minDecibels = config.minDecibels;
         analyser.maxDecibels = config.maxDecibels;
         analyserRef.current = analyser;
+        console.log("[AudioAnalyzer] Analyser created, fftSize:", config.fftSize);
 
         // Create source from stream
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
         sourceRef.current = source;
+        console.log("[AudioAnalyzer] Source connected to analyser");
 
         // Initialize data arrays
         const bufferLength = analyser.frequencyBinCount;
         frequencyDataRef.current = new Uint8Array(bufferLength);
-        timeDataRef.current = new Uint8Array(bufferLength);
+        console.log("[AudioAnalyzer] Frequency data buffer size:", bufferLength);
 
         // Reset state
-        amplitudeHistoryRef.current = [];
         smoothedAmplitudeRef.current = 0;
 
+        // Mark as initialized
         setState((prev) => ({
           ...prev,
           isInitialized: true,
+          isCalibrating: true,
         }));
 
-        // Start calibration
-        await calibrate();
+        console.log("[AudioAnalyzer] Starting calibration...");
 
-        // Start analysis loop
-        analyze();
+        // Run calibration
+        const calibrationSamples: number[] = [];
+        const startTime = Date.now();
+
+        const collectCalibrationSamples = () => {
+          if (Date.now() - startTime < config.calibrationDuration) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            analyser.getByteFrequencyData(frequencyDataRef.current as any);
+            const voiceBins = frequencyDataRef.current.slice(
+              0,
+              Math.floor(frequencyDataRef.current.length * 0.3)
+            );
+            let sum = 0;
+            for (let i = 0; i < voiceBins.length; i++) {
+              sum += voiceBins[i] * voiceBins[i];
+            }
+            const rms = Math.sqrt(sum / voiceBins.length);
+            calibrationSamples.push(rms / 255);
+            requestAnimationFrame(collectCalibrationSamples);
+          } else {
+            // Calculate noise floor and peak
+            const sorted = [...calibrationSamples].sort((a, b) => a - b);
+            const noiseFloor = sorted[Math.floor(sorted.length * 0.95)] || 0.01;
+            const peakLevel = Math.max(sorted[Math.floor(sorted.length * 0.95)] || 0.5, noiseFloor + 0.1);
+
+            console.log("[AudioAnalyzer] Calibration complete:", {
+              samples: calibrationSamples.length,
+              noiseFloor,
+              peakLevel,
+            });
+
+            setState((prev) => ({
+              ...prev,
+              isCalibrating: false,
+              noiseFloor,
+              peakLevel,
+            }));
+
+            // Start analysis loop
+            console.log("[AudioAnalyzer] Starting analysis loop...");
+            isRunningRef.current = true;
+            runAnalysisLoop();
+          }
+        };
+
+        collectCalibrationSamples();
+
+        console.log("[AudioAnalyzer] Initialization complete");
       } catch (error) {
-        console.error("Failed to initialize audio analyzer:", error);
+        console.error("[AudioAnalyzer] Initialization failed:", error);
         throw error;
       }
     },
-    [config, calibrate, analyze]
+    [config, runAnalysisLoop]
   );
 
   /**
    * Stop analysis and cleanup
    */
   const stop = useCallback(() => {
-    // Stop animation frame
+    console.log("[AudioAnalyzer] Stopping...");
+
+    // Stop loop
+    isRunningRef.current = false;
+
+    // Cancel animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
 
-    // Disconnect and cleanup
+    // Disconnect source
     if (sourceRef.current) {
       try {
         sourceRef.current.disconnect();
       } catch {
-        // Ignore disconnection errors
+        // Ignore
       }
       sourceRef.current = null;
     }
 
+    // Close audio context
     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
       try {
         audioContextRef.current.close();
       } catch {
-        // Ignore close errors
+        // Ignore
       }
       audioContextRef.current = null;
     }
 
     analyserRef.current = null;
 
+    // Reset state
     setState({
       isInitialized: false,
       isCalibrating: false,
@@ -319,41 +320,33 @@ export function useAudioAnalyzer(
       currentAmplitude: 0,
       waveformData: new Array(40).fill(0.1),
     });
+
+    console.log("[AudioAnalyzer] Stopped");
   }, []);
 
   /**
-   * Get normalized current amplitude (0-1, calibrated)
+   * Get normalized current amplitude
    */
   const getCurrentAmplitude = useCallback((): number => {
-    const { currentAmplitude, noiseFloor, peakLevel } = state;
-
+    const { currentAmplitude, noiseFloor, peakLevel } = stateRef.current;
     if (peakLevel <= noiseFloor) return 0;
-
-    // Normalize against calibrated range
-    const normalized =
-      (currentAmplitude - noiseFloor) / (peakLevel - noiseFloor);
+    const normalized = (currentAmplitude - noiseFloor) / (peakLevel - noiseFloor);
     return Math.max(0, Math.min(1, normalized));
-  }, [state]);
+  }, []);
 
   /**
-   * Get a snapshot of waveform data for storage
+   * Get a snapshot of waveform data
    */
-  const getWaveformSnapshot = useCallback(
-    (barCount: number = 40): number[] => {
-      const { waveformData, noiseFloor, peakLevel } = state;
-
-      // Normalize against calibrated range
-      if (peakLevel <= noiseFloor) {
-        return new Array(barCount).fill(0.1);
-      }
-
-      return waveformData.map((value) => {
-        const normalized = (value - noiseFloor) / (peakLevel - noiseFloor);
-        return Math.max(0.05, Math.min(1, normalized));
-      });
-    },
-    [state]
-  );
+  const getWaveformSnapshot = useCallback((barCount: number = 40): number[] => {
+    const { waveformData, noiseFloor, peakLevel } = stateRef.current;
+    if (peakLevel <= noiseFloor) {
+      return new Array(barCount).fill(0.1);
+    }
+    return waveformData.map((value) => {
+      const normalized = (value - noiseFloor) / (peakLevel - noiseFloor);
+      return Math.max(0.05, Math.min(1, normalized));
+    });
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
