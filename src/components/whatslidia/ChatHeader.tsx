@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Conversation } from "@/types/chat";
 import {
@@ -11,15 +11,36 @@ import {
   Info,
   ArrowLeft,
   Circle,
+  CalendarClock,
+  RotateCcw,
+  CheckCircle,
+  UserPlus,
+  Trash2,
+  Ban,
+  X,
 } from "lucide-react";
 import { useState } from "react";
-import { ContactInfoModal } from "./modals";
+import {
+  ContactInfoModal,
+  ScheduleMessageModal,
+  ReturnToPendingModal,
+  ResolveTicketModal,
+  TransferTicketModal,
+} from "./modals";
 
 interface ChatHeaderProps {
   conversation: Conversation | null;
   onBack?: () => void;
   showBackButton?: boolean;
   isDarkMode?: boolean;
+}
+
+interface MenuOption {
+  label: string;
+  icon: React.ElementType;
+  onClick?: () => void;
+  separator?: boolean;
+  variant?: "default" | "success" | "warning" | "danger" | "info";
 }
 
 export function ChatHeader({
@@ -29,7 +50,13 @@ export function ChatHeader({
   isDarkMode = true,
 }: ChatHeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
+  
+  // Modal states
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isReturnPendingOpen, setIsReturnPendingOpen] = useState(false);
+  const [isResolveOpen, setIsResolveOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
 
   if (!conversation) {
     return (
@@ -52,7 +79,6 @@ export function ChatHeader({
   const { contact, isTyping, assignedTo } = conversation;
 
   const formatPhone = (phone: string) => {
-    // Format: +55 XX XXXXX-XXXX
     const cleaned = phone.replace(/\D/g, "");
     if (cleaned.length === 13) {
       return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(
@@ -63,12 +89,173 @@ export function ChatHeader({
     return phone;
   };
 
-  const menuOptions = [
-    { label: "Informações do contato", icon: Info, onClick: () => { setIsContactInfoOpen(true); setShowMenu(false); } },
-    { label: "Marcar como não lido", icon: Circle },
-    { label: "Limpar conversa", icon: Circle },
-    { label: "Bloquear contato", icon: Circle },
+  // Handlers for menu actions
+  const handleScheduleMessage = async (data: { date: Date; message: string }) => {
+    console.log("Scheduling message:", data);
+    // TODO: Implement API call
+    // await fetch(`/api/conversations/${conversation.id}/schedule`, {
+    //   method: 'POST',
+    //   body: JSON.stringify(data)
+    // });
+  };
+
+  const handleReturnToPending = async () => {
+    console.log("Returning to pending:", conversation.id);
+    // TODO: Implement API call
+    // await fetch(`/api/tickets/${conversation.id}/return-to-pending`, {
+    //   method: 'POST'
+    // });
+  };
+
+  const handleResolveTicket = async (notes?: string) => {
+    console.log("Resolving ticket:", conversation.id, notes);
+    // TODO: Implement API call
+    // await fetch(`/api/tickets/${conversation.id}/resolve`, {
+    //   method: 'POST',
+    //   body: JSON.stringify({ notes })
+    // });
+  };
+
+  const handleTransferTicket = async (userId: string, userName: string) => {
+    console.log("Transferring ticket:", conversation.id, "to", userId, userName);
+    // TODO: Implement API call
+    // await fetch(`/api/tickets/${conversation.id}/transfer`, {
+    //   method: 'POST',
+    //   body: JSON.stringify({ userId })
+    // });
+  };
+
+  // Menu options with new actions
+  const menuOptions: MenuOption[] = [
+    // Info section
+    { 
+      label: "Informações do contato", 
+      icon: Info, 
+      onClick: () => { 
+        setIsContactInfoOpen(true); 
+        setShowMenu(false); 
+      },
+      variant: "default"
+    },
+    { 
+      label: "Marcar como não lido", 
+      icon: Circle,
+      onClick: () => {
+        console.log("Mark as unread");
+        setShowMenu(false);
+      },
+      variant: "default"
+    },
+    { 
+      label: "Limpar conversa", 
+      icon: Trash2,
+      onClick: () => {
+        console.log("Clear conversation");
+        setShowMenu(false);
+      },
+      variant: "default",
+      separator: true 
+    },
+    
+    // New Actions Section
+    { 
+      label: "Agendar mensagem", 
+      icon: CalendarClock, 
+      onClick: () => { 
+        setIsScheduleOpen(true); 
+        setShowMenu(false); 
+      },
+      variant: "info"
+    },
+    { 
+      label: "Retornar para pendentes", 
+      icon: RotateCcw, 
+      onClick: () => { 
+        setIsReturnPendingOpen(true); 
+        setShowMenu(false); 
+      },
+      variant: "warning"
+    },
+    { 
+      label: "Resolver ticket", 
+      icon: CheckCircle, 
+      onClick: () => { 
+        setIsResolveOpen(true); 
+        setShowMenu(false); 
+      },
+      variant: "success"
+    },
+    { 
+      label: "Transferir atendimento", 
+      icon: UserPlus, 
+      onClick: () => { 
+        setIsTransferOpen(true); 
+        setShowMenu(false); 
+      },
+      variant: "default",
+      separator: true
+    },
+    
+    // Danger zone
+    { 
+      label: "Bloquear contato", 
+      icon: Ban,
+      onClick: () => {
+        console.log("Block contact");
+        setShowMenu(false);
+      },
+      variant: "danger"
+    },
+    { 
+      label: "Fechar conversa", 
+      icon: X,
+      onClick: () => {
+        console.log("Close conversation");
+        setShowMenu(false);
+      },
+      variant: "danger"
+    },
   ];
+
+  const getVariantStyles = (variant: MenuOption["variant"]) => {
+    switch (variant) {
+      case "success":
+        return isDarkMode 
+          ? "text-[#00a884] hover:bg-[#00a884]/10" 
+          : "text-green-600 hover:bg-green-50";
+      case "warning":
+        return isDarkMode 
+          ? "text-amber-400 hover:bg-amber-500/10" 
+          : "text-amber-600 hover:bg-amber-50";
+      case "danger":
+        return isDarkMode 
+          ? "text-red-400 hover:bg-red-500/10" 
+          : "text-red-600 hover:bg-red-50";
+      case "info":
+        return isDarkMode 
+          ? "text-blue-400 hover:bg-blue-500/10" 
+          : "text-blue-600 hover:bg-blue-50";
+      default:
+        return isDarkMode 
+          ? "text-[#e9edef] hover:bg-[#374045]" 
+          : "text-gray-900 hover:bg-gray-100";
+    }
+  };
+
+  const getIconColor = (variant: MenuOption["variant"]) => {
+    switch (variant) {
+      case "success":
+        return isDarkMode ? "text-[#00a884]" : "text-green-600";
+      case "warning":
+        return isDarkMode ? "text-amber-400" : "text-amber-600";
+      case "danger":
+        return isDarkMode ? "text-red-400" : "text-red-600";
+      case "info":
+        return isDarkMode ? "text-blue-400" : "text-blue-600";
+      default:
+        return isDarkMode ? "text-[#8696a0]" : "text-gray-500";
+    }
+  };
 
   return (
     <>
@@ -215,67 +402,104 @@ export function ChatHeader({
               <MoreVertical className="w-5 h-5" />
             </motion.button>
 
-            {/* Dropdown Menu */}
-            {showMenu && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className={cn(
-                  "absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl border py-2 z-50",
-                  isDarkMode 
-                    ? "bg-[#2a3942] border-[#374045]" 
-                    : "bg-white border-gray-200"
-                )}
-              >
-                {menuOptions.map((option) => (
-                  <button
-                    key={option.label}
-                    onClick={option.onClick}
-                    className={cn(
-                      "w-full px-4 py-2.5 text-left transition-colors text-sm flex items-center gap-3",
-                      isDarkMode 
-                        ? "text-[#e9edef] hover:bg-[#374045]" 
-                        : "text-gray-900 hover:bg-gray-100"
-                    )}
-                  >
-                    <option.icon className={cn(
-                      "w-4 h-4",
-                      isDarkMode ? "text-[#8696a0]" : "text-gray-500"
-                    )} />
-                    {option.label}
-                  </button>
-                ))}
-                <div className={cn(
-                  "border-t my-1",
-                  isDarkMode ? "border-[#374045]" : "border-gray-200"
-                )} />
-                <button className={cn(
-                  "w-full px-4 py-2.5 text-left text-red-400 transition-colors text-sm",
-                  isDarkMode ? "hover:bg-[#374045]" : "hover:bg-gray-100"
-                )}>
-                  Fechar conversa
-                </button>
-              </motion.div>
-            )}
+            {/* Dropdown Menu with Animation */}
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className={cn(
+                    "absolute right-0 top-full mt-2 w-64 rounded-xl shadow-2xl border py-2 z-50 overflow-hidden",
+                    isDarkMode 
+                      ? "bg-[#2a3942] border-[#374045]" 
+                      : "bg-white border-gray-200"
+                  )}
+                >
+                  {menuOptions.map((option, index) => (
+                    <div key={option.label}>
+                      {option.separator && index > 0 && (
+                        <div className={cn(
+                          "border-t my-1",
+                          isDarkMode ? "border-[#374045]" : "border-gray-200"
+                        )} />
+                      )}
+                      <motion.button
+                        whileHover={{ x: 2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={option.onClick}
+                        className={cn(
+                          "w-full px-4 py-2.5 text-left transition-colors text-sm flex items-center gap-3",
+                          getVariantStyles(option.variant)
+                        )}
+                      >
+                        <option.icon className={cn(
+                          "w-4 h-4",
+                          getIconColor(option.variant)
+                        )} />
+                        <span className="font-medium">{option.label}</span>
+                      </motion.button>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
         {/* Click outside to close menu */}
-        {showMenu && (
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setShowMenu(false)}
-          />
-        )}
+        <AnimatePresence>
+          {showMenu && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
+              onClick={() => setShowMenu(false)}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Contact Info Modal */}
+      {/* Modals */}
       <ContactInfoModal
         isOpen={isContactInfoOpen}
         onClose={() => setIsContactInfoOpen(false)}
         conversation={conversation}
         isDarkMode={isDarkMode}
+      />
+
+      <ScheduleMessageModal
+        isOpen={isScheduleOpen}
+        onClose={() => setIsScheduleOpen(false)}
+        conversationId={conversation.id}
+        isDarkMode={isDarkMode}
+        onSchedule={handleScheduleMessage}
+      />
+
+      <ReturnToPendingModal
+        isOpen={isReturnPendingOpen}
+        onClose={() => setIsReturnPendingOpen(false)}
+        conversationId={conversation.id}
+        isDarkMode={isDarkMode}
+        onReturn={handleReturnToPending}
+      />
+
+      <ResolveTicketModal
+        isOpen={isResolveOpen}
+        onClose={() => setIsResolveOpen(false)}
+        conversationId={conversation.id}
+        isDarkMode={isDarkMode}
+        onResolve={handleResolveTicket}
+      />
+
+      <TransferTicketModal
+        isOpen={isTransferOpen}
+        onClose={() => setIsTransferOpen(false)}
+        conversationId={conversation.id}
+        isDarkMode={isDarkMode}
+        onTransfer={handleTransferTicket}
       />
     </>
   );

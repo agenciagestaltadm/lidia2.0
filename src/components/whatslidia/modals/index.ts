@@ -7,3 +7,7 @@ export { ReplyButtonsModal } from "./ReplyButtonsModal";
 export { LocationModal } from "./LocationModal";
 export { QuickRepliesManagerModal } from "./QuickRepliesManagerModal";
 export { ContactInfoModal } from "./ContactInfoModal";
+export { ScheduleMessageModal } from "./ScheduleMessageModal";
+export { ReturnToPendingModal } from "./ReturnToPendingModal";
+export { ResolveTicketModal } from "./ResolveTicketModal";
+export { TransferTicketModal } from "./TransferTicketModal";
