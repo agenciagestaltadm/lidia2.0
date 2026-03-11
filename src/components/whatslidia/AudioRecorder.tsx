@@ -124,6 +124,7 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
     
     const startRecording = async () => {
       try {
+        console.log("[AudioRecorder] Requesting microphone access...");
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
             echoCancellation: true,
@@ -133,6 +134,8 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
           }
         });
         
+        console.log("[AudioRecorder] Microphone access granted");
+        
         if (!isMounted) {
           stream.getTracks().forEach(track => track.stop());
           return;
@@ -141,11 +144,21 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         streamRef.current = stream;
         
         // Initialize audio analyzer for real-time visualization
-        await initAnalyzer(stream);
+        try {
+          console.log("[AudioRecorder] Initializing audio analyzer...");
+          await initAnalyzer(stream);
+          console.log("[AudioRecorder] Audio analyzer initialized successfully");
+        } catch (analyzerError) {
+          console.error("[AudioRecorder] Failed to initialize analyzer:", analyzerError);
+          // Continue without analyzer - recording should still work
+        }
         
         // Set up media recorder
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+        console.log("[AudioRecorder] Using MIME type:", mimeType);
+        
         const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4',
+          mimeType,
           audioBitsPerSecond: 128000,
         });
         mediaRecorderRef.current = mediaRecorder;
@@ -153,14 +166,17 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         waveformHistoryRef.current = [];
         
         mediaRecorder.ondataavailable = (event) => {
+          console.log("[AudioRecorder] Data available:", event.data.size, "bytes");
           if (event.data.size > 0) {
             audioChunksRef.current.push(event.data);
           }
         };
         
         mediaRecorder.onstop = () => {
+          console.log("[AudioRecorder] Recording stopped, chunks:", audioChunksRef.current.length);
           if (!isMounted) return;
           const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+          console.log("[AudioRecorder] Blob created:", blob.size, "bytes");
           setAudioBlob(blob);
           
           // Compile waveform history into final waveform
@@ -171,11 +187,12 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         };
         
         mediaRecorder.onerror = (_error) => {
-          console.error("MediaRecorder error:", _error);
+          console.error("[AudioRecorder] MediaRecorder error:", _error);
           onCancel();
         };
         
         // Start recording
+        console.log("[AudioRecorder] Starting recording...");
         mediaRecorder.start(100);
         setState("recording");
         setDuration(0);
@@ -255,22 +272,41 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
   }, [state, getWaveformSnapshot]);
 
   const stopRecording = useCallback(() => {
+    console.log("[AudioRecorder] Stop recording requested, state:", state);
+    
     if (mediaRecorderRef.current && (state === "recording" || state === "paused")) {
       try {
+        console.log("[AudioRecorder] Stopping media recorder...");
         mediaRecorderRef.current.stop();
       } catch (e) {
-        console.error("Error stopping:", e);
+        console.error("[AudioRecorder] Error stopping recorder:", e);
       }
     }
     
+    // Clear timer
     if (timerRef.current) {
+      console.log("[AudioRecorder] Clearing timer");
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-  }, [state]);
+    
+    // Stop all tracks to release microphone
+    if (streamRef.current) {
+      console.log("[AudioRecorder] Stopping all tracks");
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    
+    // Stop analyzer
+    stopAnalyzer();
+  }, [state, stopAnalyzer]);
 
   const handleSend = useCallback(() => {
-    if (isSending || !audioBlob || duration < 1) return;
+    console.log("[AudioRecorder] Handle send called, state:", state, "audioBlob:", !!audioBlob, "duration:", duration);
+    
+    if (isSending || !audioBlob || state !== "recorded") {
+      console.log("[AudioRecorder] Cannot send - invalid state");
+      return;
+    }
     
     setIsSending(true);
     
@@ -279,8 +315,9 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
       ? recordedWaveform 
       : getWaveformSnapshot(40);
     
+    console.log("[AudioRecorder] Sending audio with waveform length:", finalWaveform.length);
     onSend(audioBlob, duration, finalWaveform);
-  }, [audioBlob, duration, isSending, onSend, recordedWaveform, getWaveformSnapshot]);
+  }, [audioBlob, duration, isSending, onSend, recordedWaveform, getWaveformSnapshot, state]);
 
   const handleCancel = useCallback(() => {
     cleanup();
@@ -437,14 +474,10 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={stopRecording}
-          disabled={isSending || duration < 1}
+          disabled={isSending}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-            duration < 1
-              ? isDarkMode
-                ? "text-[#8696a0] cursor-not-allowed"
-                : "text-gray-400 cursor-not-allowed"
-              : "bg-[#00a884] text-white hover:bg-[#00a884]/90"
+            "w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-[#00a884] text-white hover:bg-[#00a884]/90",
+            isSending && "opacity-50 cursor-not-allowed"
           )}
         >
           <div className="w-3 h-3 bg-white rounded-sm" />

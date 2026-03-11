@@ -235,6 +235,11 @@ export function useAudioAnalyzer(
           (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         audioContextRef.current = audioContext;
 
+        // Resume audio context (required by browsers' autoplay policy)
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
         // Create analyser
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = config.fftSize;
