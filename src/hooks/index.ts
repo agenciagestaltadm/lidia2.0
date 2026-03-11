@@ -48,3 +48,44 @@ export { useDateRangePicker } from "@/components/analytics/DateRangePicker";
 
 // Export audio analyzer hook
 export { useAudioAnalyzer, type AudioAnalyzerConfig } from "./useAudioAnalyzer";
+
+// Export atendimento hooks
+export {
+  useSalesFunnel,
+  useFunnelStats,
+  useCreateDeal,
+  useUpdateDeal,
+  useDeleteDeal,
+  useMoveDeal,
+  useFunnelRealtime,
+  funnelKeys,
+} from "./use-sales-funnel";
+
+export {
+  useProtocols,
+  useProtocolStats,
+  useCreateProtocol,
+  useResolveProtocol,
+  useProtocolsRealtime,
+  protocolKeys,
+} from "./use-protocols";
+
+export {
+  useRatings,
+  useRatingStats,
+  useRequestRating,
+  useRatingsRealtime,
+  ratingKeys,
+} from "./use-ratings";
+
+export {
+  useNotes,
+  useNotesByContact,
+  useNoteStats,
+  useCreateNote,
+  useUpdateNote,
+  useDeleteNote,
+  useTogglePinNote,
+  useNotesRealtime,
+  noteKeys,
+} from "./use-notes";

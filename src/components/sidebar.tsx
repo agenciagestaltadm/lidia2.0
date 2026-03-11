@@ -89,10 +89,16 @@ export function Sidebar({
 
     if (canAccessRoute("canViewAttendances")) {
       items.push({ 
-        href: "/app/attendances", 
-        label: "Atendimentos", 
+        label: "Atendimento", 
         icon: MessageSquare, 
-        permission: "canViewAttendances" 
+        permission: "canViewAttendances",
+        children: [
+          { href: "/app/attendances", label: "Conversas" },
+          { href: "/app/atendimento/funil", label: "Funil de Vendas" },
+          { href: "/app/atendimento/protocolos", label: "Protocolos" },
+          { href: "/app/atendimento/avaliacoes", label: "Avaliações" },
+          { href: "/app/atendimento/notas", label: "Notas" },
+        ]
       });
     }
 
