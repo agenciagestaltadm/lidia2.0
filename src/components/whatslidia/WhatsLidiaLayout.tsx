@@ -12,6 +12,10 @@ import { NewConversationModal } from "./NewConversationModal";
 import { PreviewConversationModal } from "./PreviewConversationModal";
 import { AttachmentFile } from "./AttachmentMenu";
 import { mockConversations, mockContacts } from "@/lib/mock/chat-data";
+import { ContactsView } from "./views/ContactsView";
+import { NotesView } from "./views/NotesView";
+import { TasksView } from "./views/TasksView";
+import { SettingsView } from "./views/SettingsView";
 
 export function WhatsLidiaLayout() {
   const router = useRouter();
@@ -460,34 +464,69 @@ export function WhatsLidiaLayout() {
       );
     }
 
-    // Placeholder for other views
-    return (
-      <div className={cn(
-        "flex-1 flex items-center justify-center",
-        isDarkMode ? "bg-[#0b141a]" : "bg-gray-50"
-      )}>
-        <div className="text-center">
-          <h2 className={cn(
-            "text-2xl font-medium mb-2",
-            isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+    // Render actual views instead of placeholders
+    switch (currentView) {
+      case "contacts":
+        return (
+          <ContactsView
+            isDarkMode={isDarkMode}
+            onBack={() => setCurrentView("conversations")}
+            onStartConversation={(contactId) => {
+              // Find or create conversation with this contact
+              const existingConv = conversations.find(
+                (c) => c.contact.id === contactId
+              );
+              if (existingConv) {
+                handleSelectConversation(existingConv.id);
+                setCurrentView("conversations");
+              }
+            }}
+          />
+        );
+      case "notes":
+        return (
+          <NotesView
+            isDarkMode={isDarkMode}
+            onBack={() => setCurrentView("conversations")}
+          />
+        );
+      case "tasks":
+        return (
+          <TasksView
+            isDarkMode={isDarkMode}
+            onBack={() => setCurrentView("conversations")}
+          />
+        );
+      case "settings":
+        return (
+          <SettingsView
+            isDarkMode={isDarkMode}
+            onBack={() => setCurrentView("conversations")}
+          />
+        );
+      default:
+        return (
+          <div className={cn(
+            "flex-1 flex items-center justify-center",
+            isDarkMode ? "bg-[#0b141a]" : "bg-gray-50"
           )}>
-            {currentView === "contacts" && "Contatos Cadastrados"}
-            {currentView === "notes" && "Comentários Internos"}
-            {currentView === "tasks" && "Criar Tarefas"}
-            {currentView === "settings" && "Configurações"}
-          </h2>
-          <p className={isDarkMode ? "text-[#8696a0]" : "text-gray-500"}>
-            Funcionalidade em desenvolvimento
-          </p>
-          <button
-            onClick={() => setCurrentView("conversations")}
-            className="mt-4 px-4 py-2 bg-[#00a884] text-white rounded-lg hover:bg-[#00a884]/90 transition-colors"
-          >
-            Voltar às Conversas
-          </button>
-        </div>
-      </div>
-    );
+            <div className="text-center">
+              <h2 className={cn(
+                "text-2xl font-medium mb-2",
+                isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+              )}>
+                Página não encontrada
+              </h2>
+              <button
+                onClick={() => setCurrentView("conversations")}
+                className="mt-4 px-4 py-2 bg-[#00a884] text-white rounded-lg hover:bg-[#00a884]/90 transition-colors"
+              >
+                Voltar às Conversas
+              </button>
+            </div>
+          </div>
+        );
+    }
   };
 
   return (
