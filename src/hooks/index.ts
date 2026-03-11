@@ -45,3 +45,6 @@ export {
 
 // Export useDateRangePicker from analytics components
 export { useDateRangePicker } from "@/components/analytics/DateRangePicker";
+
+// Export audio analyzer hook
+export { useAudioAnalyzer, type AudioAnalyzerConfig } from "./useAudioAnalyzer";

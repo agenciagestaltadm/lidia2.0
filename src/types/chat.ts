@@ -43,6 +43,7 @@ export interface Message {
     url?: string;
     thumbnail?: string;
     audioBlob?: Blob; // For audio messages
+    waveformData?: number[]; // Amplitude data for waveform visualization (0-1 normalized)
   };
   reactions?: {
     emoji: string;

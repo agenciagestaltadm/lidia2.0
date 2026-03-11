@@ -4,14 +4,18 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Message } from "@/types/chat";
 import { Check, CheckCheck, Clock, AlertCircle, File, Play, Pause } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { WaveformVisualizer } from "@/components/ui/WaveformVisualizer";
+import { extractWaveformFromBlob, generateDefaultWaveform } from "@/lib/audio-analysis";
 
-// Audio Player Component
+// Audio Player Component with real waveform visualization
 function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: boolean }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [waveformData, setWaveformData] = useState<number[]>([]);
+  const [isLoadingWaveform, setIsLoadingWaveform] = useState(false);
 
   // Create audio URL from blob
   useEffect(() => {
@@ -23,6 +27,39 @@ function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: bo
       };
     }
   }, [message.metadata?.audioBlob]);
+
+  // Load waveform data - use stored data or extract from blob
+  useEffect(() => {
+    const loadWaveform = async () => {
+      // First priority: use stored waveform data from recording
+      if (message.metadata?.waveformData && message.metadata.waveformData.length > 0) {
+        setWaveformData(message.metadata.waveformData);
+        return;
+      }
+
+      // Second priority: extract from blob if available
+      if (message.metadata?.audioBlob) {
+        setIsLoadingWaveform(true);
+        try {
+          const extractedWaveform = await extractWaveformFromBlob(
+            message.metadata.audioBlob,
+            { barCount: 30, samplesPerSecond: 20 }
+          );
+          setWaveformData(extractedWaveform);
+        } catch (error) {
+          console.error("Failed to extract waveform:", error);
+          setWaveformData(generateDefaultWaveform(30));
+        } finally {
+          setIsLoadingWaveform(false);
+        }
+      } else {
+        // Fallback: default waveform
+        setWaveformData(generateDefaultWaveform(30));
+      }
+    };
+
+    loadWaveform();
+  }, [message.metadata?.waveformData, message.metadata?.audioBlob]);
 
   // Update current time
   useEffect(() => {
@@ -41,7 +78,7 @@ function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: bo
     };
   }, [audioUrl]);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -55,7 +92,14 @@ function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: bo
       });
       setIsPlaying(true);
     }
-  };
+  }, [isPlaying]);
+
+  const handleSeek = useCallback((newTime: number) => {
+    setCurrentTime(newTime);
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -91,27 +135,33 @@ function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: bo
 
       {/* Progress Bar */}
       <div className="flex-1 flex flex-col gap-1">
-        {/* Waveform visualization */}
-        <div className="h-6 flex items-center gap-[2px] overflow-hidden">
-          {Array.from({ length: 30 }).map((_, i) => {
-            const isActive = (i / 30) * 100 <= progress;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "w-[3px] rounded-full transition-colors duration-200",
-                  isActive
-                    ? "bg-[#00a884]"
-                    : isDarkMode
-                      ? "bg-[#374045]"
-                      : "bg-gray-300"
-                )}
-                style={{
-                  height: `${Math.max(20, Math.random() * 100)}%`,
-                }}
-              />
-            );
-          })}
+        {/* Waveform visualization with real data */}
+        <div className="h-6 flex items-center overflow-hidden">
+          {isLoadingWaveform ? (
+            <div className="flex items-center gap-[2px] h-full">
+              {Array.from({ length: 30 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-[3px] rounded-full animate-pulse",
+                    isDarkMode ? "bg-[#374045]" : "bg-gray-300"
+                  )}
+                  style={{ height: "30%", animationDelay: `${i * 0.05}s` }}
+                />
+              ))}
+            </div>
+          ) : (
+            <WaveformVisualizer
+              data={waveformData}
+              progress={progress}
+              isPlaying={isPlaying}
+              variant={isPlaying ? "playback" : "inactive"}
+              height={24}
+              barWidth={3}
+              barGap={2}
+              isDarkMode={isDarkMode}
+            />
+          )}
         </div>
         
         {/* Progress slider */}
@@ -120,13 +170,7 @@ function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: bo
           min={0}
           max={duration || 1}
           value={currentTime}
-          onChange={(e) => {
-            const newTime = parseFloat(e.target.value);
-            setCurrentTime(newTime);
-            if (audioRef.current) {
-              audioRef.current.currentTime = newTime;
-            }
-          }}
+          onChange={(e) => handleSeek(parseFloat(e.target.value))}
           className={cn(
             "w-full h-1 rounded-lg appearance-none cursor-pointer",
             isDarkMode ? "bg-[#374045]" : "bg-gray-200"

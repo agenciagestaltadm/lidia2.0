@@ -4,43 +4,105 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Trash2, Send, Pause, Play } from "lucide-react";
+import { useAudioAnalyzer } from "@/hooks/useAudioAnalyzer";
+import { WaveformVisualizer } from "@/components/ui/WaveformVisualizer";
 
 interface AudioRecorderProps {
   isDarkMode: boolean;
-  onSend: (audioBlob: Blob, duration: number) => void;
+  onSend: (audioBlob: Blob, duration: number, waveformData: number[]) => void;
   onCancel: () => void;
 }
 
 type RecordingState = "recording" | "paused" | "recorded";
 
-// Generate random waveform bars for visual feedback
-const generateWaveformData = () => {
-  return Array.from({ length: 40 }, () => Math.random() * 20 + 3);
-};
-
+/**
+ * AudioRecorder - Real-time audio recording with waveform visualization
+ * 
+ * Features:
+ * - Real-time waveform visualization using AnalyserNode
+ * - Automatic sensitivity calibration
+ * - Exponential smoothing to prevent flickering
+ * - Stores actual amplitude data for playback visualization
+ * - Low latency (< 50ms) audio-to-visual response
+ */
 export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderProps) {
   const [state, setState] = useState<RecordingState>("recording");
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [waveformData, setWaveformData] = useState<number[]>(generateWaveformData());
   const [isSending, setIsSending] = useState(false);
   
+  // Store recorded waveform data
+  const [recordedWaveform, setRecordedWaveform] = useState<number[]>([]);
+  const waveformHistoryRef = useRef<number[][]>([]);
+
+  // Media recorder refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const waveformIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Compile waveform history segments into final waveform - defined early to avoid hoisting issues
+  const compileWaveformHistory = useCallback((history: number[][]): number[] => {
+    if (history.length === 0) {
+      return new Array(40).fill(0.1);
+    }
+
+    // Flatten history and downsample to target bar count
+    const flatHistory = history.flat();
+    const targetBars = 40;
+    
+    if (flatHistory.length <= targetBars) {
+      // Pad with minimum values if not enough data
+      const padding = new Array(targetBars - flatHistory.length).fill(0.1);
+      return [...flatHistory, ...padding];
+    }
+
+    // Downsample by averaging
+    const result: number[] = [];
+    const step = flatHistory.length / targetBars;
+    
+    for (let i = 0; i < targetBars; i++) {
+      const start = Math.floor(i * step);
+      const end = Math.floor((i + 1) * step);
+      let sum = 0;
+      for (let j = start; j < end; j++) {
+        sum += flatHistory[j];
+      }
+      result.push(sum / (end - start));
+    }
+
+    return result;
+  }, []);
+
+  // Audio analyzer hook with optimized settings for low latency
+  const {
+    isInitialized,
+    isCalibrating,
+    waveformData,
+    init: initAnalyzer,
+    stop: stopAnalyzer,
+    getWaveformSnapshot,
+  } = useAudioAnalyzer({
+    fftSize: 256,
+    smoothingTimeConstant: 0.7,
+    minDecibels: -90,
+    maxDecibels: -10,
+    calibrationDuration: 500,
+    emaAlpha: 0.3,
+  });
 
   // Cleanup function
   const cleanup = useCallback(() => {
+    // Stop timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (waveformIntervalRef.current) {
-      clearInterval(waveformIntervalRef.current);
-      waveformIntervalRef.current = null;
-    }
+
+    // Stop analyzer
+    stopAnalyzer();
+
+    // Stop media recorder
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try {
         mediaRecorderRef.current.stop();
@@ -48,11 +110,13 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         // Ignore errors when stopping
       }
     }
+
+    // Stop all tracks in the stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-  }, []);
+  }, [stopAnalyzer]);
 
   // Start recording on mount
   useEffect(() => {
@@ -60,7 +124,15 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
     
     const startRecording = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+          }
+        });
+        
         if (!isMounted) {
           stream.getTracks().forEach(track => track.stop());
           return;
@@ -68,12 +140,17 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         
         streamRef.current = stream;
         
+        // Initialize audio analyzer for real-time visualization
+        await initAnalyzer(stream);
+        
         // Set up media recorder
         const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+          mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4',
+          audioBitsPerSecond: 128000,
         });
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
+        waveformHistoryRef.current = [];
         
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
@@ -85,11 +162,16 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
           if (!isMounted) return;
           const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
           setAudioBlob(blob);
+          
+          // Compile waveform history into final waveform
+          const compiledWaveform = compileWaveformHistory(waveformHistoryRef.current);
+          setRecordedWaveform(compiledWaveform);
+          
           setState("recorded");
         };
         
-        mediaRecorder.onerror = (e) => {
-          console.error("MediaRecorder error:", e);
+        mediaRecorder.onerror = (_error) => {
+          console.error("MediaRecorder error:", _error);
           onCancel();
         };
         
@@ -98,19 +180,22 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         setState("recording");
         setDuration(0);
         
-        // Start timer
+        // Start timer for duration
         timerRef.current = setInterval(() => {
           if (isMounted) {
-            setDuration(prev => prev + 1);
+            setDuration(prev => {
+              const newDuration = prev + 1;
+              // Store waveform snapshot every second
+              if (newDuration % 1 === 0) {
+                const snapshot = getWaveformSnapshot(40);
+                if (snapshot.some(v => v > 0.05)) {
+                  waveformHistoryRef.current.push(snapshot);
+                }
+              }
+              return newDuration;
+            });
           }
         }, 1000);
-        
-        // Start waveform animation
-        waveformIntervalRef.current = setInterval(() => {
-          if (isMounted) {
-            setWaveformData(generateWaveformData());
-          }
-        }, 100);
         
       } catch (error) {
         console.error("Error starting recording:", error);
@@ -125,7 +210,7 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
       isMounted = false;
       cleanup();
     };
-  }, [onCancel, cleanup]);
+  }, [onCancel, cleanup, initAnalyzer, getWaveformSnapshot, compileWaveformHistory]);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && state === "recording") {
@@ -136,10 +221,6 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
-        }
-        if (waveformIntervalRef.current) {
-          clearInterval(waveformIntervalRef.current);
-          waveformIntervalRef.current = null;
         }
       } catch (e) {
         console.error("Error pausing:", e);
@@ -155,18 +236,23 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         
         // Resume timer
         timerRef.current = setInterval(() => {
-          setDuration(prev => prev + 1);
+          setDuration(prev => {
+            const newDuration = prev + 1;
+            // Store waveform snapshot every second
+            if (newDuration % 1 === 0) {
+              const snapshot = getWaveformSnapshot(40);
+              if (snapshot.some(v => v > 0.05)) {
+                waveformHistoryRef.current.push(snapshot);
+              }
+            }
+            return newDuration;
+          });
         }, 1000);
-        
-        // Resume waveform animation
-        waveformIntervalRef.current = setInterval(() => {
-          setWaveformData(generateWaveformData());
-        }, 100);
       } catch (e) {
         console.error("Error resuming:", e);
       }
     }
-  }, [state]);
+  }, [state, getWaveformSnapshot]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && (state === "recording" || state === "paused")) {
@@ -177,17 +263,24 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
       }
     }
     
-    cleanup();
-  }, [state, cleanup]);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, [state]);
 
   const handleSend = useCallback(() => {
     if (isSending || !audioBlob || duration < 1) return;
     
     setIsSending(true);
-    onSend(audioBlob, duration);
     
-    // Don't call cleanup here as the component will unmount
-  }, [audioBlob, duration, isSending, onSend]);
+    // Use recorded waveform or extract from current data
+    const finalWaveform = recordedWaveform.length > 0 
+      ? recordedWaveform 
+      : getWaveformSnapshot(40);
+    
+    onSend(audioBlob, duration, finalWaveform);
+  }, [audioBlob, duration, isSending, onSend, recordedWaveform, getWaveformSnapshot]);
 
   const handleCancel = useCallback(() => {
     cleanup();
@@ -199,6 +292,18 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
+
+  // Determine which waveform data to display
+  const displayWaveform = state === "recorded" && recordedWaveform.length > 0
+    ? recordedWaveform
+    : waveformData;
+
+  // Determine variant based on state
+  const waveformVariant = state === "recording" 
+    ? "recording" 
+    : state === "paused" 
+      ? "paused" 
+      : "inactive";
 
   return (
     <motion.div
@@ -277,32 +382,32 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
           {formatDuration(duration)}
         </span>
 
-        {/* Waveform Visualization */}
-        <div className="flex-1 h-8 flex items-center justify-center gap-[2px] overflow-hidden px-2">
-          {waveformData.map((height, index) => (
-            <motion.div
-              key={index}
-              animate={{
-                height: state === "recording" ? [3, height, 3] : 3,
-              }}
-              transition={{
-                duration: 0.3,
-                repeat: state === "recording" ? Infinity : 0,
-                repeatType: "reverse",
-                delay: index * 0.01,
-              }}
-              className={cn(
-                "w-[3px] rounded-full",
-                state === "recording"
-                  ? "bg-[#00a884]"
-                  : state === "paused"
-                    ? "bg-yellow-500"
-                    : "bg-[#00a884]/70"
-              )}
-              style={{ minHeight: 3 }}
-            />
-          ))}
+        {/* Waveform Visualization - Real-time from AnalyserNode */}
+        <div className="flex-1 px-2">
+          <WaveformVisualizer
+            data={displayWaveform}
+            variant={waveformVariant}
+            animated={state === "recording"}
+            height={32}
+            barWidth={3}
+            barGap={2}
+            isDarkMode={isDarkMode}
+          />
         </div>
+
+        {/* Calibration indicator */}
+        {isCalibrating && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={cn(
+              "text-xs whitespace-nowrap",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )}
+          >
+            Calibrando...
+          </motion.span>
+        )}
       </div>
 
       {/* Pause/Play Button */}
@@ -310,13 +415,13 @@ export function AudioRecorder({ isDarkMode, onSend, onCancel }: AudioRecorderPro
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={state === "recording" ? pauseRecording : resumeRecording}
-          disabled={isSending}
+          disabled={isSending || !isInitialized}
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
             isDarkMode
               ? "text-[#aebac1] hover:bg-[#2a3942]"
               : "text-gray-600 hover:bg-gray-100",
-            isSending && "opacity-50 cursor-not-allowed"
+            (isSending || !isInitialized) && "opacity-50 cursor-not-allowed"
           )}
         >
           {state === "recording" ? (

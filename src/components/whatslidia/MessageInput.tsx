@@ -604,16 +604,17 @@ export function MessageInput({
         {showAudioRecorder && (
           <AudioRecorder
             isDarkMode={isDarkMode}
-            onSend={(audioBlob, duration) => {
+            onSend={(audioBlob, duration, waveformData) => {
               // Prevent double sending
               if (isSendingAudio) return;
               setIsSendingAudio(true);
               
-              // Create a message with audio
+              // Create a message with audio and real waveform data
               onSendMessage?.('🎤 Áudio', 'audio', { 
                 audioBlob, 
                 duration,
-                mimeType: audioBlob.type || 'audio/webm'
+                mimeType: audioBlob.type || 'audio/webm',
+                waveformData
               });
               
               // Close recorder after a small delay to ensure state is updated
