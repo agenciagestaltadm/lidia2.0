@@ -24,7 +24,23 @@ import {
   ZoomIn,
   ZoomOut,
   MoreHorizontal,
+  TrendingUp,
+  FileCheck,
+  Star,
+  StickyNote,
+  FileDown,
+  FolderKanban,
+  Tag,
 } from "lucide-react";
+import { KanbanIntegration } from "../components/KanbanIntegration";
+import { TagsManager } from "../components/TagsManager";
+import {
+  SalesFunnelModal,
+  ProtocolModal,
+  RatingModal,
+  NotesModal,
+  ExportChatModal,
+} from "./";  // Import from same folder (modals/index.ts)
 
 interface ContactInfoModalProps {
   isOpen: boolean;
@@ -66,6 +82,17 @@ export function ContactInfoModal({
   const [isMuted, setIsMuted] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Modal states for new features
+  const [isSalesFunnelOpen, setIsSalesFunnelOpen] = useState(false);
+  const [isProtocolOpen, setIsProtocolOpen] = useState(false);
+  const [isRatingOpen, setIsRatingOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  
+  // Mock data for features (in production, these would come from API)
+  const [currentKanbanColumn, setCurrentKanbanColumn] = useState<string>("new");
+  const [contactTags, setContactTags] = useState<string[]>(["VIP", "Follow-up"]);
 
   // Check if mobile
   useEffect(() => {
@@ -471,6 +498,228 @@ export function ContactInfoModal({
                     </motion.button>
                   ))}
                 </div>
+              </div>
+
+              {/* Interactive Features Section */}
+              <div
+                className={cn(
+                  "p-4 border-b",
+                  isDarkMode
+                    ? "bg-[#1f2c33] border-[#2a2a2a]"
+                    : "bg-white border-gray-200"
+                )}
+              >
+                <p
+                  className={cn(
+                    "text-xs uppercase tracking-wider mb-3",
+                    isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+                  )}
+                >
+                  Ações Rápidas
+                </p>
+                <div className="grid grid-cols-5 gap-2">
+                  {/* Sales Funnel */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsSalesFunnelOpen(true)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-xl transition-colors",
+                      isDarkMode
+                        ? "hover:bg-[#2a3942]"
+                        : "hover:bg-gray-100"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        isDarkMode
+                          ? "bg-purple-500/20 text-purple-400"
+                          : "bg-purple-100 text-purple-600"
+                      )}
+                    >
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium text-center",
+                        isDarkMode ? "text-[#aebac1]" : "text-gray-600"
+                      )}
+                    >
+                      Funil
+                    </span>
+                  </motion.button>
+
+                  {/* Protocol */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsProtocolOpen(true)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-xl transition-colors",
+                      isDarkMode
+                        ? "hover:bg-[#2a3942]"
+                        : "hover:bg-gray-100"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        isDarkMode
+                          ? "bg-blue-500/20 text-blue-400"
+                          : "bg-blue-100 text-blue-600"
+                      )}
+                    >
+                      <FileCheck className="w-5 h-5" />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium text-center",
+                        isDarkMode ? "text-[#aebac1]" : "text-gray-600"
+                      )}
+                    >
+                      Protocolo
+                    </span>
+                  </motion.button>
+
+                  {/* Rating */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsRatingOpen(true)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-xl transition-colors",
+                      isDarkMode
+                        ? "hover:bg-[#2a3942]"
+                        : "hover:bg-gray-100"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        isDarkMode
+                          ? "bg-amber-500/20 text-amber-400"
+                          : "bg-amber-100 text-amber-600"
+                      )}
+                    >
+                      <Star className="w-5 h-5" />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium text-center",
+                        isDarkMode ? "text-[#aebac1]" : "text-gray-600"
+                      )}
+                    >
+                      Avaliar
+                    </span>
+                  </motion.button>
+
+                  {/* Notes */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsNotesOpen(true)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-xl transition-colors",
+                      isDarkMode
+                        ? "hover:bg-[#2a3942]"
+                        : "hover:bg-gray-100"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        isDarkMode
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-green-100 text-green-600"
+                      )}
+                    >
+                      <StickyNote className="w-5 h-5" />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium text-center",
+                        isDarkMode ? "text-[#aebac1]" : "text-gray-600"
+                      )}
+                    >
+                      Notas
+                    </span>
+                  </motion.button>
+
+                  {/* Export */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsExportOpen(true)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-xl transition-colors",
+                      isDarkMode
+                        ? "hover:bg-[#2a3942]"
+                        : "hover:bg-gray-100"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        isDarkMode
+                          ? "bg-rose-500/20 text-rose-400"
+                          : "bg-rose-100 text-rose-600"
+                      )}
+                    >
+                      <FileDown className="w-5 h-5" />
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium text-center",
+                        isDarkMode ? "text-[#aebac1]" : "text-gray-600"
+                      )}
+                    >
+                      Exportar
+                    </span>
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Kanban Integration */}
+              <div
+                className={cn(
+                  "p-4 border-b",
+                  isDarkMode
+                    ? "bg-[#1f2c33] border-[#2a2a2a]"
+                    : "bg-white border-gray-200"
+                )}
+              >
+                <KanbanIntegration
+                  contactId={conversation.id}
+                  currentColumn={currentKanbanColumn}
+                  isDarkMode={isDarkMode}
+                  onMove={(columnId: string, columnLabel: string) => {
+                    setCurrentKanbanColumn(columnId);
+                    console.log("Moved to column:", columnId, columnLabel);
+                    return Promise.resolve();
+                  }}
+                />
+              </div>
+
+              {/* Tags Manager */}
+              <div
+                className={cn(
+                  "p-4 border-b",
+                  isDarkMode
+                    ? "bg-[#1f2c33] border-[#2a2a2a]"
+                    : "bg-white border-gray-200"
+                )}
+              >
+                <TagsManager
+                  contactId={conversation.id}
+                  existingTags={contactTags}
+                  isDarkMode={isDarkMode}
+                  onUpdateTags={(tags: string[]) => {
+                    setContactTags(tags);
+                    console.log("Tags updated:", tags);
+                    return Promise.resolve();
+                  }}
+                />
               </div>
 
               {/* Contact Details */}
@@ -894,6 +1143,49 @@ export function ContactInfoModal({
           </AnimatePresence>
         </div>
       )}
+
+      {/* Feature Modals */}
+      <SalesFunnelModal
+        isOpen={isSalesFunnelOpen}
+        onClose={() => setIsSalesFunnelOpen(false)}
+        contactId={conversation.id}
+        contactName={contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <ProtocolModal
+        isOpen={isProtocolOpen}
+        onClose={() => setIsProtocolOpen(false)}
+        conversationId={conversation.id}
+        contactName={contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <RatingModal
+        isOpen={isRatingOpen}
+        onClose={() => setIsRatingOpen(false)}
+        conversationId={conversation.id}
+        contactName={contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <NotesModal
+        isOpen={isNotesOpen}
+        onClose={() => setIsNotesOpen(false)}
+        contactId={conversation.id}
+        contactName={contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <ExportChatModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        conversationId={conversation.id}
+        contactName={contact.name}
+        contact={contact}
+        messages={[]}
+        isDarkMode={isDarkMode}
+      />
     </AnimatePresence>
   );
 }

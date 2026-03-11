@@ -11,3 +11,8 @@ export { ScheduleMessageModal } from "./ScheduleMessageModal";
 export { ReturnToPendingModal } from "./ReturnToPendingModal";
 export { ResolveTicketModal } from "./ResolveTicketModal";
 export { TransferTicketModal } from "./TransferTicketModal";
+export { SalesFunnelModal } from "./SalesFunnelModal";
+export { ProtocolModal } from "./ProtocolModal";
+export { RatingModal } from "./RatingModal";
+export { NotesModal } from "./NotesModal";
+export { ExportChatModal } from "./ExportChatModal";

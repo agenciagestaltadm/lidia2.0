@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { Toaster } from "sonner";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { PageTransition } from "@/components/animations/page-transition";
@@ -110,6 +111,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
             }}
           />
         </div>
+
+        {/* Sonner Toaster for notifications */}
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          toastOptions={{
+            style: {
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
+            },
+          }}
+        />
       </div>
     </QueryClientProvider>
   );

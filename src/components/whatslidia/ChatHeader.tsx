@@ -18,6 +18,11 @@ import {
   Trash2,
   Ban,
   X,
+  TrendingUp,
+  FileCheck,
+  Star,
+  StickyNote,
+  FileDown,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -26,6 +31,11 @@ import {
   ReturnToPendingModal,
   ResolveTicketModal,
   TransferTicketModal,
+  SalesFunnelModal,
+  ProtocolModal,
+  RatingModal,
+  NotesModal,
+  ExportChatModal,
 } from "./modals";
 
 interface ChatHeaderProps {
@@ -57,6 +67,13 @@ export function ChatHeader({
   const [isReturnPendingOpen, setIsReturnPendingOpen] = useState(false);
   const [isResolveOpen, setIsResolveOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  
+  // New feature modal states
+  const [isSalesFunnelOpen, setIsSalesFunnelOpen] = useState(false);
+  const [isProtocolOpen, setIsProtocolOpen] = useState(false);
+  const [isRatingOpen, setIsRatingOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   if (!conversation) {
     return (
@@ -193,6 +210,54 @@ export function ChatHeader({
         setShowMenu(false); 
       },
       variant: "default",
+      separator: true
+    },
+    
+    // Contact Info Features
+    { 
+      label: "Funil de vendas", 
+      icon: TrendingUp,
+      onClick: () => {
+        setIsSalesFunnelOpen(true);
+        setShowMenu(false);
+      },
+      variant: "info"
+    },
+    { 
+      label: "Gerar protocolo", 
+      icon: FileCheck,
+      onClick: () => {
+        setIsProtocolOpen(true);
+        setShowMenu(false);
+      },
+      variant: "info"
+    },
+    { 
+      label: "Solicitar avaliação", 
+      icon: Star,
+      onClick: () => {
+        setIsRatingOpen(true);
+        setShowMenu(false);
+      },
+      variant: "info"
+    },
+    { 
+      label: "Notas e anotações", 
+      icon: StickyNote,
+      onClick: () => {
+        setIsNotesOpen(true);
+        setShowMenu(false);
+      },
+      variant: "info"
+    },
+    { 
+      label: "Exportar conversa", 
+      icon: FileDown,
+      onClick: () => {
+        setIsExportOpen(true);
+        setShowMenu(false);
+      },
+      variant: "info",
       separator: true
     },
     
@@ -500,6 +565,49 @@ export function ChatHeader({
         conversationId={conversation.id}
         isDarkMode={isDarkMode}
         onTransfer={handleTransferTicket}
+      />
+
+      {/* New Feature Modals */}
+      <SalesFunnelModal
+        isOpen={isSalesFunnelOpen}
+        onClose={() => setIsSalesFunnelOpen(false)}
+        contactId={conversation.id}
+        contactName={conversation.contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <ProtocolModal
+        isOpen={isProtocolOpen}
+        onClose={() => setIsProtocolOpen(false)}
+        conversationId={conversation.id}
+        contactName={conversation.contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <RatingModal
+        isOpen={isRatingOpen}
+        onClose={() => setIsRatingOpen(false)}
+        conversationId={conversation.id}
+        contactName={conversation.contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <NotesModal
+        isOpen={isNotesOpen}
+        onClose={() => setIsNotesOpen(false)}
+        contactId={conversation.id}
+        contactName={conversation.contact.name}
+        isDarkMode={isDarkMode}
+      />
+
+      <ExportChatModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        conversationId={conversation.id}
+        contactName={conversation.contact.name}
+        contact={conversation.contact}
+        messages={[]}
+        isDarkMode={isDarkMode}
       />
     </>
   );
