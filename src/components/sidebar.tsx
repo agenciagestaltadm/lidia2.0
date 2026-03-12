@@ -19,7 +19,6 @@ import {
   X,
   ChevronDown,
   LogOut,
-  MessagesSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -93,15 +92,6 @@ export function Sidebar({
         href: "/app/attendances",
         label: "Atendimentos",
         icon: MessageSquare,
-        permission: "canViewAttendances"
-      });
-    }
-
-    if (canAccessRoute("canViewAttendances")) {
-      items.push({
-        href: "/app/comunicacao",
-        label: "Comunicação Interna",
-        icon: MessagesSquare,
         permission: "canViewAttendances"
       });
     }
