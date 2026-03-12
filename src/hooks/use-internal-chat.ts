@@ -692,3 +692,405 @@ export function useDirectConversations() {
     },
   });
 }
+
+// ============================================================
+// HOOK: STATUS DE LEITURA DAS MENSAGENS
+// ============================================================
+
+export function useMessageReadStatus(messageId: string | null) {
+  return useQuery({
+    queryKey: [...chatKeys.all, "read-status", messageId],
+    queryFn: async (): Promise<{ userId: string; readAt: string }[]> => {
+      if (!messageId) return [];
+
+      const { data, error } = await supabase
+        .from("chat_message_read_status")
+        .select("user_id, read_at")
+        .eq("message_id", messageId);
+
+      if (error) throw error;
+
+      return data?.map((r) => ({ userId: r.user_id, readAt: r.read_at })) || [];
+    },
+    enabled: !!messageId,
+  });
+}
+
+// ============================================================
+// HOOK: MARCAR MENSAGEM COMO LIDA
+// ============================================================
+
+export function useMarkMessageAsRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("chat_message_read_status")
+        .upsert({
+          message_id: messageId,
+          user_id: user.id,
+          read_at: new Date().toISOString(),
+        }, {
+          onConflict: "message_id,user_id",
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.all });
+    },
+  });
+}
+
+// ============================================================
+// HOOK: INDICADOR DE DIGITAÇÃO
+// ============================================================
+
+export function useTypingIndicator() {
+  const queryClient = useQueryClient();
+
+  const setTyping = useCallback(async (channelId: string, isTyping: boolean) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (isTyping) {
+      await supabase
+        .from("chat_typing_indicators")
+        .upsert({
+          channel_id: channelId,
+          user_id: user.id,
+          started_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 5000).toISOString(), // Expira em 5s
+        }, {
+          onConflict: "channel_id,user_id",
+        });
+    } else {
+      await supabase
+        .from("chat_typing_indicators")
+        .delete()
+        .eq("channel_id", channelId)
+        .eq("user_id", user.id);
+    }
+  }, []);
+
+  return { setTyping };
+}
+
+// ============================================================
+// HOOK: BUSCAR QUEM ESTÁ DIGITANDO
+// ============================================================
+
+export function useTypingUsers(channelId: string | null) {
+  const [typingUsers, setTypingUsers] = useState<{ userId: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (!channelId) {
+      setTypingUsers([]);
+      return;
+    }
+
+    // Buscar inicial
+    const fetchTyping = async () => {
+      const { data } = await supabase
+        .from("chat_typing_indicators")
+        .select("user_id, profiles(full_name)")
+        .eq("channel_id", channelId)
+        .gt("expires_at", new Date().toISOString());
+
+      const users = data?.map((t: any) => ({
+        userId: t.user_id,
+        name: t.profiles?.full_name || "Alguém",
+      })) || [];
+
+      setTypingUsers(users);
+    };
+
+    fetchTyping();
+
+    // Subscrever a mudanças
+    const subscription = supabase
+      .channel(`typing:${channelId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_typing_indicators",
+          filter: `channel_id=eq.${channelId}`,
+        },
+        () => {
+          fetchTyping();
+        }
+      )
+      .subscribe();
+
+    // Atualizar periodicamente para limpar expirados
+    const interval = setInterval(fetchTyping, 2000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
+  }, [channelId]);
+
+  return typingUsers;
+}
+
+// ============================================================
+// HOOK: FIXAR MENSAGEM
+// ============================================================
+
+export function usePinMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ messageId, channelId }: { messageId: string; channelId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("chat_pinned_messages")
+        .insert({
+          message_id: messageId,
+          channel_id: channelId,
+          pinned_by: user.id,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.pinned(variables.channelId) });
+    },
+  });
+}
+
+// ============================================================
+// HOOK: DESFIXAR MENSAGEM
+// ============================================================
+
+export function useUnpinMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ pinnedMessageId, channelId }: { pinnedMessageId: string; channelId: string }) => {
+      const { error } = await supabase
+        .from("chat_pinned_messages")
+        .delete()
+        .eq("id", pinnedMessageId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.pinned(variables.channelId) });
+    },
+  });
+}
+
+// ============================================================
+// HOOK: MENÇÕES @USUARIO
+// ============================================================
+
+export function useMentions() {
+  const extractMentions = useCallback((text: string): string[] => {
+    const mentionRegex = /@(\w+)/g;
+    const matches = text.match(mentionRegex);
+    return matches ? matches.map((m) => m.substring(1)) : [];
+  }, []);
+
+  const formatMentions = useCallback((text: string, users: ChatUser[]): { text: string; mentions: string[] } => {
+    const mentions: string[] = [];
+    let formattedText = text;
+
+    users.forEach((user) => {
+      const mentionPattern = new RegExp(`@${user.name.replace(/\s+/g, "")}`, "gi");
+      if (mentionPattern.test(text)) {
+        mentions.push(user.id);
+        formattedText = formattedText.replace(
+          mentionPattern,
+          `<span class="mention" data-user-id="${user.id}">@${user.name}</span>`
+        );
+      }
+    });
+
+    return { text: formattedText, mentions };
+  }, []);
+
+  return { extractMentions, formatMentions };
+}
+
+// ============================================================
+// HOOK: UPLOAD DE ANEXOS
+// ============================================================
+
+export function useUploadAttachment() {
+  return useMutation({
+    mutationFn: async ({
+      file,
+      messageId
+    }: {
+      file: File;
+      messageId: string
+    }): Promise<{ url: string; type: string }> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      // Upload do arquivo
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `chat-attachments/${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("chat-attachments")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from("chat-attachments")
+        .getPublicUrl(filePath);
+
+      // Registrar no banco
+      const { error: dbError } = await supabase
+        .from("chat_attachments")
+        .insert({
+          message_id: messageId,
+          file_name: file.name,
+          file_url: publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+        });
+
+      if (dbError) throw dbError;
+
+      return { url: publicUrl, type: file.type };
+    },
+  });
+}
+
+// ============================================================
+// HOOK: NOTIFICAÇÕES DE MENSAGENS
+// ============================================================
+
+export function useChatNotifications() {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("chat_channel_members")
+        .select("notification_count")
+        .eq("user_id", user.id);
+
+      if (!error && data) {
+        const total = data.reduce((sum, item) => sum + (item.notification_count || 0), 0);
+        setUnreadCount(total);
+      }
+    };
+
+    fetchUnreadCount();
+
+    // Subscrever a notificações
+    const subscription = supabase
+      .channel("chat-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_channel_members",
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const playNotificationSound = useCallback(() => {
+    // Criar som simples usando Web Audio API
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 800;
+    oscillator.type = "sine";
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  }, []);
+
+  return { unreadCount, playNotificationSound };
+}
+
+// ============================================================
+// HOOK: DELETAR MENSAGEM
+// ============================================================
+
+export function useDeleteMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("chat_messages")
+        .delete()
+        .eq("id", messageId)
+        .eq("sender_id", user.id); // Só pode deletar próprias mensagens
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.all });
+    },
+  });
+}
+
+// ============================================================
+// HOOK: EDITAR MENSAGEM
+// ============================================================
+
+export function useEditMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase
+        .from("chat_messages")
+        .update({
+          content,
+          is_edited: true,
+          edited_at: new Date().toISOString(),
+        })
+        .eq("id", messageId)
+        .eq("sender_id", user.id); // Só pode editar próprias mensagens
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.all });
+    },
+  });
+}
