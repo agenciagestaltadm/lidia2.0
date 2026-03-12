@@ -10,6 +10,7 @@ import {
   Star,
   StickyNote,
   MessageSquare,
+  Users,
 } from "lucide-react";
 
 interface AtendimentoTabsProps {
@@ -28,6 +29,12 @@ const tabs = [
     icon: MessageSquare,
     count: null,
     exact: true,
+  },
+  {
+    href: "/app/atendimento/comunicacao",
+    label: "Comunicação Interna",
+    icon: Users,
+    count: null,
   },
   {
     href: "/app/atendimento/funil",
