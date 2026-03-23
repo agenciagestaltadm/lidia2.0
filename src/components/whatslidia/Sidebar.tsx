@@ -6,7 +6,6 @@ import { ChatView } from "@/types/chat";
 import {
   MessageSquare,
   Users,
-  StickyNote,
   ClipboardCheck,
   Settings,
   LogOut,
@@ -29,9 +28,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: "conversations", icon: MessageSquare, label: "Conversas", number: 1 },
   { id: "contacts", icon: Users, label: "Contatos Cadastrados", number: 2 },
-  { id: "notes", icon: StickyNote, label: "Comentários Internos", number: 3 },
-  { id: "tasks", icon: ClipboardCheck, label: "Criar Tarefas", number: 4 },
-  { id: "settings", icon: Settings, label: "Configurações", number: 5 },
+  { id: "tasks", icon: ClipboardCheck, label: "Criar Tarefas", number: 3 },
+  { id: "settings", icon: Settings, label: "Configurações", number: 4 },
 ];
 
 export function Sidebar({ currentView, onViewChange, onExit }: SidebarProps) {

@@ -13,10 +13,8 @@ import { PreviewConversationModal } from "./PreviewConversationModal";
 import { AttachmentFile } from "./AttachmentMenu";
 import { mockConversations, mockContacts } from "@/lib/mock/chat-data";
 import { ContactsView } from "./views/ContactsView";
-import { NotesView } from "./views/NotesView";
 import { TasksView } from "./views/TasksView";
 import { SettingsView } from "./views/SettingsView";
-import { InternalChatView } from "./views/InternalChatView";
 
 export function WhatsLidiaLayout() {
   const router = useRouter();
@@ -485,12 +483,9 @@ export function WhatsLidiaLayout() {
           />
         );
       case "notes":
-        return (
-          <InternalChatView
-            isDarkMode={isDarkMode}
-            onBack={() => setCurrentView("conversations")}
-          />
-        );
+        // Redirecionar para conversas - funcionalidade removida
+        setCurrentView("conversations");
+        return null;
       case "tasks":
         return (
           <TasksView
