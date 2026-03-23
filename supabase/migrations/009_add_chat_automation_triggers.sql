@@ -15,20 +15,8 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_admin_user_id UUID;
 BEGIN
-    -- Buscar o usuário que criou a empresa (admin)
-    SELECT user_id INTO v_admin_user_id
-    FROM profiles
-    WHERE company_id = NEW.id
-    AND role = 'CLIENT_ADMIN'
-    LIMIT 1;
-    
-    -- Se não encontrou admin, tenta qualquer usuário da empresa
-    IF v_admin_user_id IS NULL THEN
-        SELECT user_id INTO v_admin_user_id
-        FROM profiles
-        WHERE company_id = NEW.id
-        LIMIT 1;
-    END IF;
+    -- O canal será criado sem created_by inicialmente
+    -- O created_by será atualizado quando o primeiro usuário for adicionado
     
     -- Criar canal geral
     INSERT INTO chat_channels (
@@ -44,11 +32,15 @@ BEGIN
         'geral',
         'Canal geral da empresa para comunicação interna',
         'public',
-        v_admin_user_id,
+        NULL,
         true,
         true
     );
     
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    -- Log do erro mas não impede a criação da empresa
+    RAISE NOTICE 'Erro ao criar canal geral: %', SQLERRM;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -95,6 +87,12 @@ BEGIN
             NOW()
         )
         ON CONFLICT (channel_id, user_id) DO NOTHING;
+        
+        -- Atualizar created_by do canal se ainda for NULL
+        UPDATE chat_channels
+        SET created_by = NEW.user_id
+        WHERE id = v_general_channel_id
+        AND created_by IS NULL;
         
         -- Inicializar status online do usuário
         INSERT INTO chat_user_status (
