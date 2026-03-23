@@ -10,6 +10,7 @@ import {
   Star,
   StickyNote,
   MessageSquare,
+  Users,
 } from "lucide-react";
 
 interface AtendimentoTabsProps {
@@ -18,6 +19,7 @@ interface AtendimentoTabsProps {
     protocols: number;
     ratings: number;
     notes: number;
+    chat?: number;
   };
 }
 
@@ -53,6 +55,12 @@ const tabs = [
     icon: StickyNote,
     countKey: "notes" as const,
   },
+  {
+    href: "/app/atendimento/chat",
+    label: "Chat Interno",
+    icon: Users,
+    countKey: "chat" as const,
+  },
 ];
 
 export function AtendimentoTabs({ counts }: AtendimentoTabsProps) {
@@ -82,7 +90,7 @@ export function AtendimentoTabs({ counts }: AtendimentoTabsProps) {
             <Icon className="w-4 h-4" />
             <span>{tab.label}</span>
             
-            {count > 0 && (
+            {count && count > 0 && (
               <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-semibold bg-emerald-500 text-white rounded-full">
                 {count > 99 ? "99+" : count}
               </span>

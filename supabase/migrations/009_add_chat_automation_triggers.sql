@@ -44,7 +44,7 @@ BEGIN
         'geral',
         'Canal geral da empresa para comunicação interna',
         'public',
-        COALESCE(v_admin_user_id, NEW.created_by),
+        v_admin_user_id,
         true,
         true
     );
