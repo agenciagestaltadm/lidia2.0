@@ -1,6 +1,40 @@
 export { useAuth } from "./use-auth";
 export { usePermissions } from "./use-permissions";
 export { useSupabaseQuery } from "./use-supabase-query";
+
+// Export WABA and Bulk Campaign hooks
+export {
+  useWABAConfigs,
+  useWABAConfig,
+  useCreateWABAConfig,
+  useUpdateWABAConfig,
+  useDeleteWABAConfig,
+  useTestWABAConnection,
+  useSyncTemplates,
+} from "./use-waba";
+
+export {
+  useTemplates,
+  useTemplate,
+  useCreateTemplate,
+  useDeleteTemplate,
+  useCheckTemplateStatus,
+  extractTemplateVariables,
+  buildTemplateComponentsWithVariables,
+} from "./use-templates";
+
+export {
+  useCampaigns,
+  useCampaign,
+  useCampaignRecipients,
+  useCampaignStats,
+  useCampaignProgress,
+  useCreateCampaign,
+  useStartCampaign,
+  usePauseCampaign,
+  useCancelCampaign,
+  useDeleteCampaign,
+} from "./use-campaigns";
 export { useSuperDashboard } from "./use-super-dashboard";
 export { usePlans } from "./use-plans";
 export { useCompanies } from "./use-companies";
