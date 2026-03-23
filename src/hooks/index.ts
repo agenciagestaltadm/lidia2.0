@@ -89,3 +89,15 @@ export {
   useNotesRealtime,
   noteKeys,
 } from "./use-notes";
+
+// Export contacts hooks
+export {
+  useContacts,
+  useContactStats,
+  useContactTags,
+  useCreateContact,
+  useUpdateContact,
+  useDeleteContact,
+  useContactsRealtime,
+  contactKeys,
+} from "./use-contacts";
