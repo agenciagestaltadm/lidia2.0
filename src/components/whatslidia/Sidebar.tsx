@@ -28,8 +28,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: "conversations", icon: MessageSquare, label: "Conversas", number: 1 },
   { id: "contacts", icon: Users, label: "Contatos Cadastrados", number: 2 },
-  { id: "tasks", icon: ClipboardCheck, label: "Criar Tarefas", number: 3 },
-  { id: "settings", icon: Settings, label: "Configurações", number: 4 },
+  { id: "settings", icon: Settings, label: "Configurações", number: 3 },
 ];
 
 export function Sidebar({ currentView, onViewChange, onExit }: SidebarProps) {
