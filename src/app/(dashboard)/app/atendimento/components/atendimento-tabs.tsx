@@ -12,6 +12,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+type UserRole = "super_admin" | "admin" | "attendant" | "user";
+
 interface AtendimentoTabsProps {
   counts: {
     funnel: number;
@@ -19,52 +21,69 @@ interface AtendimentoTabsProps {
     ratings: number;
     notes: number;
   };
+  userRole: UserRole;
 }
 
-const tabs = [
+interface TabConfig {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  countKey?: keyof AtendimentoTabsProps["counts"];
+  exact?: boolean;
+  allowedRoles: UserRole[];
+}
+
+const tabs: TabConfig[] = [
   {
     href: "/app/attendances",
     label: "Conversas",
     icon: MessageSquare,
-    count: null,
     exact: true,
+    allowedRoles: ["super_admin", "admin", "attendant", "user"],
   },
   {
     href: "/app/atendimento/funil",
     label: "Funil de Vendas",
     icon: TrendingUp,
-    countKey: "funnel" as const,
+    countKey: "funnel",
+    allowedRoles: ["super_admin", "admin", "attendant"],
   },
   {
     href: "/app/atendimento/protocolos",
     label: "Protocolos",
     icon: FileCheck,
-    countKey: "protocols" as const,
+    countKey: "protocols",
+    allowedRoles: ["super_admin", "admin", "attendant"],
   },
   {
     href: "/app/atendimento/avaliacoes",
     label: "Avaliações",
     icon: Star,
-    countKey: "ratings" as const,
+    countKey: "ratings",
+    allowedRoles: ["super_admin", "admin", "attendant"],
   },
   {
     href: "/app/atendimento/notas",
     label: "Notas",
     icon: StickyNote,
-    countKey: "notes" as const,
+    countKey: "notes",
+    allowedRoles: ["super_admin", "admin", "attendant"],
   },
 ];
 
-export function AtendimentoTabs({ counts }: AtendimentoTabsProps) {
+export function AtendimentoTabs({ counts, userRole }: AtendimentoTabsProps) {
   const pathname = usePathname();
+
+  // Filter tabs based on user role
+  const visibleTabs = tabs.filter((tab) => tab.allowedRoles.includes(userRole));
 
   return (
     <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-      {tabs.map((tab) => {
-        const isActive = tab.exact 
-          ? pathname === tab.href 
+      {visibleTabs.map((tab) => {
+        const isActive = tab.exact
+          ? pathname === tab.href
           : pathname.startsWith(tab.href);
-        
+
         const count = tab.countKey ? counts[tab.countKey] : 0;
         const Icon = tab.icon;
 
@@ -81,13 +100,13 @@ export function AtendimentoTabs({ counts }: AtendimentoTabsProps) {
           >
             <Icon className="w-4 h-4" />
             <span>{tab.label}</span>
-            
-            {count && count > 0 && (
+
+            {count > 0 && (
               <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-semibold bg-emerald-500 text-white rounded-full">
                 {count > 99 ? "99+" : count}
               </span>
             )}
-            
+
             {isActive && (
               <motion.div
                 layoutId="activeTab"
