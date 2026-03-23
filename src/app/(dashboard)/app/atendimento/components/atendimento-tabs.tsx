@@ -10,7 +10,6 @@ import {
   Star,
   StickyNote,
   MessageSquare,
-  Users,
 } from "lucide-react";
 
 interface AtendimentoTabsProps {
@@ -19,7 +18,6 @@ interface AtendimentoTabsProps {
     protocols: number;
     ratings: number;
     notes: number;
-    chat?: number;
   };
 }
 
@@ -54,12 +52,6 @@ const tabs = [
     label: "Notas",
     icon: StickyNote,
     countKey: "notes" as const,
-  },
-  {
-    href: "/app/atendimento/chat",
-    label: "Chat Interno",
-    icon: Users,
-    countKey: "chat" as const,
   },
 ];
 

@@ -129,10 +129,6 @@ export function useCompanies() {
           throw new Error(error.message || error.code || "Erro ao criar empresa");
         }
 
-        // Criar canal geral do chat (será feito quando o primeiro usuário for adicionado)
-        // Por enquanto, apenas logamos
-        console.log("Empresa criada:", data?.id);
-
         await fetchCompanies();
         return { success: true, data: data as Company };
       } catch (err) {

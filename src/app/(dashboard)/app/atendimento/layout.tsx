@@ -44,30 +44,11 @@ export default async function AtendimentoLayout({
     supabase.from("notes").select("*", { count: "exact", head: true }),
   ]);
 
-  // Fetch unread chat messages count
-  const { data: chatMemberships } = await supabase
-    .from("chat_channel_members")
-    .select("channel_id, last_read_at")
-    .eq("user_id", user.id);
-
-  let chatUnreadCount = 0;
-  if (chatMemberships && chatMemberships.length > 0) {
-    for (const membership of chatMemberships) {
-      const { count } = await supabase
-        .from("chat_messages")
-        .select("*", { count: "exact", head: true })
-        .eq("channel_id", membership.channel_id)
-        .gt("created_at", membership.last_read_at || "1970-01-01");
-      chatUnreadCount += count || 0;
-    }
-  }
-
   const counts = {
     funnel: funnelCount || 0,
     protocols: protocolCount || 0,
     ratings: ratingCount || 0,
     notes: noteCount || 0,
-    chat: chatUnreadCount || 0,
   };
 
   return (
