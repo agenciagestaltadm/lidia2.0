@@ -33,6 +33,7 @@ export default function KanbanPage() {
       const result = await createBoard.mutateAsync({
         name: newBoardName.trim(),
         description: newBoardDescription || undefined,
+        company_id: companyId,
       });
 
       if (result) {

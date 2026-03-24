@@ -188,6 +188,7 @@ export interface CreateBoardInput {
   description?: string;
   is_public?: boolean;
   settings?: Record<string, unknown>;
+  company_id: string;
 }
 
 export interface UpdateBoardInput {
@@ -326,11 +327,17 @@ export function useBoard(boardId: string | null) {
 
   const createBoard = useMutation({
     mutationFn: async (input: CreateBoardInput) => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("kanban_boards")
         .insert({
           name: input.name,
           description: input.description,
+          company_id: input.company_id,
+          created_by: user.id,
           is_public: input.is_public ?? false,
           settings: input.settings || {},
         })
