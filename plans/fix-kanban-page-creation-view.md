@@ -1,3 +1,22 @@
+# Plano de Correção: Kanban - Criação e Visualização de Quadros
+
+## Problema Identificado
+A página Kanban atual usa um `boardId` fixo mock (`"mock-board-id"`) que não existe no banco de dados, impedindo que usuários criem ou visualizem quadros. O usuário vê a mensagem "Quadro não encontrado" ao invés de poder criar novos quadros.
+
+## Objetivo
+Reescrever a página Kanban para:
+1. Buscar quadros existentes da empresa do usuário
+2. Permitir criar novos quadros quando não existirem
+3. Listar todos os quadros para seleção
+4. Visualizar o quadro selecionado
+
+## Arquivos a Modificar
+
+### 1. `/lidia2.0/src/app/(dashboard)/app/kanban/page.tsx`
+
+Substituir o conteúdo completo do arquivo:
+
+```tsx
 "use client";
 
 export const dynamic = "force-dynamic";
@@ -293,3 +312,64 @@ export default function KanbanPage() {
     </motion.div>
   );
 }
+```
+
+## Verificações Necessárias
+
+1. **Importações**: Verificar se todos os componentes importados existem:
+   - `@/components/kanban/KanbanBoard` ✅
+   - `@/components/ui/glass-card` ✅
+   - `@/components/ui/button` ✅
+   - `@/components/ui/input` ✅
+   - `@/components/ui/label` ✅
+   - `@/lib/animations` ✅
+   - `@/hooks/use-auth` ✅
+   - `@/hooks/use-kanban` ✅
+
+2. **Hook useBoard**: O hook `useBoard` precisa exportar a mutation `createBoard`. Verificar se está implementado corretamente.
+
+## Fluxo de Usuário
+
+```mermaid
+flowchart TD
+    A[Usuário acessa Kanban] --> B{Possui quadros?}
+    B -->|Não| C[Mostrar tela Criar Primeiro Quadro]
+    B -->|Sim| D{Possui mais de 1 quadro?}
+    D -->|Sim| E[Mostrar lista de quadros]
+    D -->|Não| F[Auto-selecionar único quadro]
+    C --> G[Usuário preenche formulário]
+    G --> H[Criar quadro]
+    H --> I[Redirecionar para quadro]
+    E --> J[Usuário seleciona quadro]
+    F --> I
+    J --> I
+    I --> K[Mostrar KanbanBoard com colunas e cards]
+    K --> L[Botão Trocar Quadro disponível]
+    L --> E
+```
+
+## Testes a Realizar
+
+1. **Cenário 1**: Usuário sem quadros
+   - Deve ver tela "Crie seu primeiro Quadro"
+   - Clicar em "Criar Quadro" deve abrir formulário
+   - Preencher e salvar deve criar quadro e redirecionar
+
+2. **Cenário 2**: Usuário com 1 quadro
+   - Deve ser redirecionado automaticamente para o quadro
+
+3. **Cenário 3**: Usuário com múltiplos quadros
+   - Deve ver lista de quadros
+   - Poder clicar em qualquer quadro para visualizar
+   - Botão "Novo Quadro" deve permitir criar mais
+
+4. **Cenário 4**: Erros
+   - Sem companyId deve mostrar erro apropriado
+   - Erro na API deve mostrar toast de erro
+
+## Dependências
+
+- React Query (TanStack Query) para cache de dados
+- Framer Motion para animações
+- Lucide React para ícones
+- Sonner para notificações toast
