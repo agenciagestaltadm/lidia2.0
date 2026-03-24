@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,7 +57,13 @@ export function Dialog({
     };
   }, [isOpen, onClose]);
 
-  return (
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const dialogContent = (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -135,6 +142,10 @@ export function Dialog({
       )}
     </AnimatePresence>
   );
+
+  // Use portal to render modal at document body level
+  if (!mounted) return null;
+  return createPortal(dialogContent, document.body);
 }
 
 // Dialog Footer Component

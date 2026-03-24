@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { KanbanFilters } from "./KanbanFilters";
+import { KanbanFilters, FilterState } from "./KanbanFilters";
 
 interface BoardHeaderProps {
   board: KanbanBoard;
@@ -35,14 +35,6 @@ interface BoardHeaderProps {
   onSearch?: (query: string) => void;
   onFilterChange?: (filters: FilterState) => void;
   onSwitchBoard?: () => void;
-}
-
-export interface FilterState {
-  searchQuery: string;
-  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null;
-  dateFilter: "today" | "week" | "overdue" | null;
-  members: string[];
-  labels: string[];
 }
 
 export function BoardHeader({ 
@@ -191,6 +183,7 @@ export function BoardHeader({
         <KanbanFilters
           onClose={() => setShowFilters(false)}
           boardId={board.id}
+          onFilterChange={onFilterChange}
         />
       )}
     </div>

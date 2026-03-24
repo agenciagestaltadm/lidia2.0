@@ -114,11 +114,17 @@ export function KanbanColumn({
           {!isOverlay && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 z-50">
                 <DropdownMenuItem onClick={() => onEditColumn?.(column)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Editar Coluna

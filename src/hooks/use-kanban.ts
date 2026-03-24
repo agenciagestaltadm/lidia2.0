@@ -1395,3 +1395,94 @@ export function useActivities(boardId?: string, cardId?: string) {
     refetch,
   };
 }
+
+// ============================================================
+// HOOKS - CARD CONTACTS
+// ============================================================
+
+export interface KanbanCardContact {
+  id: string;
+  card_id: string;
+  contact_id: string;
+  created_at: string;
+  contact: {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    avatar: string | null;
+  };
+}
+
+export function useCardContacts(cardId: string | null) {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["kanban-card-contacts", cardId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kanban_card_contacts")
+        .select(`
+          *,
+          contact:contacts(id, name, phone, email, avatar)
+        `)
+        .eq("card_id", cardId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as KanbanCardContact[];
+    },
+    enabled: !!cardId,
+  });
+
+  const addContact = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { data, error } = await supabase
+        .from("kanban_card_contacts")
+        .insert({
+          card_id: cardId!,
+          contact_id: contactId,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Contato adicionado ao card!");
+      queryClient.invalidateQueries({ queryKey: ["kanban-card-contacts"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao adicionar contato: " + error.message);
+    },
+  });
+
+  const removeContact = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { error } = await supabase
+        .from("kanban_card_contacts")
+        .delete()
+        .eq("id", contactId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Contato removido do card!");
+      queryClient.invalidateQueries({ queryKey: ["kanban-card-contacts"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao remover contato: " + error.message);
+    },
+  });
+
+  return {
+    contacts: data || [],
+    isLoading,
+    error,
+    refetch,
+    addContact,
+    removeContact,
+  };
+}

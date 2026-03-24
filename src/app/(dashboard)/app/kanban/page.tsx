@@ -145,10 +145,22 @@ export default function KanbanPage() {
 
   // Has boards - Show board selector or selected board
   if (!selectedBoardId) {
-    // Auto-select first board if only one exists
+    // Auto-select first board if only one exists - use effect to avoid infinite loop
     if (boards.length === 1) {
-      setSelectedBoardId(boards[0].id);
-      return null;
+      // Set timeout to avoid React render loop
+      setTimeout(() => {
+        setSelectedBoardId(boards[0].id);
+      }, 0);
+      return (
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="h-full flex items-center justify-center"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+        </motion.div>
+      );
     }
 
     return (

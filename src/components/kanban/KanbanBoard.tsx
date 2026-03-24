@@ -34,10 +34,13 @@ import {
   useKanbanRealtime,
   KanbanCard as KanbanCardType,
   KanbanColumn as KanbanColumnType,
+  MoveCardInput,
 } from "@/hooks/use-kanban";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface KanbanBoardProps {
   boardId: string;
@@ -54,6 +57,28 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
   const { columns, isLoading: columnsLoading, reorderColumns } = useColumns(boardId);
   const { cards, isLoading: cardsLoading } = useCardsByBoard(boardId);
   const { isConnected } = useKanbanRealtime(boardId);
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  // Mutation para mover cards
+  const moveCard = useMutation({
+    mutationFn: async (input: MoveCardInput) => {
+      const { data, error } = await supabase.rpc("reorder_kanban_cards", {
+        p_card_id: input.card_id,
+        p_new_column_id: input.new_column_id,
+        p_new_order: input.new_order,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kanban-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-columns"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao mover card: " + error.message);
+    },
+  });
 
   const [activeDragData, setActiveDragData] = useState<DragData | null>(null);
   const [selectedCard, setSelectedCard] = useState<KanbanCardType | null>(null);
@@ -221,11 +246,15 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
 
       if (newColumnId && newColumnId !== card.column_id) {
         // Mover card para nova coluna
-        // Esta lógica deve ser implementada no hook useCard
-        toast.success("Card movido para a nova coluna.");
+        await moveCard.mutateAsync({
+          card_id: card.id,
+          new_column_id: newColumnId,
+          new_order: newOrder,
+        });
+        toast.success("Card movido com sucesso!");
       }
     }
-  }, [activeDragData, columns, reorderColumns]);
+  }, [activeDragData, columns, reorderColumns, moveCard]);
 
   // Animação de drop
   const dropAnimation: DropAnimation = {
@@ -316,6 +345,10 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
           onEditBoard={() => setIsEditBoardModalOpen(true)}
           onManageMembers={() => setIsManageMembersModalOpen(true)}
           onSearch={setSearchQuery}
+          onFilterChange={(filters) => {
+            setPriorityFilter(filters.priority);
+            setDateFilter(filters.dateFilter);
+          }}
           onSwitchBoard={() => setIsSwitchBoardModalOpen(true)}
         />
       </motion.div>

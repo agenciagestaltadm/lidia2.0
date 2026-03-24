@@ -13,8 +13,10 @@ import {
   useCard,
   useComments,
   useChecklists,
+  useCardContacts,
   KanbanCard as KanbanCardType,
 } from "@/hooks/use-kanban";
+import { useContacts } from "@/hooks/use-contacts";
 import {
   Calendar,
   CheckSquare,
@@ -24,6 +26,11 @@ import {
   Tag,
   User,
   Activity,
+  Users,
+  Plus,
+  X,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -53,10 +60,13 @@ export function CardDetailModal({
   const { comments, createComment } = useComments(card.id);
   const { checklists, createChecklist, createChecklistItem, toggleChecklistItem } =
     useChecklists(card.id);
+  const { contacts: cardContacts, addContact, removeContact } = useCardContacts(card.id);
+  const { data: allContacts } = useContacts();
 
   const [newComment, setNewComment] = useState("");
   const [newChecklistTitle, setNewChecklistTitle] = useState("");
   const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
+  const [showAddContact, setShowAddContact] = useState(false);
 
   const handleSave = async () => {
     await updateCard.mutateAsync({
@@ -112,10 +122,14 @@ export function CardDetailModal({
     >
       <div className="mt-4">
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="details" className="gap-2">
               <Tag className="w-4 h-4" />
               <span className="hidden sm:inline">Detalhes</span>
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Contatos</span>
             </TabsTrigger>
             <TabsTrigger value="comments" className="gap-2">
               <MessageSquare className="w-4 h-4" />
@@ -206,6 +220,109 @@ export function CardDetailModal({
                   {updateCard.isPending ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Contacts Tab */}
+          <TabsContent value="contacts" className="space-y-4 mt-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium text-slate-900 dark:text-white">
+                Contatos ({cardContacts.length})
+              </h3>
+              <Button
+                size="sm"
+                onClick={() => setShowAddContact(!showAddContact)}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar
+              </Button>
+            </div>
+
+            {showAddContact && (
+              <GlassCard className="p-3" hover={false}>
+                <h4 className="text-sm font-medium mb-2">Selecionar Contato</h4>
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {allContacts?.filter(
+                    (c) => !cardContacts.some((cc) => cc.contact_id === c.id)
+                  ).map((contact) => (
+                    <button
+                      key={contact.id}
+                      onClick={() => {
+                        addContact.mutate(contact.id);
+                        setShowAddContact(false);
+                      }}
+                      className="w-full flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-medium">
+                        {contact.name?.charAt(0) || "?"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{contact.name}</p>
+                        {contact.phone && (
+                          <p className="text-xs text-slate-500">{contact.phone}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  {allContacts?.filter(
+                    (c) => !cardContacts.some((cc) => cc.contact_id === c.id)
+                  ).length === 0 && (
+                    <p className="text-sm text-slate-500 text-center py-2">
+                      Todos os contatos já foram adicionados
+                    </p>
+                  )}
+                </div>
+              </GlassCard>
+            )}
+
+            <div className="space-y-2">
+              {cardContacts.map((cardContact) => (
+                <GlassCard key={cardContact.id} className="p-3" hover={false}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-medium">
+                        {cardContact.contact?.name?.charAt(0) || "?"}
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-white">
+                          {cardContact.contact?.name}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                          {cardContact.contact?.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {cardContact.contact.phone}
+                            </span>
+                          )}
+                          {cardContact.contact?.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {cardContact.contact.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeContact.mutate(cardContact.id)}
+                      disabled={removeContact.isPending}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </GlassCard>
+              ))}
+              {cardContacts.length === 0 && (
+                <div className="text-center py-8 text-slate-500">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum contato associado a este card</p>
+                  <p className="text-sm">Clique em "Adicionar" para vincular contatos</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 

@@ -1,25 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
-interface KanbanFiltersProps {
-  onClose: () => void;
-  boardId: string;
-}
-
 type PriorityFilter = "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null;
 type DateFilter = "today" | "week" | "overdue" | null;
 
-export function KanbanFilters({ onClose, boardId }: KanbanFiltersProps) {
+export interface FilterState {
+  priority: PriorityFilter;
+  dateFilter: DateFilter;
+  members: string[];
+  labels: string[];
+}
+
+interface KanbanFiltersProps {
+  onClose: () => void;
+  boardId: string;
+  onFilterChange?: (filters: FilterState) => void;
+}
+
+export function KanbanFilters({ onClose, boardId, onFilterChange }: KanbanFiltersProps) {
   const [selectedPriority, setSelectedPriority] = useState<PriorityFilter>(null);
   const [selectedDate, setSelectedDate] = useState<DateFilter>(null);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+
+  // Notify parent when filters change
+  useEffect(() => {
+    onFilterChange?.({
+      priority: selectedPriority,
+      dateFilter: selectedDate,
+      members: selectedMembers,
+      labels: selectedLabels,
+    });
+  }, [selectedPriority, selectedDate, selectedMembers, selectedLabels, onFilterChange]);
 
   const priorities = [
     { value: "LOW" as const, label: "Baixa", color: "bg-slate-500" },
