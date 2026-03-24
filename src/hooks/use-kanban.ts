@@ -262,15 +262,7 @@ export function useBoards(companyId?: string) {
     queryFn: async () => {
       let query = supabase
         .from("kanban_boards")
-        .select(`
-          *,
-          members:kanban_board_members(
-            id,
-            user_id,
-            role,
-            user:profiles(user_id, email, full_name, avatar_url)
-          )
-        `)
+        .select("*")
         .eq("is_archived", false)
         .order("created_at", { ascending: false });
 
@@ -280,7 +272,10 @@ export function useBoards(companyId?: string) {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching boards:", error);
+        throw error;
+      }
       return data as KanbanBoard[];
     },
     enabled: !!companyId,
