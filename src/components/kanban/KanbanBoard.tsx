@@ -25,7 +25,7 @@ import { KanbanCard } from "./KanbanCard";
 import { BoardHeader } from "./BoardHeader";
 import { NewColumnDialog } from "./dialogs/NewColumnDialog";
 import { NewCardDialog } from "./dialogs/NewCardDialog";
-import { CardDetailModal, EditBoardModal, ManageMembersModal } from "./modals";
+import { CardDetailModal, EditBoardModal, ManageMembersModal, EditColumnModal, SwitchBoardModal } from "./modals";
 import { toast } from "sonner";
 import {
   useBoard,
@@ -61,7 +61,15 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
   const [isNewColumnDialogOpen, setIsNewColumnDialogOpen] = useState(false);
   const [isEditBoardModalOpen, setIsEditBoardModalOpen] = useState(false);
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
+  const [isEditColumnModalOpen, setIsEditColumnModalOpen] = useState(false);
+  const [isSwitchBoardModalOpen, setIsSwitchBoardModalOpen] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<KanbanColumnType | null>(null);
   const [newCardColumnId, setNewCardColumnId] = useState<string | null>(null);
+
+  // Estados para filtros
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<"LOW" | "MEDIUM" | "HIGH" | "URGENT" | null>(null);
+  const [dateFilter, setDateFilter] = useState<"today" | "week" | "overdue" | null>(null);
 
   // Configurar sensores para drag-and-drop
   const sensors = useSensors(
@@ -72,13 +80,53 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
     })
   );
 
-  // Agrupar cards por coluna
+  // Filtrar cards com base na busca e filtros
+  const filteredCards = useMemo(() => {
+    return cards.filter((card) => {
+      // Filtro de busca por título ou descrição
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          card.title.toLowerCase().includes(query) ||
+          (card.description && card.description.toLowerCase().includes(query));
+        if (!matchesSearch) return false;
+      }
+
+      // Filtro de prioridade
+      if (priorityFilter && card.priority !== priorityFilter) {
+        return false;
+      }
+
+      // Filtro de data
+      if (dateFilter && card.due_date) {
+        const dueDate = new Date(card.due_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (dateFilter === "today") {
+          const dueDay = new Date(dueDate);
+          dueDay.setHours(0, 0, 0, 0);
+          if (dueDay.getTime() !== today.getTime()) return false;
+        } else if (dateFilter === "week") {
+          const weekFromNow = new Date(today);
+          weekFromNow.setDate(weekFromNow.getDate() + 7);
+          if (dueDate > weekFromNow) return false;
+        } else if (dateFilter === "overdue") {
+          if (dueDate >= today) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [cards, searchQuery, priorityFilter, dateFilter]);
+
+  // Agrupar cards filtrados por coluna
   const columnsWithCards = useMemo(() => {
     return columns.map((column) => ({
       ...column,
-      cards: cards.filter((card) => card.column_id === column.id),
+      cards: filteredCards.filter((card) => card.column_id === column.id),
     }));
-  }, [columns, cards]);
+  }, [columns, filteredCards]);
 
   // Handler para início do drag
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -199,6 +247,16 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
     setNewCardColumnId(columnId);
   }, []);
 
+  const handleEditColumn = useCallback((column: KanbanColumnType) => {
+    setSelectedColumn(column);
+    setIsEditColumnModalOpen(true);
+  }, []);
+
+  const handleDeleteColumn = useCallback((column: KanbanColumnType) => {
+    setSelectedColumn(column);
+    setIsEditColumnModalOpen(true);
+  }, []);
+
   // Timeout para detectar loading infinito
   const [showLoadingTimeout, setShowLoadingTimeout] = useState(false);
   
@@ -257,6 +315,8 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
           onAddColumn={() => setIsNewColumnDialogOpen(true)}
           onEditBoard={() => setIsEditBoardModalOpen(true)}
           onManageMembers={() => setIsManageMembersModalOpen(true)}
+          onSearch={setSearchQuery}
+          onSwitchBoard={() => setIsSwitchBoardModalOpen(true)}
         />
       </motion.div>
 
@@ -282,6 +342,8 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
                   column={column}
                   onCardClick={handleCardClick}
                   onAddCard={() => handleAddCard(column.id)}
+                  onEditColumn={handleEditColumn}
+                  onDeleteColumn={handleDeleteColumn}
                 />
               ))}
 
@@ -361,6 +423,20 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
         board={board}
         isOpen={isManageMembersModalOpen}
         onClose={() => setIsManageMembersModalOpen(false)}
+      />
+
+      <EditColumnModal
+        open={isEditColumnModalOpen}
+        onOpenChange={setIsEditColumnModalOpen}
+        column={selectedColumn}
+        boardId={boardId}
+      />
+
+      <SwitchBoardModal
+        open={isSwitchBoardModalOpen}
+        onOpenChange={setIsSwitchBoardModalOpen}
+        currentBoardId={boardId}
+        companyId={companyId}
       />
     </motion.div>
   );

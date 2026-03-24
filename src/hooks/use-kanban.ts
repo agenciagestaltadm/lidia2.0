@@ -218,6 +218,7 @@ export interface UpdateColumnInput {
 export interface CreateCardInput {
   column_id: string;
   board_id: string;
+  company_id: string;
   title: string;
   description?: string;
   priority?: KanbanPriority;

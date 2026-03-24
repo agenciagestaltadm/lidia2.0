@@ -7,14 +7,23 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { KanbanCard } from "./KanbanCard";
 import { KanbanColumn as KanbanColumnType, KanbanCard as KanbanCardType } from "@/hooks/use-kanban";
 import { cn } from "@/lib/utils";
-import { MoreVertical, Plus } from "lucide-react";
+import { MoreVertical, Plus, Edit, Trash2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface KanbanColumnProps {
   column: KanbanColumnType;
   onCardClick?: (card: KanbanCardType) => void;
   onAddCard?: () => void;
+  onEditColumn?: (column: KanbanColumnType) => void;
+  onDeleteColumn?: (column: KanbanColumnType) => void;
   isOverlay?: boolean;
 }
 
@@ -22,6 +31,8 @@ export function KanbanColumn({
   column,
   onCardClick,
   onAddCard,
+  onEditColumn,
+  onDeleteColumn,
   isOverlay = false,
 }: KanbanColumnProps) {
   const {
@@ -100,9 +111,33 @@ export function KanbanColumn({
             )}
           </div>
 
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreVertical className="w-4 h-4" />
-          </Button>
+          {!isOverlay && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => onEditColumn?.(column)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar Coluna
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEditColumn?.(column)}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurar WIP
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => onDeleteColumn?.(column)}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir Coluna
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Lista de Cards */}

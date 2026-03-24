@@ -22,6 +22,7 @@ export function NewCardDialog({
   onOpenChange,
   columnId,
   boardId,
+  companyId,
 }: NewCardDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -38,6 +39,7 @@ export function NewCardDialog({
     await createCard.mutateAsync({
       column_id: columnId,
       board_id: boardId,
+      company_id: companyId,
       title: title.trim(),
       description: description || undefined,
       priority,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export function EditBoardModal({ board, isOpen, onClose }: EditBoardModalProps) 
     }
   };
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -144,4 +145,10 @@ export function EditBoardModal({ board, isOpen, onClose }: EditBoardModalProps) 
       )}
     </AnimatePresence>
   );
+
+  // Use createPortal to render modal outside of parent container
+  if (typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+  return null;
 }

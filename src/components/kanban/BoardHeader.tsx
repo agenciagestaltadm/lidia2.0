@@ -32,9 +32,29 @@ interface BoardHeaderProps {
   onAddColumn: () => void;
   onEditBoard: () => void;
   onManageMembers: () => void;
+  onSearch?: (query: string) => void;
+  onFilterChange?: (filters: FilterState) => void;
+  onSwitchBoard?: () => void;
 }
 
-export function BoardHeader({ board, isConnected, onAddColumn, onEditBoard, onManageMembers }: BoardHeaderProps) {
+export interface FilterState {
+  searchQuery: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null;
+  dateFilter: "today" | "week" | "overdue" | null;
+  members: string[];
+  labels: string[];
+}
+
+export function BoardHeader({ 
+  board, 
+  isConnected, 
+  onAddColumn, 
+  onEditBoard, 
+  onManageMembers,
+  onSearch,
+  onFilterChange,
+  onSwitchBoard,
+}: BoardHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -97,6 +117,9 @@ export function BoardHeader({ board, isConnected, onAddColumn, onEditBoard, onMa
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onSwitchBoard}>
+                  Trocar Quadro
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onEditBoard}>
                   Configurações do Board
                 </DropdownMenuItem>
@@ -127,7 +150,10 @@ export function BoardHeader({ board, isConnected, onAddColumn, onEditBoard, onMa
             <Input
               placeholder="Buscar cards..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                onSearch?.(e.target.value);
+              }}
               className="pl-9"
             />
           </div>
