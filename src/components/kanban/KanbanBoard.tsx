@@ -26,7 +26,7 @@ import { BoardHeader } from "./BoardHeader";
 import { NewColumnDialog } from "./dialogs/NewColumnDialog";
 import { NewCardDialog } from "./dialogs/NewCardDialog";
 import { CardDetailModal } from "./modals/CardDetailModal";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   useBoard,
   useColumns,
@@ -37,8 +37,6 @@ import {
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
-import { NeonButton } from "@/components/ui/neon-button";
-import { v4 as uuidv4 } from "uuid";
 
 interface KanbanBoardProps {
   boardId: string;
@@ -51,7 +49,6 @@ interface DragData {
 }
 
 export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
-  const { toast } = useToast();
   const { board, isLoading: boardLoading } = useBoard(boardId);
   const { columns, isLoading: columnsLoading, reorderColumns } = useColumns(boardId);
   const { isConnected } = useKanbanRealtime(boardId);
@@ -173,13 +170,10 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
       if (newColumnId && newColumnId !== card.column_id) {
         // Mover card para nova coluna
         // Esta lógica deve ser implementada no hook useCard
-        toast({
-          title: "Card movido",
-          description: "O card foi movido para a nova coluna.",
-        });
+        toast.success("Card movido para a nova coluna.");
       }
     }
-  }, [activeDragData, columns, reorderColumns, toast]);
+  }, [activeDragData, columns, reorderColumns]);
 
   // Animação de drop
   const dropAnimation: DropAnimation = {
