@@ -30,9 +30,11 @@ interface BoardHeaderProps {
   board: KanbanBoard;
   isConnected: boolean;
   onAddColumn: () => void;
+  onEditBoard: () => void;
+  onManageMembers: () => void;
 }
 
-export function BoardHeader({ board, isConnected, onAddColumn }: BoardHeaderProps) {
+export function BoardHeader({ board, isConnected, onAddColumn, onEditBoard, onManageMembers }: BoardHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -82,7 +84,7 @@ export function BoardHeader({ board, isConnected, onAddColumn }: BoardHeaderProp
             </div>
 
             {/* Members Button */}
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={onManageMembers}>
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Membros</span>
             </Button>
@@ -95,7 +97,9 @@ export function BoardHeader({ board, isConnected, onAddColumn }: BoardHeaderProp
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Configurações do Board</DropdownMenuItem>
+                <DropdownMenuItem onClick={onEditBoard}>
+                  Configurações do Board
+                </DropdownMenuItem>
                 <DropdownMenuItem>Gerenciar Etiquetas</DropdownMenuItem>
                 <DropdownMenuItem>Arquivar Cards Concluídos</DropdownMenuItem>
                 <DropdownMenuSeparator />

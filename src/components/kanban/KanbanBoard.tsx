@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -25,11 +25,12 @@ import { KanbanCard } from "./KanbanCard";
 import { BoardHeader } from "./BoardHeader";
 import { NewColumnDialog } from "./dialogs/NewColumnDialog";
 import { NewCardDialog } from "./dialogs/NewCardDialog";
-import { CardDetailModal } from "./modals/CardDetailModal";
+import { CardDetailModal, EditBoardModal, ManageMembersModal } from "./modals";
 import { toast } from "sonner";
 import {
   useBoard,
   useColumns,
+  useCardsByBoard,
   useKanbanRealtime,
   KanbanCard as KanbanCardType,
   KanbanColumn as KanbanColumnType,
@@ -51,12 +52,15 @@ interface DragData {
 export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
   const { board, isLoading: boardLoading } = useBoard(boardId);
   const { columns, isLoading: columnsLoading, reorderColumns } = useColumns(boardId);
+  const { cards, isLoading: cardsLoading } = useCardsByBoard(boardId);
   const { isConnected } = useKanbanRealtime(boardId);
 
   const [activeDragData, setActiveDragData] = useState<DragData | null>(null);
   const [selectedCard, setSelectedCard] = useState<KanbanCardType | null>(null);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isNewColumnDialogOpen, setIsNewColumnDialogOpen] = useState(false);
+  const [isEditBoardModalOpen, setIsEditBoardModalOpen] = useState(false);
+  const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
   const [newCardColumnId, setNewCardColumnId] = useState<string | null>(null);
 
   // Configurar sensores para drag-and-drop
@@ -72,9 +76,9 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
   const columnsWithCards = useMemo(() => {
     return columns.map((column) => ({
       ...column,
-      cards: column.cards || [],
+      cards: cards.filter((card) => card.column_id === column.id),
     }));
-  }, [columns]);
+  }, [columns, cards]);
 
   // Handler para início do drag
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -195,10 +199,32 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
     setNewCardColumnId(columnId);
   }, []);
 
-  if (boardLoading || columnsLoading) {
+  // Timeout para detectar loading infinito
+  const [showLoadingTimeout, setShowLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (boardLoading || columnsLoading || cardsLoading) {
+        setShowLoadingTimeout(true);
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [boardLoading, columnsLoading, cardsLoading]);
+
+  if (boardLoading || columnsLoading || cardsLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+        <p className="text-slate-500">Carregando quadro...</p>
+        {showLoadingTimeout && (
+          <div className="text-center">
+            <p className="text-amber-500 text-sm mb-2">O carregamento está demorando...</p>
+            <p className="text-slate-400 text-xs max-w-md">
+              Verifique se as políticas RLS foram aplicadas no Supabase.
+              Execute as migrations 017 e 018 no SQL Editor.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -229,6 +255,8 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
           board={board}
           isConnected={isConnected}
           onAddColumn={() => setIsNewColumnDialogOpen(true)}
+          onEditBoard={() => setIsEditBoardModalOpen(true)}
+          onManageMembers={() => setIsManageMembersModalOpen(true)}
         />
       </motion.div>
 
@@ -322,6 +350,18 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
           boardId={boardId}
         />
       )}
+
+      <EditBoardModal
+        board={board}
+        isOpen={isEditBoardModalOpen}
+        onClose={() => setIsEditBoardModalOpen(false)}
+      />
+
+      <ManageMembersModal
+        board={board}
+        isOpen={isManageMembersModalOpen}
+        onClose={() => setIsManageMembersModalOpen(false)}
+      />
     </motion.div>
   );
 }

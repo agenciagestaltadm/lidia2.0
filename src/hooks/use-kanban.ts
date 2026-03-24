@@ -300,21 +300,14 @@ export function useBoard(boardId: string | null) {
 
       const { data, error } = await supabase
         .from("kanban_boards")
-        .select(`
-          *,
-          columns:kanban_columns(*, cards:kanban_cards(*)),
-          members:kanban_board_members(
-            id,
-            user_id,
-            role,
-            permissions,
-            user:profiles(user_id, email, full_name, avatar_url)
-          )
-        `)
+        .select("*")
         .eq("id", boardId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching board:", error);
+        throw error;
+      }
       return data as KanbanBoard;
     },
     enabled: !!boardId,
@@ -420,18 +413,14 @@ export function useColumns(boardId: string | null) {
 
       const { data, error } = await supabase
         .from("kanban_columns")
-        .select(`
-          *,
-          cards:kanban_cards(
-            *,
-            labels:kanban_card_labels(label:kanban_labels(*)),
-            members:kanban_card_members(user:profiles(user_id, email, full_name, avatar_url))
-          )
-        `)
+        .select("*")
         .eq("board_id", boardId)
         .order("order", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching columns:", error);
+        throw error;
+      }
       return data as KanbanColumn[];
     },
     enabled: !!boardId,
@@ -552,19 +541,50 @@ export function useCards(columnId: string | null) {
 
       const { data, error } = await supabase
         .from("kanban_cards")
-        .select(`
-          *,
-          labels:kanban_card_labels(label:kanban_labels(*)),
-          members:kanban_card_members(user:profiles(user_id, email, full_name, avatar_url))
-        `)
+        .select("*")
         .eq("column_id", columnId)
         .eq("is_archived", false)
         .order("order", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching cards:", error);
+        throw error;
+      }
       return data as KanbanCard[];
     },
     enabled: !!columnId,
+  });
+
+  return {
+    cards: data || [],
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+export function useCardsByBoard(boardId: string | null) {
+  const supabase = useMemo(() => createClient(), []);
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["kanban-board-cards", boardId],
+    queryFn: async () => {
+      if (!boardId) return [];
+
+      const { data, error } = await supabase
+        .from("kanban_cards")
+        .select("*")
+        .eq("board_id", boardId)
+        .eq("is_archived", false)
+        .order("order", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching board cards:", error);
+        throw error;
+      }
+      return data as KanbanCard[];
+    },
+    enabled: !!boardId,
   });
 
   return {
