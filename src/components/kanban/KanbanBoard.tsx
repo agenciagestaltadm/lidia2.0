@@ -346,8 +346,9 @@ export function KanbanBoard({ boardId, companyId }: KanbanBoardProps) {
           onManageMembers={() => setIsManageMembersModalOpen(true)}
           onSearch={setSearchQuery}
           onFilterChange={(filters) => {
-            setPriorityFilter(filters.priority);
-            setDateFilter(filters.dateFilter);
+            const priority = filters.priority?.[0] as "LOW" | "MEDIUM" | "HIGH" | "URGENT" | undefined;
+            setPriorityFilter(priority ?? null);
+            setDateFilter(null);
           }}
           onSwitchBoard={() => setIsSwitchBoardModalOpen(true)}
         />

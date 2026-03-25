@@ -626,57 +626,119 @@ export function useCard(cardId: string | null) {
 
   const createCard = useMutation({
     mutationFn: async (input: CreateCardInput) => {
+      // Validação de campos obrigatórios
+      if (!input.company_id) {
+        throw new Error("Company ID é obrigatório para criar um card");
+      }
+      if (!input.column_id) {
+        throw new Error("Coluna é obrigatória para criar um card");
+      }
+      if (!input.board_id) {
+        throw new Error("Board é obrigatório para criar um card");
+      }
+      if (!input.title?.trim()) {
+        throw new Error("Título do card é obrigatório");
+      }
+
       // Get current max order in column
-      const { data: maxOrder } = await supabase
+      const { data: maxOrder, error: orderError } = await supabase
         .from("kanban_cards")
         .select("order")
         .eq("column_id", input.column_id)
         .order("order", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+
+      if (orderError) {
+        console.error("Erro ao buscar ordem máxima:", orderError);
+        throw new Error("Erro ao preparar criação do card");
+      }
+
+      // Preparar dados do card com valores default
+      const cardData = {
+        column_id: input.column_id,
+        board_id: input.board_id,
+        company_id: input.company_id,
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        order: (maxOrder?.order ?? -1) + 1,
+        priority: input.priority || "MEDIUM",
+        card_type: input.card_type || "TASK",
+        due_date: input.due_date || null,
+        start_date: input.start_date || null,
+        estimated_hours: input.estimated_hours || null,
+      };
 
       const { data: card, error } = await supabase
         .from("kanban_cards")
-        .insert({
-          ...input,
-          order: (maxOrder?.order ?? -1) + 1,
-          priority: input.priority || "MEDIUM",
-          card_type: input.card_type || "TASK",
-        })
+        .insert(cardData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao criar card:", error);
+        
+        // Tratamento específico por código de erro
+        if (error.code === "23503") {
+          throw new Error("Coluna ou board não encontrados. Recarregue a página e tente novamente.");
+        }
+        if (error.code === "42501") {
+          throw new Error("Você não tem permissão para criar cards neste board.");
+        }
+        if (error.code === "23502") {
+          throw new Error("Dados incompletos. Verifique se todos os campos obrigatórios estão preenchidos.");
+        }
+        if (error.code === "PGRST116") {
+          throw new Error("Erro de validação nos dados do card.");
+        }
+        
+        throw new Error(error.message || "Erro desconhecido ao criar card");
+      }
+
+      if (!card) {
+        throw new Error("Card não foi criado. Tente novamente.");
+      }
 
       // Add labels if provided
       if (input.label_ids?.length) {
-        await supabase.from("kanban_card_labels").insert(
+        const { error: labelError } = await supabase.from("kanban_card_labels").insert(
           input.label_ids.map((labelId) => ({
             card_id: card.id,
             label_id: labelId,
           }))
         );
+        
+        if (labelError) {
+          console.error("Erro ao adicionar labels:", labelError);
+          // Não falha a operação principal, apenas loga o erro
+        }
       }
 
       // Add members if provided
       if (input.member_ids?.length) {
-        await supabase.from("kanban_card_members").insert(
+        const { error: memberError } = await supabase.from("kanban_card_members").insert(
           input.member_ids.map((userId) => ({
             card_id: card.id,
             user_id: userId,
           }))
         );
+        
+        if (memberError) {
+          console.error("Erro ao adicionar membros:", memberError);
+          // Não falha a operação principal, apenas loga o erro
+        }
       }
 
       return card;
     },
-    onSuccess: () => {
-      toast.success("Card criado com sucesso!");
+    onSuccess: (data) => {
+      toast.success(`Card "${data.title}" criado com sucesso!`);
       queryClient.invalidateQueries({ queryKey: ["kanban-cards"] });
       queryClient.invalidateQueries({ queryKey: ["kanban-columns"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-board-cards"] });
     },
-    onError: (error) => {
-      toast.error("Erro ao criar card: " + error.message);
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao criar card");
     },
   });
 
@@ -736,12 +798,43 @@ export function useCard(cardId: string | null) {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    // Optimistic update
+    onMutate: async (input) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["kanban-cards"] });
+      await queryClient.cancelQueries({ queryKey: ["kanban-columns"] });
+
+      // Snapshot the previous value
+      const previousCards = queryClient.getQueryData<KanbanCard[]>(["kanban-cards"]);
+      const previousColumns = queryClient.getQueryData<KanbanColumn[]>(["kanban-columns"]);
+
+      // Optimistically update all card caches
+      queryClient.setQueriesData<KanbanCard[]>({ queryKey: ["kanban-cards"] }, (old) => {
+        if (!old) return old;
+        return old.map((card) =>
+          card.id === input.card_id
+            ? { ...card, column_id: input.new_column_id, order: input.new_order }
+            : card
+        );
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousCards, previousColumns };
+    },
+    // If the mutation fails, use the context returned from onMutate to roll back
+    onError: (error, input, context) => {
+      if (context?.previousCards) {
+        queryClient.setQueryData(["kanban-cards"], context.previousCards);
+      }
+      if (context?.previousColumns) {
+        queryClient.setQueryData(["kanban-columns"], context.previousColumns);
+      }
+      toast.error("Erro ao mover card: " + error.message);
+    },
+    // Always refetch after error or success
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["kanban-cards"] });
       queryClient.invalidateQueries({ queryKey: ["kanban-columns"] });
-    },
-    onError: (error) => {
-      toast.error("Erro ao mover card: " + error.message);
     },
   });
 

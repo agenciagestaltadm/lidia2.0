@@ -2,7 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -16,15 +17,40 @@ import { Plus, FolderKanban, LayoutGrid, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 export default function KanbanPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
   const { user } = useAuth();
   const companyId = user?.companyId;
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
+  
+  // Usar URL como source of truth
+  const selectedBoardId = searchParams.get("board");
+  
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardDescription, setNewBoardDescription] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const { boards, isLoading: boardsLoading, refetch } = useBoards(companyId);
   const { createBoard } = useBoard(null);
+
+  // Função para atualizar o board na URL
+  const handleSelectBoard = useCallback((boardId: string | null) => {
+    setIsNavigating(true);
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (boardId) {
+      params.set("board", boardId);
+    } else {
+      params.delete("board");
+    }
+    
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    
+    // Reset loading state após navegação
+    setTimeout(() => setIsNavigating(false), 300);
+  }, [router, pathname, searchParams]);
 
   const handleCreateBoard = async () => {
     if (!newBoardName.trim() || !companyId) return;
@@ -41,7 +67,7 @@ export default function KanbanPage() {
         setNewBoardName("");
         setNewBoardDescription("");
         setShowCreateForm(false);
-        setSelectedBoardId(result.id);
+        handleSelectBoard(result.id);
         refetch();
       }
     } catch (error) {
@@ -149,7 +175,7 @@ export default function KanbanPage() {
     if (boards.length === 1) {
       // Set timeout to avoid React render loop
       setTimeout(() => {
-        setSelectedBoardId(boards[0].id);
+        handleSelectBoard(boards[0].id);
       }, 0);
       return (
         <motion.div
@@ -236,7 +262,7 @@ export default function KanbanPage() {
               <GlassCard
                 key={board.id}
                 className="p-6 cursor-pointer hover:border-emerald-500/50 transition-all"
-                onClick={() => setSelectedBoardId(board.id)}
+                onClick={() => handleSelectBoard(board.id)}
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -278,7 +304,8 @@ export default function KanbanPage() {
             <div className="flex items-center gap-4 mb-4">
               <Button
                 variant="outline"
-                onClick={() => setSelectedBoardId(null)}
+                onClick={() => handleSelectBoard(null)}
+                disabled={isNavigating}
               >
                 <ChevronDown className="w-4 h-4 mr-2" />
                 Trocar Quadro
@@ -286,10 +313,13 @@ export default function KanbanPage() {
               <span className="text-slate-500 dark:text-slate-400">
                 {boards.find(b => b.id === selectedBoardId)?.name}
               </span>
+              {isNavigating && (
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-emerald-500" />
+              )}
             </div>
-            <KanbanBoard 
-              boardId={selectedBoardId} 
-              companyId={companyId} 
+            <KanbanBoard
+              boardId={selectedBoardId}
+              companyId={companyId}
             />
           </>
         ) : (

@@ -112,37 +112,53 @@ export function KanbanColumn({
           </div>
 
           {!isOverlay && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
+            <div
+              className="shrink-0"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
+              data-no-dnd="true"
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    tabIndex={0}
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48"
                 >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 z-50">
-                <DropdownMenuItem onClick={() => onEditColumn?.(column)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar Coluna
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEditColumn?.(column)}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Configurar WIP
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => onDeleteColumn?.(column)}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir Coluna
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem onClick={() => onEditColumn?.(column)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar Coluna
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEditColumn?.(column)}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Configurar WIP
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDeleteColumn?.(column)}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir Coluna
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
 
