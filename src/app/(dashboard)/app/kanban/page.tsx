@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
@@ -16,7 +16,7 @@ import { useBoards, useBoard } from "@/hooks/use-kanban";
 import { Plus, FolderKanban, LayoutGrid, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
-export default function KanbanPage() {
+function KanbanPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -334,5 +334,18 @@ export default function KanbanPage() {
         )}
       </motion.div>
     </motion.div>
+  );
+}
+
+// Export default com Suspense para evitar erro de prerendering
+export default function KanbanPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+      </div>
+    }>
+      <KanbanPageContent />
+    </Suspense>
   );
 }
