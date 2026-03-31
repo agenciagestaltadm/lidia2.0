@@ -5,6 +5,7 @@ import { BaileysService } from '@/lib/whatsapp/baileys-service';
 // POST /api/whatsapp/sessions - Criar nova sessão
 export async function POST(request: NextRequest) {
   try {
+    console.log('[API WhatsApp] Iniciando criação de sessão...');
     const supabase = await createClient();
 
     // Verifica autenticação
@@ -13,25 +14,33 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
+      console.log('[API WhatsApp] Usuário não autenticado');
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 401 }
       );
     }
+    console.log('[API WhatsApp] Usuário autenticado:', user.id);
 
     // Obtém o perfil do usuário
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id, role')
       .eq('user_id', user.id)
       .single();
 
+    if (profileError) {
+      console.error('[API WhatsApp] Erro ao buscar perfil:', profileError);
+    }
+
     if (!profile) {
+      console.log('[API WhatsApp] Perfil não encontrado');
       return NextResponse.json(
         { error: 'Perfil não encontrado' },
         { status: 404 }
       );
     }
+    console.log('[API WhatsApp] Perfil encontrado:', { company_id: profile.company_id, role: profile.role });
 
     // Verifica permissões
     if (
@@ -39,6 +48,7 @@ export async function POST(request: NextRequest) {
       profile.role !== 'CLIENT_ADMIN' &&
       profile.role !== 'CLIENT_MANAGER'
     ) {
+      console.log('[API WhatsApp] Permissão negada:', profile.role);
       return NextResponse.json(
         { error: 'Permissão negada' },
         { status: 403 }
@@ -48,6 +58,7 @@ export async function POST(request: NextRequest) {
     // Obtém os dados da requisição
     const body = await request.json();
     const { name } = body;
+    console.log('[API WhatsApp] Dados recebidos:', { name });
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
@@ -57,14 +68,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Cria a sessão
+    console.log('[API WhatsApp] Criando sessão Baileys...');
     const service = new BaileysService('', profile.company_id);
     const session = await service.createSession(name.trim());
+    console.log('[API WhatsApp] Sessão criada com sucesso:', session.id);
 
     return NextResponse.json(session, { status: 201 });
   } catch (error) {
-    console.error('Erro ao criar sessão:', error);
+    console.error('[API WhatsApp] Erro detalhado ao criar sessão:', error);
+    if (error instanceof Error) {
+      console.error('[API WhatsApp] Stack trace:', error.stack);
+    }
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
     );
   }

@@ -95,13 +95,21 @@ export function useWhatsAppQR(sessionId: string | null) {
     });
 
     eventSource.addEventListener("error", (event) => {
-      const data = JSON.parse((event as MessageEvent).data || '{}');
+      console.error("EventSource error:", event);
+      let errorMessage = "Erro desconhecido";
+      try {
+        const data = JSON.parse((event as MessageEvent).data || '{}');
+        errorMessage = data.error || data.message || "Erro na conexão";
+        console.error("Error data:", data);
+      } catch (e) {
+        console.error("Failed to parse error data:", e);
+      }
       setState((prev) => ({
         ...prev,
         status: "error",
         loading: false,
       }));
-      toast.error(data.error || "Erro ao conectar");
+      toast.error(errorMessage);
       eventSource.close();
     });
 

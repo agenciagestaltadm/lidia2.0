@@ -40,7 +40,11 @@ export class BaileysService {
    * Cria uma nova sessão WhatsApp
    */
   async createSession(name: string): Promise<WhatsAppSession> {
+    console.log('[BaileysService] Criando sessão:', { name, companyId: this.companyId });
     const supabase = await createClient();
+
+    const token = uuidv4();
+    console.log('[BaileysService] Token gerado:', token);
 
     // Cria a sessão no banco de dados
     const { data: session, error } = await supabase
@@ -48,14 +52,18 @@ export class BaileysService {
       .insert({
         company_id: this.companyId,
         name,
-        token: uuidv4(),
+        token,
         status: 'creating',
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[BaileysService] Erro ao criar sessão no banco:', error);
+      throw new Error(`Erro no banco de dados: ${error.message} (${error.code})`);
+    }
 
+    console.log('[BaileysService] Sessão criada com sucesso:', session.id);
     return session as WhatsAppSession;
   }
 

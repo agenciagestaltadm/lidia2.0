@@ -45,18 +45,28 @@ export function useWhatsAppSessions() {
   const createSession = useCallback(
     async (input: CreateSessionInput): Promise<WhatsAppSession | null> => {
       try {
+        console.log("[WhatsApp] Criando sessão:", input);
         const response = await fetch("/api/whatsapp/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(input),
         });
 
+        console.log("[WhatsApp] Status da resposta:", response.status);
+
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Erro ao criar sessão");
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch {
+            errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+          }
+          console.error("[WhatsApp] Erro na resposta:", errorData);
+          throw new Error(errorData.error || `Erro ${response.status}: ${response.statusText}`);
         }
 
         const session = await response.json();
+        console.log("[WhatsApp] Sessão criada:", session);
         setState((prev) => ({
           ...prev,
           sessions: [session, ...prev.sessions],
@@ -65,6 +75,7 @@ export function useWhatsAppSessions() {
         return session;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro ao criar sessão";
+        console.error("[WhatsApp] Erro ao criar sessão:", err);
         toast.error(errorMessage);
         return null;
       }
