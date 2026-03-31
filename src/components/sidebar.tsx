@@ -19,6 +19,8 @@ import {
   X,
   ChevronDown,
   LogOut,
+  QrCode,
+  BadgeCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -28,6 +30,7 @@ import { SIDEBAR_WIDTHS, SIDEBAR_TRANSITIONS } from "@/hooks/use-sidebar-state";
 interface SubMenuItem {
   href: string;
   label: string;
+  icon?: React.ElementType;
 }
 
 interface NavItem {
@@ -89,10 +92,13 @@ export function Sidebar({
 
     if (canAccessRoute("canViewAttendances")) {
       items.push({
-        href: "/app/attendances",
         label: "Atendimentos",
         icon: MessageSquare,
-        permission: "canViewAttendances"
+        permission: "canViewAttendances",
+        children: [
+          { href: "/app/atendimento/whatsapp", label: "WhatsApp QR", icon: QrCode },
+          { href: "/app/atendimento/wa-oficial", label: "WhatsApp Business API", icon: BadgeCheck },
+        ]
       });
     }
 
@@ -466,18 +472,20 @@ function NavItemComponent({ item, isActive, isCollapsed }: NavItemComponentProps
               <div className="mt-1 ml-4 pl-4 border-l border-emerald-500/20 space-y-1">
                 {item.children.map((child) => {
                   const isChildActive = pathname === child.href;
+                  const ChildIcon = child.icon;
                   return (
                     <Link
                       key={child.href}
                       href={child.href}
                       className={cn(
-                        "block px-3 py-2 text-sm rounded-lg transition-all duration-200 truncate",
+                        "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200",
                         isChildActive
                           ? "text-emerald-400 bg-emerald-500/10"
                           : "dark:text-slate-500 text-slate-500 dark:hover:text-emerald-300 hover:text-emerald-600 dark:hover:bg-white/5 hover:bg-slate-100"
                       )}
                     >
-                      {child.label}
+                      {ChildIcon && <ChildIcon className="w-4 h-4 flex-shrink-0" />}
+                      <span className="truncate">{child.label}</span>
                     </Link>
                   );
                 })}
