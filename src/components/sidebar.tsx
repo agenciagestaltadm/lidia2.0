@@ -96,8 +96,8 @@ export function Sidebar({
         icon: MessageSquare,
         permission: "canViewAttendances",
         children: [
-          { href: "/app/atendimento/whatsapp", label: "WhatsApp QR", icon: QrCode },
-          { href: "/app/atendimento/wa-oficial", label: "WhatsApp Business API", icon: BadgeCheck },
+          { href: "/app/whatsapp", label: "WhatsApp QR", icon: QrCode },
+          { href: "/app/wa-oficial", label: "WA Oficial", icon: BadgeCheck },
         ]
       });
     }
