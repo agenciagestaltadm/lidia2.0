@@ -15,7 +15,11 @@ import { mockConversations, mockContacts } from "@/lib/mock/chat-data";
 import { ContactsView } from "./views/ContactsView";
 import { SettingsView } from "./views/SettingsView";
 
-export function WhatsLidiaLayout() {
+interface WhatsLidiaLayoutProps {
+  connectionType?: "qr" | "oficial";
+}
+
+export function WhatsLidiaLayout({ connectionType }: WhatsLidiaLayoutProps) {
   const router = useRouter();
   const [currentView, setCurrentView] = useState<ChatView>("conversations");
   const [selectedConversationId, setSelectedConversationId] = useState<
@@ -400,6 +404,7 @@ export function WhatsLidiaLayout() {
                   onOpenConversation={handleOpenConversation}
                   onReopen={handleReopenConversation}
                   onTabChange={handleTabChange}
+                  connectionType={connectionType}
                 />
               </motion.div>
             ) : (
@@ -445,6 +450,7 @@ export function WhatsLidiaLayout() {
             onOpenConversation={handleOpenConversation}
             onReopen={handleReopenConversation}
             onTabChange={handleTabChange}
+            connectionType={connectionType}
           />
           <ChatWindow
             conversation={selectedConversation}

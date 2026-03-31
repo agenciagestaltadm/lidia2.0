@@ -21,6 +21,8 @@ interface ConversationListProps {
   onOpenConversation?: (id: string) => void;
   onReopen?: (id: string) => void;
   onTabChange?: (tab: 'open' | 'pending' | 'resolved') => void;
+  connectionType?: "qr" | "oficial";
+  loading?: boolean;
 }
 
 type FilterTab = "open" | "pending" | "resolved";
@@ -38,6 +40,8 @@ export function ConversationList({
   onOpenConversation,
   onReopen,
   onTabChange,
+  connectionType,
+  loading = false,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("open");
@@ -115,6 +119,16 @@ export function ConversationList({
           )}>
             BETA
           </span>
+          {connectionType && (
+            <span className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase",
+              connectionType === "qr"
+                ? (isDarkMode ? "bg-blue-500/20 text-blue-400" : "bg-blue-100 text-blue-600")
+                : (isDarkMode ? "bg-purple-500/20 text-purple-400" : "bg-purple-100 text-purple-600")
+            )}>
+              {connectionType === "qr" ? "QR" : "OFICIAL"}
+            </span>
+          )}
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -218,7 +232,18 @@ export function ConversationList({
           ? "scrollbar-thumb-[#374045] scrollbar-track-transparent" 
           : "scrollbar-thumb-gray-300 scrollbar-track-transparent"
       )}>
-        {filteredConversations.length === 0 ? (
+        {loading ? (
+          <div className={cn(
+            "flex flex-col items-center justify-center h-full px-6",
+            isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+          )}>
+            <div className={cn(
+              "w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mb-4",
+              isDarkMode ? "border-emerald-500 border-t-transparent" : "border-emerald-500 border-t-transparent"
+            )} />
+            <p className="text-center text-sm">Carregando conversas...</p>
+          </div>
+        ) : filteredConversations.length === 0 ? (
           <div className={cn(
             "flex flex-col items-center justify-center h-full px-6",
             isDarkMode ? "text-[#8696a0]" : "text-gray-500"

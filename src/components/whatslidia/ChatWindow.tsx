@@ -24,6 +24,9 @@ interface ChatWindowProps {
   onSendContact?: () => void;
   onSendTemplate?: (type: string) => void;
   onSendFlow?: () => void;
+  // Props for real data integration
+  externalMessages?: Message[];
+  loading?: boolean;
 }
 
 export function ChatWindow({
@@ -39,19 +42,24 @@ export function ChatWindow({
   onSendContact,
   onSendTemplate,
   onSendFlow,
+  externalMessages,
+  loading: externalLoading = false,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Load messages when conversation changes
+  // Load messages when conversation changes - use external if provided
   useEffect(() => {
-    if (conversation) {
+    if (externalMessages !== undefined) {
+      // Use external messages from props
+      setMessages(externalMessages);
+    } else if (conversation) {
       const msgs = getConversationMessages(conversation.id);
       setMessages(msgs);
     } else {
       setMessages([]);
     }
-  }, [conversation?.id]);
+  }, [conversation?.id, externalMessages]);
 
   // Auto-scroll to bottom
   useEffect(() => {

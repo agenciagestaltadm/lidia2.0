@@ -1,0 +1,179 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { BaileysService } from '@/lib/whatsapp/baileys-service';
+
+// GET /api/whatsapp/sessions/[id]/messages - Listar mensagens
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // Verifica autenticação
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      );
+    }
+
+    // Obtém o perfil do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id, role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Perfil não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Verifica se a sessão existe e pertence à empresa
+    const session = await BaileysService.getSessionById(id, profile.company_id);
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Sessão não encontrada' },
+        { status: 404 }
+      );
+    }
+
+    // Obtém parâmetros de query
+    const { searchParams } = new URL(request.url);
+    const phone = searchParams.get('phone');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const before = searchParams.get('before');
+
+    if (!phone) {
+      return NextResponse.json(
+        { error: 'Número de telefone é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    // Busca mensagens
+    let query = supabase
+      .from('whatsapp_messages')
+      .select('*')
+      .eq('session_id', id)
+      .eq('contact_phone', phone)
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+
+    if (before) {
+      query = query.lt('timestamp', before);
+    }
+
+    const { data: messages, error } = await query;
+
+    if (error) {
+      console.error('Erro ao buscar mensagens:', error);
+      return NextResponse.json(
+        { error: 'Erro ao buscar mensagens' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(messages?.reverse() || []);
+  } catch (error) {
+    console.error('Erro ao listar mensagens:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/whatsapp/sessions/[id]/messages - Enviar mensagem
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // Verifica autenticação
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      );
+    }
+
+    // Obtém o perfil do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id, role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Perfil não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Verifica se a sessão existe e pertence à empresa
+    const session = await BaileysService.getSessionById(id, profile.company_id);
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Sessão não encontrada' },
+        { status: 404 }
+      );
+    }
+
+    // Verifica se está ativa
+    if (session.status !== 'active') {
+      return NextResponse.json(
+        { error: 'Sessão não está ativa' },
+        { status: 400 }
+      );
+    }
+
+    // Obtém os dados da requisição
+    const body = await request.json();
+    const { phone, message } = body;
+
+    if (!phone || typeof phone !== 'string') {
+      return NextResponse.json(
+        { error: 'Número de telefone é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Mensagem é obrigatória' },
+        { status: 400 }
+      );
+    }
+
+    // Envia a mensagem
+    const service = new BaileysService(id, profile.company_id);
+    const savedMessage = await service.sendMessage(phone, message.trim());
+
+    return NextResponse.json(savedMessage, { status: 201 });
+  } catch (error) {
+    console.error('Erro ao enviar mensagem:', error);
+    return NextResponse.json(
+      { error: 'Erro ao enviar mensagem' },
+      { status: 500 }
+    );
+  }
+}
