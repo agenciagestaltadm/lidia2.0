@@ -292,14 +292,14 @@ export class BaileysService {
     // Evento de atualização de credenciais
     this.socket.ev.on('creds.update', saveCreds);
 
-    // Evento de mensagens
-    this.socket.ev.on('messages.upsert', async (m) => {
-      if (m.type === 'notify') {
-        for (const msg of m.messages) {
-          await this.handleIncomingMessage(msg as BaileysMessage);
-        }
-      }
-    });
+     // Evento de mensagens
+     this.socket.ev.on('messages.upsert', async (m) => {
+       if (m.type === 'notify') {
+         for (const msg of m.messages) {
+           await this.handleIncomingMessage(msg as BaileysMessage);
+         }
+       }
+     });
 
     // Evento de contatos
     this.socket.ev.on('contacts.upsert', async (contacts) => {

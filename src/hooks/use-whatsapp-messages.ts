@@ -34,6 +34,7 @@ export function useWhatsAppMessages(
 
   const supabase = createClient();
   const cacheKey = `${sessionId}-${phone}`;
+  const previousPhoneRef = useRef<string | null>(null);
 
   // Verifica se o cache é válido
   const isCacheValid = useCallback(() => {
@@ -66,7 +67,7 @@ export function useWhatsAppMessages(
 
         const params = new URLSearchParams();
         params.append("phone", phone);
-        params.append("limit", "50");
+        params.append("limit", "100"); // Aumentado de 50 para 100
         if (before) params.append("before", before);
 
         const response = await fetch(
@@ -79,7 +80,7 @@ export function useWhatsAppMessages(
         }
 
         const messages = await response.json();
-        const hasMore = messages.length === 50;
+        const hasMore = messages.length === 100; // Atualizado para 100
 
         // Atualiza cache apenas para carga inicial
         if (!before) {
@@ -225,18 +226,33 @@ export function useWhatsAppMessages(
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
         },
         (payload) => {
-          const newMessage = payload.new as WhatsAppMessage;
-          if (newMessage.contact_phone === phone) {
-            setState((prev) => ({
-              ...prev,
-              messages: [...prev.messages, newMessage],
-            }));
+          const message = payload.new as WhatsAppMessage;
+          
+          if (payload.eventType === "INSERT") {
+            if (message.contact_phone === phone) {
+              setState((prev) => ({
+                ...prev,
+                messages: [...prev.messages, message],
+              }));
+              console.log("[useWhatsAppMessages] Nova mensagem recebida:", message);
+            }
+          } else if (payload.eventType === "UPDATE") {
+            // Atualiza status de mensagem existente
+            if (message.contact_phone === phone) {
+              setState((prev) => ({
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === message.id ? message : m
+                ),
+              }));
+              console.log("[useWhatsAppMessages] Mensagem atualizada:", message);
+            }
           }
         }
       )
@@ -247,19 +263,49 @@ export function useWhatsAppMessages(
     };
   }, [sessionId, phone, supabase]);
 
-  // Carrega mensagens iniciais
+  // Polling para atualizar mensagens a cada 3 segundos
+  useEffect(() => {
+    if (!sessionId || !phone) return;
+
+    const interval = setInterval(() => {
+      fetchMessages();
+    }, 3000); // 3 segundos
+
+    return () => clearInterval(interval);
+  }, [sessionId, phone, fetchMessages]);
+
+  // Carrega mensagens iniciais e força refresh ao trocar de conversa
   useEffect(() => {
     if (sessionId && phone) {
-      fetchMessages();
+      // Se o telefone mudou, força refresh do cache
+      if (previousPhoneRef.current !== phone) {
+        messagesCache.delete(cacheKey);
+        previousPhoneRef.current = phone;
+        console.log('[useWhatsAppMessages] Carregando mensagens para novo contato:', phone);
+        fetchMessages(undefined, true); // forceRefresh = true
+      } else {
+        console.log('[useWhatsAppMessages] Carregando mensagens iniciais');
+        fetchMessages();
+      }
     }
-  }, [fetchMessages, sessionId, phone]);
+  }, [fetchMessages, sessionId, phone, cacheKey]);
 
-  return {
-    ...state,
-    sendMessage,
-    sendMediaMessage,
-    loadMore,
-    refetch: () => fetchMessages(),
-    refresh,
-  };
-}
+  // Carrega mensagens antigas ao fazer scroll para cima
+  const loadOlderMessages = useCallback(() => {
+    if (state.messages.length > 0 && state.hasMore && !state.loading) {
+      const oldestMessage = state.messages[0];
+      console.log('[useWhatsAppMessages] Carregando mensagens antigas antes de:', oldestMessage.timestamp);
+      fetchMessages(oldestMessage.timestamp);
+    }
+  }, [fetchMessages, state.messages, state.hasMore, state.loading]);
+
+   return {
+     ...state,
+     sendMessage,
+     sendMediaMessage,
+     loadMore,
+     loadOlderMessages,
+     refetch: () => fetchMessages(),
+     refresh,
+   };
+ }

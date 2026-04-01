@@ -198,7 +198,35 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
 
   // Handle sending attachments
   const handleSendAttachments = async (files: AttachmentFile[], caption?: string) => {
-    toast.info("Envio de arquivos em desenvolvimento");
+    if (!selectedContactPhone || !sessionId) return;
+    
+    for (const file of files) {
+      try {
+        // Converte arquivo para base64
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64Data = e.target?.result as string;
+          
+          const success = await sendWhatsAppMessage({
+            phone: selectedContactPhone,
+            message: caption || file.file.name,
+            mediaType: file.type,
+            mediaUrl: base64Data,
+            fileName: file.file.name,
+          } as any);
+
+          if (!success) {
+            toast.error(`Erro ao enviar ${file.file.name}`);
+          } else {
+            toast.success(`${file.file.name} enviado com sucesso`);
+          }
+        };
+        reader.readAsDataURL(file.file);
+      } catch (error) {
+        console.error('Erro ao processar arquivo:', error);
+        toast.error(`Erro ao processar ${file.file.name}`);
+      }
+    }
   };
 
   // Handle sending location

@@ -52,6 +52,7 @@ export function ChatWindow({
   useEffect(() => {
     if (externalMessages !== undefined) {
       // Use external messages from props
+      console.log('[ChatWindow] Atualizando mensagens externas:', externalMessages.length);
       setMessages(externalMessages);
     } else if (conversation) {
       const msgs = getConversationMessages(conversation.id);
@@ -84,20 +85,8 @@ export function ChatWindow({
 
     setMessages((prev) => [...prev, newMessage]);
 
-    // Simulate message status updates
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === newMessage.id ? { ...m, status: "delivered" } : m
-        )
-      );
-    }, 1000);
-
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === newMessage.id ? { ...m, status: "read" } : m))
-      );
-    }, 2500);
+    // Não simula mais o status de mensagem - aguarda confirmação real do WhatsApp
+    // O status será atualizado via webhook/callback do Baileys
   };
 
   // Handle sending messages with type and metadata (for modals)
@@ -120,20 +109,8 @@ export function ChatWindow({
 
     setMessages((prev) => [...prev, newMessage]);
 
-    // Simulate message status updates
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === newMessage.id ? { ...m, status: "delivered" } : m
-        )
-      );
-    }, 1000);
-
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === newMessage.id ? { ...m, status: "read" } : m))
-      );
-    }, 2500);
+    // Não simula mais o status de mensagem - aguarda confirmação real do WhatsApp
+    // O status será atualizado via webhook/callback do Baileys
   };
 
   // Handle sending attachments with caption
@@ -164,22 +141,8 @@ export function ChatWindow({
       setMessages((prev) => [...prev, newMessage]);
     });
 
-    // Simulate status updates
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.timestamp > new Date(Date.now() - 5000) ? { ...m, status: "delivered" } : m
-        )
-      );
-    }, 1000);
-
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.timestamp > new Date(Date.now() - 5000) ? { ...m, status: "read" } : m
-        )
-      );
-    }, 2500);
+    // Não simula mais o status de mensagem - aguarda confirmação real do WhatsApp
+    // O status será atualizado via webhook/callback do Baileys
   };
 
   // Group messages by sender and time

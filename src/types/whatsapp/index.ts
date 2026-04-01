@@ -57,6 +57,10 @@ export interface WhatsAppMessage {
   metadata?: Record<string, unknown>;
   timestamp: string;
   created_at: string;
+  reaction_count?: number;
+  is_deleted?: boolean;
+  is_forwarded?: boolean;
+  forward_count?: number;
 }
 
 export interface WhatsAppContact {
@@ -101,6 +105,84 @@ export interface Conversation {
   contact: WhatsAppContact;
   lastMessage?: WhatsAppMessage;
   unreadCount: number;
+}
+
+// ============================================================
+// Phase 2 Types
+// ============================================================
+
+export interface WhatsAppMessageReaction {
+  id: string;
+  session_id: string;
+  message_id: string;
+  contact_phone: string;
+  reaction_emoji: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WhatsAppMessageForward {
+  id: string;
+  session_id: string;
+  original_message_id: string;
+  forwarded_to_phone: string;
+  forwarded_at: string;
+  created_at: string;
+}
+
+export interface WhatsAppMessageDeletion {
+  id: string;
+  session_id: string;
+  message_id: string;
+  deleted_by: string;
+  deletion_type: 'user' | 'admin';
+  reason?: string;
+  deleted_at: string;
+  created_at: string;
+}
+
+export interface WhatsAppGroup {
+  id: string;
+  session_id: string;
+  group_jid: string;
+  name: string;
+  description?: string;
+  profile_picture_url?: string;
+  owner_phone?: string;
+  participants_count: number;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WhatsAppGroupParticipant {
+  id: string;
+  group_id: string;
+  participant_phone: string;
+  participant_name?: string;
+  is_admin: boolean;
+  joined_at: string;
+  created_at: string;
+}
+
+export interface WhatsAppMedia {
+  id: string;
+  session_id: string;
+  message_id?: string;
+  media_type: 'image' | 'video' | 'audio' | 'document' | 'sticker';
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
+  storage_path: string;
+  storage_url?: string;
+  thumbnail_url?: string;
+  duration_seconds?: number;
+  width?: number;
+  height?: number;
+  metadata?: Record<string, unknown>;
+  uploaded_at: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Tipos para eventos do Baileys

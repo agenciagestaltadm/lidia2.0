@@ -11,17 +11,7 @@ interface UseWhatsAppContactsState {
   error: string | null;
 }
 
-// Cache global para contatos
-const contactsCache = new Map<string, {
-  contacts: WhatsAppContact[];
-  timestamp: number;
-}>();
-
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos
-
-export function useWhatsAppContacts(
-  sessionId: string | null
-) {
+export function useWhatsAppContacts(sessionId: string | null) {
   const [state, setState] = useState<UseWhatsAppContactsState>({
     contacts: [],
     loading: false,
@@ -29,121 +19,44 @@ export function useWhatsAppContacts(
   });
 
   const supabase = createClient();
-  const cacheKey = `contacts-${sessionId}`;
 
-  // Verifica se o cache é válido
-  const isCacheValid = useCallback(() => {
-    const cached = contactsCache.get(cacheKey);
-    if (!cached) return false;
-    return Date.now() - cached.timestamp < CACHE_DURATION;
-  }, [cacheKey]);
-
-  // Busca contatos com cache
-  const fetchContacts = useCallback(
-    async (forceRefresh = false) => {
-      if (!sessionId) return;
-
-      // Verifica cache se não for refresh forçado
-      if (!forceRefresh && isCacheValid()) {
-        const cached = contactsCache.get(cacheKey);
-        if (cached) {
-          setState({
-            contacts: cached.contacts,
-            loading: false,
-            error: null,
-          });
-          return;
-        }
-      }
-
-      try {
-        setState((prev) => ({ ...prev, loading: true, error: null }));
-
-        const response = await fetch(
-          `/api/whatsapp/sessions/${sessionId}/contacts`
-        );
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Erro ao buscar contatos");
-        }
-
-        const contacts = await response.json();
-
-        // Atualiza cache
-        contactsCache.set(cacheKey, {
-          contacts,
-          timestamp: Date.now(),
-        });
-
-        setState({
-          contacts,
-          loading: false,
-          error: null,
-        });
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Erro ao buscar contatos";
-        setState((prev) => ({ ...prev, loading: false, error: errorMessage }));
-      }
-    },
-    [sessionId, cacheKey, isCacheValid]
-  );
-
-  // Sincroniza contatos do WhatsApp
-  const syncContacts = useCallback(async (): Promise<boolean> => {
-    if (!sessionId) return false;
+  // Busca contatos
+  const fetchContacts = useCallback(async () => {
+    if (!sessionId) return;
 
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
-      const response = await fetch(
-        `/api/whatsapp/sessions/${sessionId}/contacts/sync`,
-        {
-          method: "POST",
-        }
-      );
+      const { data: contacts, error } = await supabase
+        .from("whatsapp_contacts")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("last_message_at", { ascending: false });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erro ao sincronizar contatos");
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const contacts = await response.json();
-
-      // Atualiza cache
-      contactsCache.set(cacheKey, {
-        contacts,
-        timestamp: Date.now(),
-      });
-
       setState({
-        contacts,
+        contacts: contacts || [],
         loading: false,
         error: null,
       });
-
-      toast.success("Contatos sincronizados com sucesso!");
-      return true;
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Erro ao sincronizar contatos";
+        err instanceof Error ? err.message : "Erro ao buscar contatos";
       setState((prev) => ({ ...prev, loading: false, error: errorMessage }));
-      toast.error(errorMessage);
-      return false;
     }
-  }, [sessionId, cacheKey]);
+  }, [sessionId, supabase]);
 
-  // Força refresh do cache
-  const refresh = useCallback(() => {
-    contactsCache.delete(cacheKey);
-    fetchContacts(true);
-  }, [cacheKey, fetchContacts]);
-
-  // Subscreve a atualizações de contatos em tempo real
+  // Subscreve a mudanças em tempo real nos contatos
   useEffect(() => {
     if (!sessionId) return;
 
+    // Busca inicial
+    fetchContacts();
+
+    // Subscreve a mudanças
     const subscription = supabase
       .channel(`whatsapp-contacts-${sessionId}`)
       .on(
@@ -155,10 +68,33 @@ export function useWhatsAppContacts(
           filter: `session_id=eq.${sessionId}`,
         },
         (payload) => {
-          // Limpa o cache quando há mudanças
-          contactsCache.delete(cacheKey);
-          // Recarrega os contatos
-          fetchContacts(true);
+          console.log("[useWhatsAppContacts] Mudança detectada:", payload);
+
+          if (payload.eventType === "INSERT") {
+            const newContact = payload.new as WhatsAppContact;
+            setState((prev) => ({
+              ...prev,
+              contacts: [newContact, ...prev.contacts],
+            }));
+          } else if (payload.eventType === "UPDATE") {
+            const updatedContact = payload.new as WhatsAppContact;
+            setState((prev) => ({
+              ...prev,
+              contacts: prev.contacts
+                .map((c) => (c.id === updatedContact.id ? updatedContact : c))
+                .sort(
+                  (a, b) =>
+                    new Date(b.last_message_at || 0).getTime() -
+                    new Date(a.last_message_at || 0).getTime()
+                ),
+            }));
+          } else if (payload.eventType === "DELETE") {
+            const deletedContact = payload.old as WhatsAppContact;
+            setState((prev) => ({
+              ...prev,
+              contacts: prev.contacts.filter((c) => c.id !== deletedContact.id),
+            }));
+          }
         }
       )
       .subscribe();
@@ -166,19 +102,21 @@ export function useWhatsAppContacts(
     return () => {
       subscription.unsubscribe();
     };
-  }, [sessionId, cacheKey, fetchContacts, supabase]);
+  }, [sessionId, supabase, fetchContacts]);
 
-  // Carrega contatos iniciais
+  // Polling para atualizar contatos a cada 5 segundos
   useEffect(() => {
-    if (sessionId) {
+    if (!sessionId) return;
+
+    const interval = setInterval(() => {
       fetchContacts();
-    }
-  }, [fetchContacts, sessionId]);
+    }, 5000); // 5 segundos
+
+    return () => clearInterval(interval);
+  }, [sessionId, fetchContacts]);
 
   return {
     ...state,
-    fetchContacts,
-    syncContacts,
-    refresh,
+    refetch: fetchContacts,
   };
 }

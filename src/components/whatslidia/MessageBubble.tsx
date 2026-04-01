@@ -7,6 +7,7 @@ import { Check, CheckCheck, Clock, AlertCircle, File, Play, Pause } from "lucide
 import { useState, useRef, useEffect, useCallback } from "react";
 import { WaveformVisualizer } from "@/components/ui/WaveformVisualizer";
 import { extractWaveformFromBlob, generateDefaultWaveform } from "@/lib/audio-analysis";
+import { MessageStatusIcon } from "./PresenceIndicator";
 
 // Audio Player Component with real waveform visualization
 function AudioPlayer({ message, isDarkMode }: { message: Message; isDarkMode: boolean }) {
@@ -217,19 +218,17 @@ export function MessageBubble({
   const getStatusIcon = () => {
     if (!message.isFromMe) return null;
 
-    const baseClasses = "w-3.5 h-3.5";
-
     switch (message.status) {
       case "sent":
-        return <Check className={cn(baseClasses, "text-[#8696a0]")} />;
+        return <MessageStatusIcon status="sent" isDarkMode={isDarkMode} size="sm" />;
       case "delivered":
-        return <CheckCheck className={cn(baseClasses, "text-[#8696a0]")} />;
+        return <MessageStatusIcon status="delivered" isDarkMode={isDarkMode} size="sm" />;
       case "read":
-        return <CheckCheck className={cn(baseClasses, "text-[#53bdeb]")} />;
+        return <MessageStatusIcon status="read" isDarkMode={isDarkMode} size="sm" />;
       case "failed":
-        return <AlertCircle className={cn(baseClasses, "text-red-500")} />;
+        return <MessageStatusIcon status="failed" isDarkMode={isDarkMode} size="sm" />;
       default:
-        return <Clock className={cn(baseClasses, "text-[#8696a0]")} />;
+        return <Clock className="w-3.5 h-3.5 text-[#8696a0]" />;
     }
   };
 
@@ -265,8 +264,15 @@ export function MessageBubble({
           </div>
         );
 
-      case "audio":
-        return <AudioPlayer message={message} isDarkMode={isDarkMode} />;
+       case "audio":
+         return (
+           <div className="flex items-center gap-3">
+             <AudioPlayer message={message} isDarkMode={isDarkMode} />
+             {message.metadata?.caption && (
+               <p className="text-sm ml-2">{message.metadata.caption}</p>
+             )}
+           </div>
+         );
 
       case "document":
         return (

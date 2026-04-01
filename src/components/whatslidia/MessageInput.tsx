@@ -204,11 +204,35 @@ export function MessageInput({
       .padStart(2, "0")}`;
   };
 
-  // Handle attachment send
-  const handleSendAttachments = (files: AttachmentFile[], caption?: string) => {
-    onSendAttachments?.(files, caption);
-    setShowAttachments(false);
-  };
+   // Handle attachment send
+   const handleSendAttachments = (files: AttachmentFile[], caption?: string) => {
+     onSendAttachments?.(files, caption);
+     setShowAttachments(false);
+   };
+
+   // Handle audio send
+   const handleSendAudio = async (audioBlob: Blob, duration: number, waveformData: number[]) => {
+     setIsSendingAudio(true);
+     try {
+       // Enviar áudio via onSendMessage com tipo 'audio'
+       onSendMessage?.(
+         `[Áudio ${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')}]`,
+         'audio',
+         {
+           audioBlob,
+           duration,
+           waveformData,
+           mimeType: audioBlob.type,
+           fileSize: audioBlob.size,
+         }
+       );
+       setShowAudioRecorder(false);
+     } catch (error) {
+       console.error('Erro ao enviar áudio:', error);
+     } finally {
+       setIsSendingAudio(false);
+     }
+   };
 
   // Handle video conference
   const handleOpenVideoConf = () => {

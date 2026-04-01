@@ -192,17 +192,28 @@ export async function POST(
 
     const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
 
-    // Envia a mensagem com mídia
-    const service = new BaileysService(id, profile.company_id);
-    const savedMessage = await service.sendMediaMessage(
-      phone,
-      mediaBuffer,
-      mediaType as 'image' | 'video' | 'audio' | 'document' | 'sticker',
-      caption,
-      fileName
-    );
+     // Envia a mensagem com mídia
+     const service = new BaileysService(id, profile.company_id);
+     
+     // Para áudio, tenta converter para formato suportado
+     let finalMediaBuffer = mediaBuffer;
+     let finalMediaType = mediaType as 'image' | 'video' | 'audio' | 'document' | 'sticker';
+     
+     if (mediaType === 'audio') {
+       // Se for áudio, mantém o buffer como está
+       // O Baileys vai lidar com a conversão se necessário
+       console.log('[API] Enviando áudio:', { fileName, size: mediaBuffer.length, type: mediaType });
+     }
+     
+     const savedMessage = await service.sendMediaMessage(
+       phone,
+       finalMediaBuffer,
+       finalMediaType,
+       caption,
+       fileName
+     );
 
-    return NextResponse.json(savedMessage, { status: 201 });
+     return NextResponse.json(savedMessage, { status: 201 });
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error);
     return NextResponse.json(
