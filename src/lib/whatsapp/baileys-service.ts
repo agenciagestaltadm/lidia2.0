@@ -1,14 +1,28 @@
-import {
-  makeWASocket,
+import makeWASocket, {
   DisconnectReason,
   useMultiFileAuthState,
-  WASocket,
-  BaileysEventMap,
-  delay,
+  Browsers,
+  makeCacheableSignalKeyStore,
 } from '@whiskeysockets/baileys';
+import type { WASocket } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { createClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
+import { promises as fs } from 'fs';
+import path from 'path';
+
+// Logger customizado silencioso (compatível com @whiskeysockets/baileys v7)
+const baileysLogger = {
+  level: 'silent',
+  trace: () => {},
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  fatal: () => {},
+  child: () => baileysLogger,
+} as any;
+
 import type {
   WhatsAppSession,
   WhatsAppMessage,
@@ -25,6 +39,14 @@ const sessionCallbacks = new Map<string, {
   onMessage?: (message: WhatsAppMessage) => void;
   onContact?: (contact: WhatsAppContact) => void;
 }>();
+// Contador de tentativas de reconexão por sessão
+const reconnectAttempts = new Map<string, number>();
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+// Helper para delay
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export class BaileysService {
   private sessionId: string;
@@ -69,6 +91,7 @@ export class BaileysService {
 
   /**
    * Inicia uma sessão WhatsApp e retorna o QR code
+   * Usa @whiskeysockets/baileys v7
    */
   async startSession(
     onQR?: (qr: string) => void,
@@ -83,15 +106,30 @@ export class BaileysService {
       .eq('id', this.sessionId);
 
     // Configura o estado de autenticação
-    const { state, saveCreds } = await useMultiFileAuthState(
-      `./whatsapp-sessions/${this.sessionId}`
-    );
+    const authPath = path.join(process.cwd(), 'whatsapp-sessions', this.sessionId);
+    
+    // Garante que o diretório existe
+    await fs.mkdir(authPath, { recursive: true });
+    
+    const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
-    // Cria o socket do WhatsApp
+    console.log('[BaileysService] Criando socket @whiskeysockets/baileys v7...');
+
+    // Cria o socket do WhatsApp usando @whiskeysockets/baileys v7
     this.socket = makeWASocket({
       printQRInTerminal: false,
-      auth: state,
-      browser: ['Lidia 2.0', 'Chrome', '1.0'],
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, baileysLogger),
+      },
+      logger: baileysLogger,
+      browser: Browsers.ubuntu('Chrome'),
+      connectTimeoutMs: 120000, // 2 minutos de timeout
+      keepAliveIntervalMs: 30000,
+      markOnlineOnConnect: false,
+      syncFullHistory: false,
+      // Configurações adicionais para melhor estabilidade na v7
+      generateHighQualityLinkPreview: false,
     });
 
     // Armazena a sessão ativa
@@ -101,30 +139,50 @@ export class BaileysService {
     // Evento de atualização de conexão
     this.socket.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
+      
+      console.log('[BaileysService] connection.update:', {
+        connection,
+        hasQR: !!qr,
+        qrLength: qr?.length,
+        lastDisconnectStatus: (lastDisconnect?.error as Boom)?.output?.statusCode,
+        lastDisconnectError: lastDisconnect?.error?.message,
+      });
 
       // QR code gerado
       if (qr && onQR) {
-        onQR(qr);
+        try {
+          console.log('[BaileysService] QR code gerado com sucesso! Comprimento:', qr.length);
+          onQR(qr);
 
-        // Salva QR code no banco
-        await supabase.from('whatsapp_qr_codes').insert({
-          session_id: this.sessionId,
-          qr_code_data: qr,
-          expires_at: new Date(Date.now() + 60 * 1000).toISOString(), // 1 minuto
-        });
+          // Salva QR code no banco
+          await supabase.from('whatsapp_qr_codes').insert({
+            session_id: this.sessionId,
+            qr_code_data: qr,
+            expires_at: new Date(Date.now() + 60 * 1000).toISOString(), // 1 minuto
+          });
+        } catch (error) {
+          console.error('[BaileysService] Error in QR callback:', error);
+        }
       }
 
-      // Conexão fechada
+      // Conexão fechada ou erro
       if (connection === 'close') {
-        const shouldReconnect =
-          (lastDisconnect?.error as Boom)?.output?.statusCode !==
-          DisconnectReason.loggedOut;
+        const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        const errorMessage = lastDisconnect?.error?.message || 'Unknown error';
+        const attempts = reconnectAttempts.get(this.sessionId) || 0;
+        
+        console.log('[BaileysService] Connection closed:', { 
+          statusCode, 
+          attempts,
+          error: errorMessage
+        });
 
-        if (shouldReconnect) {
-          // Reconecta automaticamente
-          await this.startSession(onQR, onConnection);
-        } else {
-          // Deslogado, atualiza status
+        // Se foi deslogado, não reconecta
+        if (statusCode === DisconnectReason.loggedOut) {
+          console.log('[BaileysService] Logged out, not reconnecting');
+          reconnectAttempts.delete(this.sessionId);
+          activeSessions.delete(this.sessionId);
+          
           await supabase
             .from('whatsapp_sessions')
             .update({
@@ -134,14 +192,80 @@ export class BaileysService {
             .eq('id', this.sessionId);
 
           if (onConnection) {
-            onConnection('disconnected');
+            try {
+              onConnection('disconnected');
+            } catch (error) {
+              console.error('[BaileysService] Error in connection callback (disconnected):', error);
+            }
+          }
+          return;
+        }
+
+        // Verifica se atingiu o limite de tentativas
+        if (attempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.error('[BaileysService] Max reconnection attempts reached:', attempts);
+          reconnectAttempts.delete(this.sessionId);
+          activeSessions.delete(this.sessionId);
+          
+          // Limpa dados de autenticação
+          await BaileysService.clearSessionAuth(this.sessionId);
+          
+          // Notifica o frontend do erro
+          if (onConnection) {
+            try {
+              onConnection('error', undefined, `Falha na conexão após ${MAX_RECONNECT_ATTEMPTS} tentativas. Tente novamente.`);
+            } catch (error) {
+              console.error('[BaileysService] Error in connection callback (max attempts):', error);
+            }
+          }
+          
+          // Atualiza status no banco
+          await supabase
+            .from('whatsapp_sessions')
+            .update({
+              status: 'error',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', this.sessionId);
+          
+          return;
+        }
+
+        // Notifica o frontend que está tentando reconectar
+        if (onConnection) {
+          try {
+            onConnection('retrying' as any, undefined, `Reconectando... Tentativa ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS}`);
+          } catch (error) {
+            console.error('[BaileysService] Error in connection callback (retrying):', error);
           }
         }
+
+        // Incrementa contador de tentativas
+        reconnectAttempts.set(this.sessionId, attempts + 1);
+        
+        // Limpa dados de autenticação se for Connection Failure (405)
+        if (errorMessage.includes('Connection Failure') || statusCode === 405) {
+          console.warn('[BaileysService] Connection Failure (405), clearing auth and retrying...');
+          await BaileysService.clearSessionAuth(this.sessionId);
+        }
+        
+        // Reconecta automaticamente após delay progressivo
+        const retryDelay = Math.min((attempts + 1) * 3000, 15000); // 3s, 6s, 9s, 12s, 15s
+        console.log(`[BaileysService] Reconnecting (attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS}) in ${retryDelay / 1000}s...`);
+        await delay(retryDelay);
+        await this.startSession(onQR, onConnection);
       }
 
       // Conexão aberta
       if (connection === 'open') {
         const user = this.socket?.user;
+        
+        // Reseta contador de tentativas
+        reconnectAttempts.delete(this.sessionId);
+        console.log('[BaileysService] Connection opened successfully!', {
+          userId: user?.id,
+          userName: user?.name,
+        });
 
         // Atualiza status e informações do usuário
         await supabase
@@ -156,7 +280,11 @@ export class BaileysService {
           .eq('id', this.sessionId);
 
         if (onConnection && user) {
-          onConnection('active', user.id.split(':')[0], user.name);
+          try {
+            onConnection('active', user.id.split(':')[0], user.name);
+          } catch (error) {
+            console.error('[BaileysService] Error in connection callback (active):', error);
+          }
         }
       }
     });
@@ -448,6 +576,19 @@ export class BaileysService {
   }
 
   /**
+   * Limpa os dados de autenticação de uma sessão
+   */
+  static async clearSessionAuth(sessionId: string): Promise<void> {
+    try {
+      const sessionPath = path.join(process.cwd(), 'whatsapp-sessions', sessionId);
+      await fs.rm(sessionPath, { recursive: true, force: true });
+      console.log(`[BaileysService] Cleared auth data for session: ${sessionId}`);
+    } catch (error) {
+      console.log(`[BaileysService] No auth data to clear for session: ${sessionId}`);
+    }
+  }
+
+  /**
    * Exclui uma sessão
    */
   static async deleteSession(sessionId: string, companyId: string): Promise<void> {
@@ -456,11 +597,18 @@ export class BaileysService {
     // Desconecta se estiver ativa
     const socket = activeSessions.get(sessionId);
     if (socket) {
-      await socket.logout();
-      socket.end(undefined);
+      try {
+        await socket.logout();
+        socket.end(undefined);
+      } catch (error) {
+        console.log('[BaileysService] Error during logout:', error);
+      }
       activeSessions.delete(sessionId);
       sessionCallbacks.delete(sessionId);
     }
+
+    // Limpa dados de autenticação
+    await this.clearSessionAuth(sessionId);
 
     // Exclui do banco
     await supabase

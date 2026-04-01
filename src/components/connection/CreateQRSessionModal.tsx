@@ -44,6 +44,7 @@ export function CreateQRSessionModal({
     phone,
     pushName,
     loading: qrLoading,
+    errorMessage,
     startConnection,
     cancelConnection,
   } = useWhatsAppQR(createdSession?.id || null);
@@ -299,7 +300,7 @@ export function CreateQRSessionModal({
                         Erro na conexão
                       </h3>
                       <p className="text-sm dark:text-slate-400 text-slate-600 mt-1">
-                        Ocorreu um erro ao conectar. Tente novamente.
+                        {errorMessage || "Ocorreu um erro ao conectar. Tente novamente."}
                       </p>
                     </div>
                     <div className="flex gap-2">
