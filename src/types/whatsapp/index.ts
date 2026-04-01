@@ -57,10 +57,12 @@ export interface WhatsAppMessage {
   metadata?: Record<string, unknown>;
   timestamp: string;
   created_at: string;
+  updated_at?: string;
   reaction_count?: number;
   is_deleted?: boolean;
   is_forwarded?: boolean;
   forward_count?: number;
+  is_from_me?: boolean;
 }
 
 export interface WhatsAppContact {
@@ -186,11 +188,13 @@ export interface WhatsAppMedia {
 }
 
 // Tipos para eventos do Baileys
+// Usando any para campos complexos do proto do WhatsApp
 export interface BaileysMessage {
   key: {
     remoteJid: string;
     fromMe: boolean;
     id: string;
+    participant?: string;
   };
   messageTimestamp: number;
   pushName?: string;
@@ -199,21 +203,61 @@ export interface BaileysMessage {
     imageMessage?: {
       caption?: string;
       url?: string;
+      fileLength?: string | number;
+      [key: string]: any;
     };
     videoMessage?: {
       caption?: string;
+      fileLength?: string | number;
+      seconds?: number;
+      [key: string]: any;
     };
-    audioMessage?: {};
+    audioMessage?: {
+      ptt?: boolean;
+      seconds?: number;
+      fileLength?: string | number;
+      [key: string]: any;
+    };
     documentMessage?: {
       fileName?: string;
+      caption?: string;
+      fileLength?: string | number;
+      [key: string]: any;
     };
     extendedTextMessage?: {
       text?: string;
+      contextInfo?: {
+        isForwarded?: boolean;
+        forwardingScore?: number;
+        [key: string]: any;
+      };
+      [key: string]: any;
     };
-    stickerMessage?: {};
-    locationMessage?: {};
-    contactMessage?: {};
+    stickerMessage?: {
+      [key: string]: any;
+    };
+    locationMessage?: {
+      degreesLatitude?: number;
+      degreesLongitude?: number;
+      [key: string]: any;
+    };
+    contactMessage?: {
+      vcard?: string;
+      [key: string]: any;
+    };
+    pollCreationMessage?: {
+      [key: string]: any;
+    };
+    protocolMessage?: {
+      type?: number;
+      key?: any;
+      [key: string]: any;
+    };
+    [key: string]: any;
   };
+  messageStubType?: number;
+  messageStubParameters?: string[];
+  [key: string]: any;
 }
 
 export interface BaileysContact {
@@ -223,4 +267,5 @@ export interface BaileysContact {
   verifiedName?: string;
   imgUrl?: string;
   status?: string;
+  [key: string]: any;
 }

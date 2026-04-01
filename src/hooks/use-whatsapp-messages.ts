@@ -43,7 +43,66 @@ export function useWhatsAppMessages(
     return Date.now() - cached.timestamp < CACHE_DURATION;
   }, [cacheKey]);
 
-  // Busca mensagens com cache
+  // Busca mensagens do Supabase (fallback)
+  const fetchMessagesFromSupabase = useCallback(
+    async (before?: string) => {
+      if (!sessionId || !phone) return [];
+
+      try {
+        const params = new URLSearchParams();
+        params.append("phone", phone);
+        params.append("limit", "100");
+        if (before) params.append("before", before);
+
+        const response = await fetch(
+          `/api/whatsapp/sessions/${sessionId}/messages?${params}`
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Erro ao buscar mensagens");
+        }
+
+        return await response.json();
+      } catch (err) {
+        console.error("[useWhatsAppMessages] Erro ao buscar do Supabase:", err);
+        return [];
+      }
+    },
+    [sessionId, phone]
+  );
+
+  // Busca mensagens diretamente do WhatsApp (rápido)
+  const fetchMessagesFromWhatsApp = useCallback(
+    async (limit: number = 50) => {
+      if (!sessionId || !phone) return [];
+
+      try {
+        const params = new URLSearchParams();
+        params.append("phone", phone);
+        params.append("limit", limit.toString());
+
+        const response = await fetch(
+          `/api/whatsapp/sessions/${sessionId}/fetch-messages?${params}`
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Erro ao buscar mensagens do WhatsApp");
+        }
+
+        const messages = await response.json();
+        console.log(`[useWhatsAppMessages] ${messages.length} mensagens carregadas do WhatsApp`);
+        return messages;
+      } catch (err) {
+        console.error("[useWhatsAppMessages] Erro ao buscar do WhatsApp:", err);
+        return [];
+      }
+    },
+    [sessionId, phone]
+  );
+
+  // Busca mensagens com cache (tenta WhatsApp primeiro)
   const fetchMessages = useCallback(
     async (before?: string, forceRefresh = false) => {
       if (!sessionId || !phone) return;
@@ -65,22 +124,16 @@ export function useWhatsAppMessages(
       try {
         setState((prev) => ({ ...prev, loading: true, error: null }));
 
-        const params = new URLSearchParams();
-        params.append("phone", phone);
-        params.append("limit", "100"); // Aumentado de 50 para 100
-        if (before) params.append("before", before);
-
-        const response = await fetch(
-          `/api/whatsapp/sessions/${sessionId}/messages?${params}`
-        );
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Erro ao buscar mensagens");
+        // Tenta buscar do WhatsApp primeiro (mais rápido)
+        let messages = await fetchMessagesFromWhatsApp(50);
+        
+        // Se não conseguiu do WhatsApp, tenta do Supabase
+        if (messages.length === 0 && !before) {
+          console.log("[useWhatsAppMessages] Tentando buscar do Supabase...");
+          messages = await fetchMessagesFromSupabase(before);
         }
 
-        const messages = await response.json();
-        const hasMore = messages.length === 100; // Atualizado para 100
+        const hasMore = messages.length === 50;
 
         // Atualiza cache apenas para carga inicial
         if (!before) {
@@ -105,7 +158,7 @@ export function useWhatsAppMessages(
         setState((prev) => ({ ...prev, loading: false, error: errorMessage }));
       }
     },
-    [sessionId, phone, cacheKey, isCacheValid]
+    [sessionId, phone, cacheKey, isCacheValid, fetchMessagesFromWhatsApp, fetchMessagesFromSupabase]
   );
 
   // Envia mensagem
@@ -217,16 +270,21 @@ export function useWhatsAppMessages(
     fetchMessages(undefined, true);
   }, [cacheKey, fetchMessages]);
 
-  // Subscreve a novas mensagens em tempo real
+  // Subscrição Realtime otimizada - recebe mensagens instantaneamente via WebSocket
   useEffect(() => {
     if (!sessionId || !phone) return;
 
-    const subscription = supabase
-      .channel(`whatsapp-messages-${sessionId}-${phone}`)
+    // Canal otimizado com broadcast desabilitado para self
+    const channel = supabase
+      .channel(`whatsapp-messages-${sessionId}-${phone}`, {
+        config: {
+          broadcast: { self: false },
+        },
+      })
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
@@ -234,45 +292,94 @@ export function useWhatsAppMessages(
         (payload) => {
           const message = payload.new as WhatsAppMessage;
           
-          if (payload.eventType === "INSERT") {
-            if (message.contact_phone === phone) {
-              setState((prev) => ({
-                ...prev,
-                messages: [...prev.messages, message],
-              }));
-              console.log("[useWhatsAppMessages] Nova mensagem recebida:", message);
-            }
-          } else if (payload.eventType === "UPDATE") {
-            // Atualiza status de mensagem existente
-            if (message.contact_phone === phone) {
-              setState((prev) => ({
-                ...prev,
-                messages: prev.messages.map((m) =>
-                  m.id === message.id ? message : m
-                ),
-              }));
-              console.log("[useWhatsAppMessages] Mensagem atualizada:", message);
-            }
+          if (message.contact_phone === phone) {
+            setState((prev) => {
+              // Deduplicação: evita mensagens duplicadas
+              if (prev.messages.some(m => m.id === message.id || m.message_id === message.message_id)) {
+                return prev;
+              }
+              
+              // Adiciona mensagem mantendo ordenação por timestamp
+              const newMessages = [...prev.messages, message].sort(
+                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+              );
+              
+              console.log("[useWhatsAppMessages] Nova mensagem recebida em tempo real:", {
+                id: message.id,
+                content: message.content?.substring(0, 50),
+                timestamp: message.timestamp,
+              });
+              
+              return { ...prev, messages: newMessages };
+            });
+            
+            // Limpa cache após receber nova mensagem
+            messagesCache.delete(cacheKey);
           }
         }
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "whatsapp_messages",
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload) => {
+          const message = payload.new as WhatsAppMessage;
+          
+          if (message.contact_phone === phone) {
+            setState((prev) => ({
+              ...prev,
+              messages: prev.messages.map((m) =>
+                m.id === message.id ? message : m
+              ),
+            }));
+            console.log("[useWhatsAppMessages] Mensagem atualizada:", message.id);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "whatsapp_messages",
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload) => {
+          const deletedId = payload.old?.id as string;
+          if (deletedId) {
+            setState((prev) => ({
+              ...prev,
+              messages: prev.messages.filter((m) => m.id !== deletedId),
+            }));
+            console.log("[useWhatsAppMessages] Mensagem deletada:", deletedId);
+          }
+        }
+      );
+
+    // Inscreve no canal
+    channel.subscribe((status) => {
+      console.log(`[useWhatsAppMessages] Realtime subscription status: ${status}`);
+    });
 
     return () => {
-      subscription.unsubscribe();
+      channel.unsubscribe();
     };
-  }, [sessionId, phone, supabase]);
+  }, [sessionId, phone, supabase, cacheKey]);
 
-  // Polling para atualizar mensagens a cada 3 segundos
+  // Sincronização inicial - apenas carga inicial, sem polling
+  // As mensagens são recebidas em tempo real via Supabase Realtime
   useEffect(() => {
     if (!sessionId || !phone) return;
 
-    const interval = setInterval(() => {
+    // Carrega mensagens iniciais apenas se não houver cache válido
+    if (!isCacheValid()) {
       fetchMessages();
-    }, 3000); // 3 segundos
-
-    return () => clearInterval(interval);
-  }, [sessionId, phone, fetchMessages]);
+    }
+  }, [sessionId, phone, fetchMessages, isCacheValid]);
 
   // Carrega mensagens iniciais e força refresh ao trocar de conversa
   useEffect(() => {

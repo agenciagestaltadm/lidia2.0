@@ -9,6 +9,7 @@ interface UseWhatsAppContactsState {
   contacts: WhatsAppContact[];
   loading: boolean;
   error: string | null;
+  isSyncing: boolean;
 }
 
 export function useWhatsAppContacts(sessionId: string | null) {
@@ -16,17 +17,16 @@ export function useWhatsAppContacts(sessionId: string | null) {
     contacts: [],
     loading: false,
     error: null,
+    isSyncing: false,
   });
 
   const supabase = createClient();
 
-  // Busca contatos
-  const fetchContacts = useCallback(async () => {
-    if (!sessionId) return;
+  // Busca contatos do Supabase (fallback)
+  const fetchContactsFromSupabase = useCallback(async () => {
+    if (!sessionId) return [];
 
     try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
       const { data: contacts, error } = await supabase
         .from("whatsapp_contacts")
         .select("*")
@@ -37,17 +37,60 @@ export function useWhatsAppContacts(sessionId: string | null) {
         throw new Error(error.message);
       }
 
+      return contacts || [];
+    } catch (err) {
+      console.error("[useWhatsAppContacts] Erro ao buscar do Supabase:", err);
+      return [];
+    }
+  }, [sessionId, supabase]);
+
+  // Busca contatos diretamente do WhatsApp (rápido)
+  const fetchContactsFromWhatsApp = useCallback(async () => {
+    if (!sessionId) return;
+
+    try {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
+      const response = await fetch(`/api/whatsapp/sessions/${sessionId}/fetch-contacts`);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao buscar contatos do WhatsApp");
+      }
+
+      const contacts = await response.json();
+
       setState({
         contacts: contacts || [],
         loading: false,
         error: null,
+        isSyncing: false,
       });
+
+      console.log(`[useWhatsAppContacts] ${contacts.length} contatos carregados do WhatsApp`);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Erro ao buscar contatos";
-      setState((prev) => ({ ...prev, loading: false, error: errorMessage }));
+      
+      // Tenta buscar do Supabase como fallback
+      const supabaseContacts = await fetchContactsFromSupabase();
+      
+      setState({
+        contacts: supabaseContacts,
+        loading: false,
+        error: supabaseContacts.length > 0 ? null : errorMessage,
+        isSyncing: false,
+      });
     }
-  }, [sessionId, supabase]);
+  }, [sessionId, fetchContactsFromSupabase]);
+
+  // Busca contatos (método principal - tenta WhatsApp primeiro)
+  const fetchContacts = useCallback(async () => {
+    if (!sessionId) return;
+    
+    // Tenta buscar do WhatsApp primeiro (mais rápido)
+    await fetchContactsFromWhatsApp();
+  }, [sessionId, fetchContactsFromWhatsApp]);
 
   // Subscreve a mudanças em tempo real nos contatos
   useEffect(() => {
@@ -118,5 +161,6 @@ export function useWhatsAppContacts(sessionId: string | null) {
   return {
     ...state,
     refetch: fetchContacts,
+    refetchFromWhatsApp: fetchContactsFromWhatsApp,
   };
 }
