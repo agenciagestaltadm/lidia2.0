@@ -3,6 +3,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   Browsers,
   makeCacheableSignalKeyStore,
+  downloadMediaMessage,
 } from '@whiskeysockets/baileys';
 import type { WASocket } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
@@ -130,7 +131,7 @@ export class BaileysService {
       connectTimeoutMs: 120000, // 2 minutos de timeout
       keepAliveIntervalMs: 30000,
       markOnlineOnConnect: false,
-      syncFullHistory: false,
+      syncFullHistory: true,
       // Configurações adicionais para melhor estabilidade na v7
       generateHighQualityLinkPreview: false,
     });
@@ -297,10 +298,18 @@ export class BaileysService {
 
      // Evento de mensagens
      this.socket.ev.on('messages.upsert', async (m) => {
-       if (m.type === 'notify') {
+       // Processa tanto mensagens novas (notify) quanto histórico (append)
+       if (m.type === 'notify' || m.type === 'append') {
          for (const msg of m.messages) {
            await this.handleIncomingMessage(msg as BaileysMessage);
          }
+       }
+     });
+
+     // Evento de atualização de status das mensagens (entregue, lido, etc)
+     this.socket.ev.on('messages.update', async (updates) => {
+       for (const update of updates) {
+         await this.handleMessageStatusUpdate(update);
        }
      });
 
@@ -329,9 +338,15 @@ export class BaileysService {
     const isGroup = msg.key.remoteJid.includes('@g.us');
     const isFromMe = msg.key.fromMe;
 
+    // Ignora mensagens de status do WhatsApp (stories/status)
+    if (msg.key.remoteJid === 'status@broadcast') {
+      return;
+    }
+
     // Extrai conteúdo da mensagem
     let content = '';
     let type: WhatsAppMessage['type'] = 'text';
+    let mediaUrl: string | null = null;
 
     if (msg.message?.conversation) {
       content = msg.message.conversation;
@@ -347,11 +362,14 @@ export class BaileysService {
       content = '[Áudio]';
       type = 'audio';
     } else if (msg.message?.documentMessage) {
-      content = `[Documento: ${msg.message.documentMessage.fileName || 'arquivo'}]`;
+      content = `[Documento]`;
       type = 'document';
     } else if (msg.message?.stickerMessage) {
       content = '[Sticker]';
       type = 'sticker';
+    } else if (msg.message?.locationMessage) {
+      content = '[Localização]';
+      type = 'location';
     }
 
     // Salva mensagem no banco
@@ -402,6 +420,12 @@ export class BaileysService {
     const callbacks = sessionCallbacks.get(this.sessionId);
     if (callbacks?.onMessage && message) {
       callbacks.onMessage(message as WhatsAppMessage);
+    }
+
+    // Baixa mídia se for mensagem de imagem, vídeo, áudio ou documento
+    if (['image', 'video', 'audio', 'document'].includes(type)) {
+      // Não aguarda o download para não bloquear o processamento
+      this.downloadAndSaveMedia(msg, msg.key.id).catch(console.error);
     }
   }
 
@@ -464,6 +488,117 @@ export class BaileysService {
   }
 
   /**
+   * Processa atualização de status da mensagem (entregue, lido, etc)
+   */
+  private async handleMessageStatusUpdate(update: any): Promise<void> {
+    const supabase = await createClient();
+
+    // Extrai informações da atualização
+    const messageId = update.key?.id;
+    const status = update.update?.status;
+
+    if (!messageId || !status) return;
+
+    // Mapeia o status do Baileys para o nosso formato
+    let mappedStatus: string | null = null;
+    switch (status) {
+      case 1: // PENDING
+        mappedStatus = 'pending';
+        break;
+      case 2: // SERVER_ACK
+      case 3: // DELIVERY_ACK
+        mappedStatus = 'delivered';
+        break;
+      case 4: // READ
+      case 5: // PLAYED
+        mappedStatus = 'read';
+        break;
+      default:
+        return; // Status desconhecido, ignora
+    }
+
+    if (!mappedStatus) return;
+
+    try {
+      // Atualiza o status da mensagem no banco
+      const { data: existingMessage } = await supabase
+        .from('whatsapp_messages')
+        .select('id')
+        .eq('session_id', this.sessionId)
+        .eq('message_id', messageId)
+        .single();
+
+      if (existingMessage) {
+        await supabase
+          .from('whatsapp_messages')
+          .update({
+            status: mappedStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingMessage.id);
+
+        console.log(`[BaileysService] Status da mensagem ${messageId} atualizado para ${mappedStatus}`);
+      }
+    } catch (error) {
+      console.error('[BaileysService] Erro ao atualizar status da mensagem:', error);
+    }
+  }
+
+  /**
+   * Baixa e salva mídia da mensagem (imagem, vídeo, áudio)
+   */
+  private async downloadAndSaveMedia(msg: BaileysMessage, messageId: string): Promise<void> {
+    if (!this.socket) return;
+
+    try {
+      const type = msg.message?.imageMessage ? 'image' :
+                   msg.message?.videoMessage ? 'video' :
+                   msg.message?.audioMessage ? 'audio' :
+                   msg.message?.documentMessage ? 'document' : null;
+
+      if (!type) return;
+
+      console.log(`[BaileysService] Baixando mídia ${type} para mensagem ${messageId}`);
+
+      // Baixa a mídia usando o Baileys
+      const buffer = await downloadMediaMessage(
+        msg as any,
+        'buffer',
+        {},
+      );
+
+      if (!buffer) {
+        console.log(`[BaileysService] Mídia não disponível para download`);
+        return;
+      }
+
+      // Converte para base64
+      const base64 = Buffer.from(buffer).toString('base64');
+      const mimeType = type === 'image' ? 'image/jpeg' :
+                       type === 'video' ? 'video/mp4' :
+                       type === 'audio' ? 'audio/ogg; codecs=opus' :
+                       'application/octet-stream';
+
+      const mediaData = `data:${mimeType};base64,${base64}`;
+
+      // Atualiza a mensagem no banco com a mídia
+      const supabase = await createClient();
+      await supabase
+        .from('whatsapp_messages')
+        .update({
+          media_url: mediaData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('message_id', messageId)
+        .eq('session_id', this.sessionId);
+
+      console.log(`[BaileysService] Mídia ${type} salva para mensagem ${messageId}`);
+    } catch (error) {
+      console.error('[BaileysService] Erro ao baixar mídia:', error);
+    }
+  }
+
+  /**
    * Restaura uma sessão ativa a partir das credenciais salvas
    */
   async restoreSession(): Promise<boolean> {
@@ -512,7 +647,7 @@ export class BaileysService {
         connectTimeoutMs: 60000,
         keepAliveIntervalMs: 30000,
         markOnlineOnConnect: false,
-        syncFullHistory: false,
+        syncFullHistory: true,
         generateHighQualityLinkPreview: false,
       });
 

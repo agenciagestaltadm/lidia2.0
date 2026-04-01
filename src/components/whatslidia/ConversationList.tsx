@@ -23,6 +23,7 @@ interface ConversationListProps {
   onTabChange?: (tab: 'open' | 'pending' | 'resolved') => void;
   connectionType?: "qr" | "oficial";
   loading?: boolean;
+  hideTabs?: boolean;
 }
 
 type FilterTab = "open" | "pending" | "resolved";
@@ -42,13 +43,15 @@ export function ConversationList({
   onTabChange,
   connectionType,
   loading = false,
+  hideTabs = false,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("open");
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((conv) => {
-      const matchesTab = conv.status === activeTab;
+      // Quando hideTabs está ativo, não filtra por status
+      const matchesTab = hideTabs ? true : conv.status === activeTab;
       const matchesSearch =
         searchQuery === "" ||
         conv.contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,7 +59,7 @@ export function ConversationList({
         conv.lastMessage?.content.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesTab && matchesSearch;
     });
-  }, [conversations, activeTab, searchQuery]);
+  }, [conversations, activeTab, searchQuery, hideTabs]);
 
   const getUnreadCount = (status: ConversationStatus) => {
     return conversations
@@ -184,46 +187,48 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className={cn(
-        "px-3 pb-2 border-b transition-colors duration-300",
-        isDarkMode ? "bg-[#111b21] border-[#2a2a2a]" : "bg-white border-gray-200"
-      )}>
-        <div className="flex gap-1">
-          {tabs.map((tab) => {
-            const unreadCount = getUnreadCount(tab.id);
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  onTabChange?.(tab.id);
-                }}
-                className={cn(
-                  "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
-                  activeTab === tab.id
-                    ? isDarkMode 
-                      ? "bg-[#2a3942] text-[#00a884]" 
-                      : "bg-emerald-100 text-emerald-600"
-                    : isDarkMode 
-                      ? "text-[#8696a0] hover:bg-[#1f2c33] hover:text-[#e9edef]"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                )}
-              >
-                {tab.label}
-                {unreadCount > 0 && (
-                  <span className={cn(
-                    "text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center",
-                    isDarkMode ? "bg-[#00a884] text-white" : "bg-emerald-500 text-white"
-                  )}>
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      {/* Filter Tabs - apenas se hideTabs for false */}
+      {!hideTabs && (
+        <div className={cn(
+          "px-3 pb-2 border-b transition-colors duration-300",
+          isDarkMode ? "bg-[#111b21] border-[#2a2a2a]" : "bg-white border-gray-200"
+        )}>
+          <div className="flex gap-1">
+            {tabs.map((tab) => {
+              const unreadCount = getUnreadCount(tab.id);
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    onTabChange?.(tab.id);
+                  }}
+                  className={cn(
+                    "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2",
+                    activeTab === tab.id
+                      ? isDarkMode
+                        ? "bg-[#2a3942] text-[#00a884]"
+                        : "bg-emerald-100 text-emerald-600"
+                      : isDarkMode
+                        ? "text-[#8696a0] hover:bg-[#1f2c33] hover:text-[#e9edef]"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  {tab.label}
+                  {unreadCount > 0 && (
+                    <span className={cn(
+                      "text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center",
+                      isDarkMode ? "bg-[#00a884] text-white" : "bg-emerald-500 text-white"
+                    )}>
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Conversations List */}
       <div className={cn(
@@ -257,7 +262,9 @@ export function ConversationList({
             <p className="text-center text-sm">
               {searchQuery
                 ? "Nenhuma conversa encontrada"
-                : `Nenhuma conversa ${activeTab === "open" ? "aberta" : activeTab === "pending" ? "pendente" : "resolvida"}`}
+                : hideTabs
+                  ? "Nenhuma conversa"
+                  : `Nenhuma conversa ${activeTab === "open" ? "aberta" : activeTab === "pending" ? "pendente" : "resolvida"}`}
             </p>
           </div>
         ) : (

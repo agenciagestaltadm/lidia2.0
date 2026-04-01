@@ -306,6 +306,7 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   onTabChange={handleTabChange}
                   connectionType="qr"
                   loading={contactsLoading}
+                  hideTabs={true}
                 />
               </motion.div>
             ) : (
@@ -350,6 +351,7 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   onTabChange={handleTabChange}
                   connectionType="qr"
                   loading={contactsLoading}
+                  hideTabs={true}
                 />
           <ChatWindow
             conversation={selectedConversation}
