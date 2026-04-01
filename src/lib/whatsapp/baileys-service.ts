@@ -461,17 +461,134 @@ export class BaileysService {
   }
 
   /**
+   * Restaura uma sessão ativa a partir das credenciais salvas
+   */
+  async restoreSession(): Promise<boolean> {
+    // Verifica se já existe uma sessão ativa em memória
+    const existingSocket = activeSessions.get(this.sessionId);
+    if (existingSocket) {
+      this.socket = existingSocket;
+      return true;
+    }
+
+    const supabase = await createClient();
+    
+    // Verifica se a sessão existe e está ativa no banco
+    const { data: session } = await supabase
+      .from('whatsapp_sessions')
+      .select('*')
+      .eq('id', this.sessionId)
+      .eq('company_id', this.companyId)
+      .single();
+
+    if (!session || session.status !== 'active') {
+      return false;
+    }
+
+    // Verifica se há credenciais salvas
+    const authPath = path.join(process.cwd(), 'whatsapp-sessions', this.sessionId);
+    
+    try {
+      await fs.access(authPath);
+    } catch {
+      return false;
+    }
+
+    // Restaura a sessão
+    try {
+      const { state, saveCreds } = await useMultiFileAuthState(authPath);
+      
+      this.socket = makeWASocket({
+        printQRInTerminal: false,
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(state.keys, baileysLogger),
+        },
+        logger: baileysLogger,
+        browser: Browsers.ubuntu('Chrome'),
+        connectTimeoutMs: 60000,
+        keepAliveIntervalMs: 30000,
+        markOnlineOnConnect: false,
+        syncFullHistory: false,
+        generateHighQualityLinkPreview: false,
+      });
+
+      // Armazena a sessão ativa
+      activeSessions.set(this.sessionId, this.socket);
+
+      // Configura eventos
+      this.socket.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect } = update;
+        
+        if (connection === 'close') {
+          const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+          
+          if (statusCode === DisconnectReason.loggedOut) {
+            activeSessions.delete(this.sessionId);
+            sessionCallbacks.delete(this.sessionId);
+            
+            await supabase
+              .from('whatsapp_sessions')
+              .update({
+                status: 'disconnected',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', this.sessionId);
+          }
+        }
+      });
+
+      this.socket.ev.on('creds.update', saveCreds);
+
+      // Aguarda a conexão estar aberta
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve(false);
+        }, 30000);
+
+        this.socket?.ev.on('connection.update', (update) => {
+          if (update.connection === 'open') {
+            clearTimeout(timeout);
+            resolve(true);
+          } else if (update.connection === 'close') {
+            clearTimeout(timeout);
+            resolve(false);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('[BaileysService] Erro ao restaurar sessão:', error);
+      return false;
+    }
+  }
+
+  /**
    * Envia uma mensagem de texto
    */
   async sendMessage(phone: string, message: string): Promise<WhatsAppMessage | null> {
+    // Tenta recuperar o socket da sessão ativa em memória
     if (!this.socket) {
-      throw new Error('Sessão não iniciada');
+      const activeSocket = activeSessions.get(this.sessionId);
+      if (activeSocket) {
+        this.socket = activeSocket;
+      } else {
+        // Tenta restaurar a sessão
+        const restored = await this.restoreSession();
+        if (!restored) {
+          throw new Error('Sessão não iniciada');
+        }
+      }
     }
 
     const supabase = await createClient();
 
     // Formata o número de telefone
     const formattedPhone = phone.includes('@') ? phone : `${phone}@s.whatsapp.net`;
+
+    // Verifica novamente se o socket existe
+    if (!this.socket) {
+      throw new Error('Sessão não iniciada');
+    }
 
     // Envia a mensagem
     const result = await this.socket.sendMessage(formattedPhone, { text: message });
