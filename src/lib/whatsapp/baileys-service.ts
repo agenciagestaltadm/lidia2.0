@@ -13,7 +13,32 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 // Diretório de sessões do WhatsApp
-const WHATSAPP_SESSIONS_DIR = process.env.WHATSAPP_SESSIONS_DIR || path.join(process.cwd(), 'whatsapp-sessions');
+// Usa /tmp em ambientes serverless (Vercel, etc) ou o diretório local em desenvolvimento
+const WHATSAPP_SESSIONS_DIR = process.env.WHATSAPP_SESSIONS_DIR ||
+  (process.env.VERCEL ? '/tmp/whatsapp-sessions' : path.join(process.cwd(), 'whatsapp-sessions'));
+
+// Garante que o diretório de sessões existe
+async function ensureSessionsDir() {
+  try {
+    await fs.access(WHATSAPP_SESSIONS_DIR);
+  } catch {
+    try {
+      await fs.mkdir(WHATSAPP_SESSIONS_DIR, { recursive: true });
+      console.log(`[BaileysService] Diretório de sessões criado: ${WHATSAPP_SESSIONS_DIR}`);
+    } catch (error) {
+      console.error(`[BaileysService] Erro ao criar diretório de sessões: ${error}`);
+      // Fallback para /tmp se não conseguir criar
+      if (WHATSAPP_SESSIONS_DIR !== '/tmp/whatsapp-sessions') {
+        console.log('[BaileysService] Tentando fallback para /tmp/whatsapp-sessions');
+        try {
+          await fs.mkdir('/tmp/whatsapp-sessions', { recursive: true });
+        } catch {
+          // Ignora erro do fallback
+        }
+      }
+    }
+  }
+}
 
 // Logger customizado silencioso (compatível com @whiskeysockets/baileys v7)
 const baileysLogger = {
@@ -109,11 +134,19 @@ export class BaileysService {
       .update({ status: 'waiting_qr' })
       .eq('id', this.sessionId);
 
+    // Garante que o diretório de sessões existe
+    await ensureSessionsDir();
+
     // Configura o estado de autenticação
     const authPath = path.join(WHATSAPP_SESSIONS_DIR, this.sessionId);
     
-    // Garante que o diretório existe
-    await fs.mkdir(authPath, { recursive: true });
+    // Garante que o diretório da sessão específica existe
+    try {
+      await fs.mkdir(authPath, { recursive: true });
+    } catch (mkdirError) {
+      console.error(`[BaileysService] Erro ao criar diretório da sessão: ${mkdirError}`);
+      throw new Error('Não foi possível criar diretório de sessão. Verifique as permissões.');
+    }
     
     const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
