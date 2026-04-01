@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: Promise<{ id: string; groupId: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id: sessionId, groupId } = params;
+    const { id: sessionId, groupId } = await params;
 
     // Busca participantes do grupo
     const { data: participants, error } = await supabase
@@ -36,11 +36,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: Promise<{ id: string; groupId: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id: sessionId, groupId } = params;
+    const { id: sessionId, groupId } = await params;
     const { participantPhone, participantName, isAdmin } = await request.json();
 
     if (!participantPhone) {
@@ -113,11 +113,11 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: Promise<{ id: string; groupId: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id: sessionId, groupId } = params;
+    const { id: sessionId, groupId } = await params;
     const { participantId, isAdmin, participantName } = await request.json();
 
     if (!participantId) {
@@ -159,11 +159,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: Promise<{ id: string; groupId: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id: sessionId, groupId } = params;
+    const { id: sessionId, groupId } = await params;
     const { participantId } = await request.json();
 
     if (!participantId) {

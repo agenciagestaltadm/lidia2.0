@@ -10,10 +10,10 @@ const supabase = createClient(
 // GET - List backups
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -45,10 +45,10 @@ export async function GET(
 // POST - Create backup
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const body = await request.json();
     const {
       includeMessages = true,
@@ -141,10 +141,10 @@ export async function POST(
 // PUT - Update backup (for restore operations)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const body = await request.json();
     const { backupId, action, overwrite = false } = body;
 
@@ -193,10 +193,10 @@ export async function PUT(
 // DELETE - Delete backup
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const body = await request.json();
     const { backupId } = body;
 

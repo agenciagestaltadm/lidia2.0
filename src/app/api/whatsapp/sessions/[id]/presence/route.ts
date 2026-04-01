@@ -4,10 +4,10 @@ import { BaileysService } from "@/lib/whatsapp/baileys-service";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get("phone");
 
@@ -52,10 +52,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { phone, presence_status, is_typing } = await request.json();
 
     if (!phone || !presence_status) {

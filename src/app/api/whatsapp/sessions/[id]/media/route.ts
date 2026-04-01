@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const mediaType = request.nextUrl.searchParams.get("type");
     const limit = parseInt(request.nextUrl.searchParams.get("limit") || "50");
     const offset = parseInt(request.nextUrl.searchParams.get("offset") || "0");
@@ -50,11 +50,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const formData = await request.formData();
 
     const file = formData.get("file") as File;
@@ -153,11 +153,11 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { mediaId } = await request.json();
 
     if (!mediaId) {

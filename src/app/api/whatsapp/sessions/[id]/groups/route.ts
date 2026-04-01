@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const includeArchived = request.nextUrl.searchParams.get("includeArchived") === "true";
 
     let query = supabase
@@ -43,11 +43,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { groupJid, name, description, profilePictureUrl, ownerPhone } =
       await request.json();
 
@@ -107,11 +107,11 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { groupId, name, description, profilePictureUrl, isArchived } =
       await request.json();
 
@@ -157,11 +157,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { groupId } = await request.json();
 
     if (!groupId) {

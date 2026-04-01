@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const messageId = request.nextUrl.searchParams.get("messageId");
 
     if (!messageId) {
@@ -58,11 +58,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { messageId, contactPhone, reactionEmoji } = await request.json();
 
     if (!messageId || !contactPhone || !reactionEmoji) {
@@ -132,11 +132,11 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { messageId, contactPhone, reactionEmoji } = await request.json();
 
     if (!messageId || !contactPhone || !reactionEmoji) {

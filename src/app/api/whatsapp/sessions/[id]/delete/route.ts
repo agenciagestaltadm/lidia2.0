@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { messageId, deletedBy, reason } = await request.json();
 
     if (!messageId || !deletedBy) {
@@ -86,11 +86,11 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const messageId = request.nextUrl.searchParams.get("messageId");
 
     if (!messageId) {

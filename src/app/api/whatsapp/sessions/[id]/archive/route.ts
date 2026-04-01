@@ -9,10 +9,11 @@ const supabase = createClient(
 // GET - List archived conversations
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id } = await params;
+    const sessionId = id;
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -44,10 +45,11 @@ export async function GET(
 // POST - Archive conversation
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id } = await params;
+    const sessionId = id;
     const body = await request.json();
     const { contactPhone, contactName, reason } = body;
 
@@ -93,10 +95,11 @@ export async function POST(
 // DELETE - Unarchive conversation
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id } = await params;
+    const sessionId = id;
     const body = await request.json();
     const { archiveId } = body;
 

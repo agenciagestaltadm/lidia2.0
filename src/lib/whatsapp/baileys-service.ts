@@ -11,6 +11,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+// Diretório de sessões do WhatsApp
+const WHATSAPP_SESSIONS_DIR = process.env.WHATSAPP_SESSIONS_DIR || path.join(process.cwd(), 'whatsapp-sessions');
+
 // Logger customizado silencioso (compatível com @whiskeysockets/baileys v7)
 const baileysLogger = {
   level: 'silent',
@@ -106,7 +109,7 @@ export class BaileysService {
       .eq('id', this.sessionId);
 
     // Configura o estado de autenticação
-    const authPath = path.join(process.cwd(), 'whatsapp-sessions', this.sessionId);
+    const authPath = path.join(WHATSAPP_SESSIONS_DIR, this.sessionId);
     
     // Garante que o diretório existe
     await fs.mkdir(authPath, { recursive: true });
@@ -486,7 +489,7 @@ export class BaileysService {
     }
 
     // Verifica se há credenciais salvas
-    const authPath = path.join(process.cwd(), 'whatsapp-sessions', this.sessionId);
+    const authPath = path.join(WHATSAPP_SESSIONS_DIR, this.sessionId);
     
     try {
       await fs.access(authPath);
@@ -873,7 +876,7 @@ export class BaileysService {
    */
   static async clearSessionAuth(sessionId: string): Promise<void> {
     try {
-      const sessionPath = path.join(process.cwd(), 'whatsapp-sessions', sessionId);
+      const sessionPath = path.join(WHATSAPP_SESSIONS_DIR, sessionId);
       await fs.rm(sessionPath, { recursive: true, force: true });
       console.log(`[BaileysService] Cleared auth data for session: ${sessionId}`);
     } catch (error) {

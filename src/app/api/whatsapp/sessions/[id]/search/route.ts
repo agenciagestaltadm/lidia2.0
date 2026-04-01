@@ -9,10 +9,10 @@ const supabase = createClient(
 // GET - Advanced message search
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sessionId = params.id;
+    const { id: sessionId } = await params;
     const { searchParams } = new URL(request.url);
     
     const query = searchParams.get('q') || '';
