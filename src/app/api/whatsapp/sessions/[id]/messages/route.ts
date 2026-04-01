@@ -148,7 +148,7 @@ export async function POST(
 
     // Obtém os dados da requisição
     const body = await request.json();
-    const { phone, message } = body;
+    const { phone, message, mediaType, mediaUrl, caption, fileName } = body;
 
     if (!phone || typeof phone !== 'string') {
       return NextResponse.json(
@@ -157,16 +157,50 @@ export async function POST(
       );
     }
 
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    // Se for mensagem de texto
+    if (!mediaType) {
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Mensagem é obrigatória' },
+          { status: 400 }
+        );
+      }
+
+      // Envia a mensagem de texto
+      const service = new BaileysService(id, profile.company_id);
+      const savedMessage = await service.sendMessage(phone, message.trim());
+
+      return NextResponse.json(savedMessage, { status: 201 });
+    }
+
+    // Se for mensagem com mídia
+    if (!mediaUrl) {
       return NextResponse.json(
-        { error: 'Mensagem é obrigatória' },
+        { error: 'URL da mídia é obrigatória' },
         { status: 400 }
       );
     }
 
-    // Envia a mensagem
+    // Baixa a mídia da URL
+    const mediaResponse = await fetch(mediaUrl);
+    if (!mediaResponse.ok) {
+      return NextResponse.json(
+        { error: 'Erro ao baixar mídia' },
+        { status: 400 }
+      );
+    }
+
+    const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
+
+    // Envia a mensagem com mídia
     const service = new BaileysService(id, profile.company_id);
-    const savedMessage = await service.sendMessage(phone, message.trim());
+    const savedMessage = await service.sendMediaMessage(
+      phone,
+      mediaBuffer,
+      mediaType as 'image' | 'video' | 'audio' | 'document' | 'sticker',
+      caption,
+      fileName
+    );
 
     return NextResponse.json(savedMessage, { status: 201 });
   } catch (error) {

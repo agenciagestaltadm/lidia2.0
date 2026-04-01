@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { WhatsAppMessage, SendMessageInput } from "@/types/whatsapp";
 import { toast } from "sonner";
@@ -11,6 +11,15 @@ interface UseWhatsAppMessagesState {
   error: string | null;
   hasMore: boolean;
 }
+
+// Cache global para mensagens
+const messagesCache = new Map<string, {
+  messages: WhatsAppMessage[];
+  timestamp: number;
+  hasMore: boolean;
+}>();
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 export function useWhatsAppMessages(
   sessionId: string | null,
@@ -24,11 +33,33 @@ export function useWhatsAppMessages(
   });
 
   const supabase = createClient();
+  const cacheKey = `${sessionId}-${phone}`;
 
-  // Busca mensagens
+  // Verifica se o cache é válido
+  const isCacheValid = useCallback(() => {
+    const cached = messagesCache.get(cacheKey);
+    if (!cached) return false;
+    return Date.now() - cached.timestamp < CACHE_DURATION;
+  }, [cacheKey]);
+
+  // Busca mensagens com cache
   const fetchMessages = useCallback(
-    async (before?: string) => {
+    async (before?: string, forceRefresh = false) => {
       if (!sessionId || !phone) return;
+
+      // Verifica cache se não for refresh forçado e não for paginação
+      if (!before && !forceRefresh && isCacheValid()) {
+        const cached = messagesCache.get(cacheKey);
+        if (cached) {
+          setState({
+            messages: cached.messages,
+            loading: false,
+            error: null,
+            hasMore: cached.hasMore,
+          });
+          return;
+        }
+      }
 
       try {
         setState((prev) => ({ ...prev, loading: true, error: null }));
@@ -48,6 +79,16 @@ export function useWhatsAppMessages(
         }
 
         const messages = await response.json();
+        const hasMore = messages.length === 50;
+
+        // Atualiza cache apenas para carga inicial
+        if (!before) {
+          messagesCache.set(cacheKey, {
+            messages,
+            timestamp: Date.now(),
+            hasMore,
+          });
+        }
 
         setState((prev) => ({
           messages: before
@@ -55,7 +96,7 @@ export function useWhatsAppMessages(
             : messages,
           loading: false,
           error: null,
-          hasMore: messages.length === 50,
+          hasMore,
         }));
       } catch (err) {
         const errorMessage =
@@ -63,7 +104,7 @@ export function useWhatsAppMessages(
         setState((prev) => ({ ...prev, loading: false, error: errorMessage }));
       }
     },
-    [sessionId, phone]
+    [sessionId, phone, cacheKey, isCacheValid]
   );
 
   // Envia mensagem
@@ -91,6 +132,10 @@ export function useWhatsAppMessages(
           ...prev,
           messages: [...prev.messages, message],
         }));
+        
+        // Limpa o cache após enviar mensagem
+        messagesCache.delete(cacheKey);
+        
         return true;
       } catch (err) {
         const errorMessage =
@@ -99,16 +144,77 @@ export function useWhatsAppMessages(
         return false;
       }
     },
-    [sessionId]
+    [sessionId, cacheKey]
+  );
+
+  // Envia mensagem com mídia
+  const sendMediaMessage = useCallback(
+    async (
+      phone: string,
+      mediaBuffer: Buffer,
+      mediaType: 'image' | 'video' | 'audio' | 'document' | 'sticker',
+      caption?: string,
+      fileName?: string
+    ): Promise<boolean> => {
+      if (!sessionId) return false;
+
+      try {
+        // Converte Buffer para base64 para envio
+        const base64Media = mediaBuffer.toString('base64');
+        
+        const response = await fetch(
+          `/api/whatsapp/sessions/${sessionId}/messages`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              phone,
+              mediaType,
+              mediaUrl: `data:application/octet-stream;base64,${base64Media}`,
+              caption,
+              fileName,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Erro ao enviar mídia");
+        }
+
+        const message = await response.json();
+        setState((prev) => ({
+          ...prev,
+          messages: [...prev.messages, message],
+        }));
+        
+        // Limpa o cache após enviar mensagem
+        messagesCache.delete(cacheKey);
+        
+        return true;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Erro ao enviar mídia";
+        toast.error(errorMessage);
+        return false;
+      }
+    },
+    [sessionId, cacheKey]
   );
 
   // Carrega mais mensagens (paginação)
   const loadMore = useCallback(() => {
-    if (state.messages.length > 0) {
+    if (state.messages.length > 0 && state.hasMore && !state.loading) {
       const oldestMessage = state.messages[0];
       fetchMessages(oldestMessage.timestamp);
     }
-  }, [fetchMessages, state.messages]);
+  }, [fetchMessages, state.messages, state.hasMore, state.loading]);
+
+  // Força refresh do cache
+  const refresh = useCallback(() => {
+    messagesCache.delete(cacheKey);
+    fetchMessages(undefined, true);
+  }, [cacheKey, fetchMessages]);
 
   // Subscreve a novas mensagens em tempo real
   useEffect(() => {
@@ -151,7 +257,9 @@ export function useWhatsAppMessages(
   return {
     ...state,
     sendMessage,
+    sendMediaMessage,
     loadMore,
     refetch: () => fetchMessages(),
+    refresh,
   };
 }

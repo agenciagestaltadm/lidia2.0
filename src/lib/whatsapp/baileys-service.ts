@@ -617,6 +617,182 @@ export class BaileysService {
   }
 
   /**
+   * Envia uma mensagem com mídia (imagem, vídeo, áudio, documento, sticker)
+   */
+  async sendMediaMessage(
+    phone: string,
+    mediaBuffer: Buffer,
+    mediaType: 'image' | 'video' | 'audio' | 'document' | 'sticker',
+    caption?: string,
+    fileName?: string
+  ): Promise<WhatsAppMessage | null> {
+    // Tenta recuperar o socket da sessão ativa em memória
+    if (!this.socket) {
+      const activeSocket = activeSessions.get(this.sessionId);
+      if (activeSocket) {
+        this.socket = activeSocket;
+      } else {
+        // Tenta restaurar a sessão
+        const restored = await this.restoreSession();
+        if (!restored) {
+          throw new Error('Sessão não iniciada');
+        }
+      }
+    }
+
+    const supabase = await createClient();
+
+    // Formata o número de telefone
+    const formattedPhone = phone.includes('@') ? phone : `${phone}@s.whatsapp.net`;
+
+    // Verifica novamente se o socket existe
+    if (!this.socket) {
+      throw new Error('Sessão não iniciada');
+    }
+
+    // Prepara o objeto de mídia baseado no tipo
+    let messageContent: any = {};
+
+    switch (mediaType) {
+      case 'image':
+        messageContent = {
+          image: mediaBuffer,
+          caption: caption || '',
+        };
+        break;
+      case 'video':
+        messageContent = {
+          video: mediaBuffer,
+          caption: caption || '',
+        };
+        break;
+      case 'audio':
+        messageContent = {
+          audio: mediaBuffer,
+          ptt: true, // Áudio como nota de voz
+        };
+        break;
+      case 'document':
+        messageContent = {
+          document: mediaBuffer,
+          fileName: fileName || 'documento',
+          caption: caption || '',
+        };
+        break;
+      case 'sticker':
+        messageContent = {
+          sticker: mediaBuffer,
+        };
+        break;
+    }
+
+    // Envia a mensagem
+    const result = await this.socket.sendMessage(formattedPhone, messageContent);
+
+    if (!result || !result.key) {
+      throw new Error('Falha ao enviar mídia');
+    }
+
+    // Salva no banco
+    const { data: savedMessage } = await supabase
+      .from('whatsapp_messages')
+      .insert({
+        session_id: this.sessionId,
+        message_id: result.key.id,
+        contact_phone: phone.replace('@s.whatsapp.net', '').replace('@g.us', ''),
+        content: caption || `[${mediaType.toUpperCase()}]`,
+        type: mediaType,
+        direction: 'outgoing',
+        status: 'sent',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          fileName: fileName || null,
+          mediaSize: mediaBuffer.length,
+        },
+      })
+      .select()
+      .single();
+
+    return savedMessage as WhatsAppMessage | null;
+  }
+
+  /**
+   * Sincroniza contatos do WhatsApp
+   */
+  async syncContacts(): Promise<WhatsAppContact[]> {
+    // Tenta recuperar o socket da sessão ativa em memória
+    if (!this.socket) {
+      const activeSocket = activeSessions.get(this.sessionId);
+      if (activeSocket) {
+        this.socket = activeSocket;
+      } else {
+        // Tenta restaurar a sessão
+        const restored = await this.restoreSession();
+        if (!restored) {
+          throw new Error('Sessão não iniciada');
+        }
+      }
+    }
+
+    if (!this.socket) {
+      throw new Error('Sessão não iniciada');
+    }
+
+    const supabase = await createClient();
+    const syncedContacts: WhatsAppContact[] = [];
+
+    try {
+      // Obtém todos os contatos do WhatsApp usando fetchBlocklist
+      const contacts = await this.socket.fetchBlocklist();
+
+      for (const contact of contacts || []) {
+        if (!contact) continue;
+        const phone = contact.split('@')[0];
+        const isGroup = contact.includes('@g.us');
+
+        // Verifica se contato existe
+        const { data: existingContact } = await supabase
+          .from('whatsapp_contacts')
+          .select()
+          .eq('session_id', this.sessionId)
+          .eq('phone', phone)
+          .single();
+
+        const contactData = {
+          session_id: this.sessionId,
+          phone,
+          name: phone,
+          is_group: isGroup,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (existingContact) {
+          await supabase
+            .from('whatsapp_contacts')
+            .update(contactData)
+            .eq('id', existingContact.id);
+        } else {
+          const { data: newContact } = await supabase
+            .from('whatsapp_contacts')
+            .insert(contactData)
+            .select()
+            .single();
+
+          if (newContact) {
+            syncedContacts.push(newContact as WhatsAppContact);
+          }
+        }
+      }
+
+      console.log(`[BaileysService] Sincronizados ${syncedContacts.length} contatos`);
+      return syncedContacts;
+    } catch (error) {
+      console.error('[BaileysService] Erro ao sincronizar contatos:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Desconecta a sessão
    */
   async disconnect(): Promise<void> {
