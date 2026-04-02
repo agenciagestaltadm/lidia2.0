@@ -13,6 +13,8 @@ interface UseWhatsAppContactsState {
 }
 
 export function useWhatsAppContacts(sessionId: string | null) {
+  console.log('[useWhatsAppContacts] Hook called with sessionId:', sessionId);
+
   const [state, setState] = useState<UseWhatsAppContactsState>({
     contacts: [],
     loading: false,
@@ -21,6 +23,17 @@ export function useWhatsAppContacts(sessionId: string | null) {
   });
 
   const supabase = createClient();
+
+  // Timeout de segurança para evitar loading infinito
+  useEffect(() => {
+    if (state.loading) {
+      const timeout = setTimeout(() => {
+        console.log('[useWhatsAppContacts] Safety timeout triggered - forcing loading to false');
+        setState((prev) => ({ ...prev, loading: false, error: 'Timeout ao carregar contatos' }));
+      }, 10000); // 10 segundos timeout
+      return () => clearTimeout(timeout);
+    }
+  }, [state.loading]);
 
   // Busca contatos do Supabase (fallback)
   const fetchContactsFromSupabase = useCallback(async () => {

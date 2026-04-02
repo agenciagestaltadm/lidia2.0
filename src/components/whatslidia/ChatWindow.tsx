@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Conversation, Message, MessageType } from "@/types/chat";
@@ -9,7 +9,7 @@ import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { AttachmentFile } from "./AttachmentMenu";
 import { getConversationMessages } from "@/lib/mock/chat-data";
-import { Lock, Shield, Eye, RotateCcw, AlertCircle } from "lucide-react";
+import { Lock, Shield, Eye, RotateCcw, AlertCircle, Loader2 } from "lucide-react";
 
 interface ChatWindowProps {
   conversation: Conversation | null;
@@ -27,6 +27,10 @@ interface ChatWindowProps {
   // Props for real data integration
   externalMessages?: Message[];
   loading?: boolean;
+  // Pagination props
+  loadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 export function ChatWindow({
@@ -44,9 +48,14 @@ export function ChatWindow({
   onSendFlow,
   externalMessages,
   loading: externalLoading = false,
+  loadingMore = false,
+  hasMore = false,
+  onLoadMore,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   // Load messages when conversation changes - use external if provided
   useEffect(() => {
@@ -62,10 +71,33 @@ export function ChatWindow({
     }
   }, [conversation?.id, externalMessages]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom apenas na primeira carga ou quando enviar mensagem
   useEffect(() => {
+    if (messages.length > 0 && !loadingMore) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length === 0]); // Só scrolla no início
+
+  // Handler para scroll e carregar mais mensagens
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container || !hasMore || loadingMore) return;
+
+    const { scrollTop } = container;
+    
+    // Se scrollou perto do topo, carrega mais mensagens
+    if (scrollTop < 100) {
+      onLoadMore?.();
+    }
+
+    // Mostra/esconde botão de scroll para baixo
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    setShowScrollButton(!isNearBottom);
+  }, [hasMore, loadingMore, onLoadMore]);
+
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  };
 
   const handleSendMessage = (content: string) => {
     if (!conversation) return;
@@ -287,8 +319,10 @@ export function ChatWindow({
 
       {/* Messages Area */}
       <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
         className={cn(
-          "flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent",
+          "flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent relative",
           isReadOnly ? "pointer-events-none" : "",
           isDarkMode ? "scrollbar-thumb-[#374045]" : "scrollbar-thumb-gray-300"
         )}
@@ -299,6 +333,15 @@ export function ChatWindow({
           backgroundRepeat: "repeat",
         }}
       >
+        {/* Loading more indicator */}
+        {loadingMore && (
+          <div className="flex justify-center py-4">
+            <Loader2 className={cn(
+              "w-6 h-6 animate-spin",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )} />
+          </div>
+        )}
         {/* Encryption notice */}
         <div className="flex justify-center py-4">
           <div className={cn(
@@ -356,6 +399,34 @@ export function ChatWindow({
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Scroll to bottom button */}
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToBottom}
+            className={cn(
+              "absolute bottom-4 right-4 w-10 h-10 rounded-full shadow-lg flex items-center justify-center",
+              isDarkMode ? "bg-[#00a884] text-white" : "bg-emerald-500 text-white"
+            )}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </motion.button>
+        )}
       </div>
 
       {/* Input Area - Only show when not read-only */}

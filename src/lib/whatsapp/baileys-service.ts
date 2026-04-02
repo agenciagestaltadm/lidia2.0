@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { notifyMessageListeners, notifyContactListeners } from '@/app/api/whatsapp/sessions/[id]/stream/route';
 
 // Diretório de sessões do WhatsApp
 const WHATSAPP_SESSIONS_DIR = process.env.WHATSAPP_SESSIONS_DIR ||
@@ -693,17 +694,12 @@ export class BaileysService {
 
       console.log(`[BaileysService] Mensagem salva: ${savedMessage.id} (${type})`);
 
-      // Broadcast via Supabase Realtime para entrega instantânea ao frontend
+      // NOTIFICA VIA SSE - SEM SUPABASE REALTIME
       try {
-        const broadcastSupabase = await createClient();
-        await broadcastSupabase.channel(`whatsapp-broadcast-${this.sessionId}`)
-          .send({
-            type: 'broadcast',
-            event: 'new-message',
-            payload: savedMessage
-          });
-      } catch (broadcastError) {
-        console.error('[BaileysService] Erro ao broadcast mensagem:', broadcastError);
+        notifyMessageListeners(this.sessionId, savedMessage);
+        console.log(`[BaileysService] Message notified via SSE: ${savedMessage.id}`);
+      } catch (notifyError) {
+        console.error('[BaileysService] Error notifying via SSE:', notifyError);
       }
 
       // Atualiza ou cria contato

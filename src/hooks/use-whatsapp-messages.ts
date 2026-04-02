@@ -24,6 +24,8 @@ export function useWhatsAppMessages(
   sessionId: string | null,
   phone: string | null
 ) {
+  console.log('[useWhatsAppMessages] Hook called with:', { sessionId, phone });
+
   const [state, setState] = useState<UseWhatsAppMessagesState>({
     messages: [],
     loading: false,
@@ -36,6 +38,17 @@ export function useWhatsAppMessages(
   const cacheKey = `${sessionId}-${phone}`;
   const previousPhoneRef = useRef<string | null>(null);
   const lastMessageTimeRef = useRef<string | null>(null);
+
+  // Timeout de segurança para evitar loading infinito
+  useEffect(() => {
+    if (state.loading) {
+      const timeout = setTimeout(() => {
+        console.log('[useWhatsAppMessages] Safety timeout triggered - forcing loading to false');
+        setState((prev) => ({ ...prev, loading: false, error: 'Timeout ao carregar mensagens' }));
+      }, 10000); // 10 segundos timeout
+      return () => clearTimeout(timeout);
+    }
+  }, [state.loading]);
 
   const isCacheValid = useCallback(() => {
     const cached = messagesCache.get(cacheKey);

@@ -15,7 +15,7 @@ import { ContactsView } from "./views/ContactsView";
 import { SettingsView } from "./views/SettingsView";
 import { useWhatsAppSessions } from "@/hooks/use-whatsapp-sessions";
 import { useWhatsAppContacts } from "@/hooks/use-whatsapp-contacts";
-import { useWhatsAppMessages } from "@/hooks/use-whatsapp-messages";
+import { useWhatsAppChat } from "@/hooks/use-whatsapp-chat";
 import { toast } from "sonner";
 
 interface WhatsLidiaRealLayoutProps {
@@ -107,15 +107,18 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
     }
   }, [contacts, contactsError, sessionId]);
 
-  // Load messages for selected conversation
+  // Load messages for selected conversation usando o novo hook com SSE
   const selectedContactPhone = selectedConversationId?.replace('conv-', '') || null;
   const { 
     messages, 
     loading: messagesLoading, 
+    loadingMore,
+    hasMore,
     sendMessage: sendWhatsAppMessage,
-    refetch: refetchMessages,
+    loadMore,
+    refresh: refetchMessages,
     error: messagesError
-  } = useWhatsAppMessages(sessionId, selectedContactPhone);
+  } = useWhatsAppChat(sessionId, selectedContactPhone);
 
   // Debug logs para mensagens
   useEffect(() => {
@@ -346,6 +349,9 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   onSendTemplate={handleSendTemplate}
                   onSendFlow={handleSendFlow}
                   loading={messagesLoading}
+                  loadingMore={loadingMore}
+                  hasMore={hasMore}
+                  onLoadMore={loadMore}
                 />
               </motion.div>
             )}
@@ -370,7 +376,7 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                 />
           <ChatWindow
             conversation={selectedConversation}
-                  externalMessages={currentMessages}
+            externalMessages={currentMessages}
             isDarkMode={isDarkMode}
             isReadOnly={isChatReadOnly}
             onSendMessage={handleSendMessage}
@@ -380,6 +386,9 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
             onSendTemplate={handleSendTemplate}
             onSendFlow={handleSendFlow}
             loading={messagesLoading}
+            loadingMore={loadingMore}
+            hasMore={hasMore}
+            onLoadMore={loadMore}
           />
         </>
       );

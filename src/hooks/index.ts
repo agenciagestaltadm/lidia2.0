@@ -135,3 +135,9 @@ export {
   useContactsRealtime,
   contactKeys,
 } from "./use-contacts";
+
+// Export WhatsApp hooks
+export { useWhatsAppChat } from "./use-whatsapp-chat";
+export { useWhatsAppContacts } from "./use-whatsapp-contacts";
+export { useWhatsAppMessages } from "./use-whatsapp-messages";
+export { useWhatsAppSessions } from "./use-whatsapp-sessions";
