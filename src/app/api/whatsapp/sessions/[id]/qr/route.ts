@@ -3,6 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 import { BaileysService } from '@/lib/whatsapp/baileys-service';
 import QRCode from 'qrcode';
 
+// Configuração para Node.js runtime (não Edge) - necessário para Baileys
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 // GET /api/whatsapp/sessions/[id]/qr - Iniciar sessão e obter QR code (SSE)
 export async function GET(
   request: NextRequest,
