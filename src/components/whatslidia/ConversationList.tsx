@@ -6,7 +6,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Conversation, ConversationStatus } from "@/types/chat";
 import { ConversationItem } from "./ConversationItem";
-import { Search, Plus, Filter, Moon, Sun, Wifi, WifiOff } from "lucide-react";
+import { Search, Plus, Filter, Moon, Sun, Wifi, WifiOff, RefreshCw, Loader2 } from "lucide-react";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -24,6 +24,10 @@ interface ConversationListProps {
   connectionType?: "qr" | "oficial";
   loading?: boolean;
   hideTabs?: boolean;
+  // Syncing state props
+  isSyncing?: boolean;
+  onRefresh?: () => void;
+  lastSyncTime?: Date | null;
 }
 
 type FilterTab = "open" | "pending" | "resolved";
@@ -44,6 +48,9 @@ export function ConversationList({
   connectionType,
   loading = false,
   hideTabs = false,
+  isSyncing = false,
+  onRefresh,
+  lastSyncTime,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("open");
@@ -253,19 +260,77 @@ export function ConversationList({
             "flex flex-col items-center justify-center h-full px-6",
             isDarkMode ? "text-[#8696a0]" : "text-gray-500"
           )}>
-            <div className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center mb-4",
-              isDarkMode ? "bg-[#1f2c33]" : "bg-gray-100"
-            )}>
-              <Filter className="w-8 h-8 opacity-50" />
-            </div>
-            <p className="text-center text-sm">
-              {searchQuery
-                ? "Nenhuma conversa encontrada"
-                : hideTabs
-                  ? "Nenhuma conversa"
-                  : `Nenhuma conversa ${activeTab === "open" ? "aberta" : activeTab === "pending" ? "pendente" : "resolvida"}`}
-            </p>
+            {isSyncing || (wabaStatus === "connected" && !searchQuery) ? (
+              // Syncing state - show spinner and message
+              <>
+                <div className={cn(
+                  "w-16 h-16 rounded-full flex items-center justify-center mb-4",
+                  isDarkMode ? "bg-[#1f2c33]" : "bg-gray-100"
+                )}>
+                  <Loader2 className="w-8 h-8 opacity-50 animate-spin" />
+                </div>
+                <p className="text-center text-sm mb-2">
+                  Sincronizando contatos do WhatsApp...
+                </p>
+                <p className="text-center text-xs opacity-70">
+                  Isso pode levar alguns segundos
+                </p>
+                {onRefresh && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onRefresh}
+                    className={cn(
+                      "mt-4 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors",
+                      isDarkMode 
+                        ? "bg-[#2a3942] text-[#e9edef] hover:bg-[#374045]" 
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Tentar novamente
+                  </motion.button>
+                )}
+              </>
+            ) : (
+              // Normal empty state
+              <>
+                <div className={cn(
+                  "w-16 h-16 rounded-full flex items-center justify-center mb-4",
+                  isDarkMode ? "bg-[#1f2c33]" : "bg-gray-100"
+                )}>
+                  <Filter className="w-8 h-8 opacity-50" />
+                </div>
+                <p className="text-center text-sm">
+                  {searchQuery
+                    ? "Nenhuma conversa encontrada"
+                    : hideTabs
+                      ? "Nenhuma conversa"
+                      : `Nenhuma conversa ${activeTab === "open" ? "aberta" : activeTab === "pending" ? "pendente" : "resolvida"}`}
+                </p>
+                {wabaStatus === "disconnected" && (
+                  <p className="text-center text-xs mt-2 opacity-70">
+                    Conecte seu WhatsApp para ver as conversas
+                  </p>
+                )}
+                {onRefresh && wabaStatus === "connected" && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onRefresh}
+                    className={cn(
+                      "mt-4 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors",
+                      isDarkMode 
+                        ? "bg-[#2a3942] text-[#e9edef] hover:bg-[#374045]" 
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Atualizar
+                  </motion.button>
+                )}
+              </>
+            )}
           </div>
         ) : (
           <motion.div

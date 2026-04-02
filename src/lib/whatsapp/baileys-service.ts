@@ -1331,11 +1331,15 @@ export class BaileysService {
    * Retorna imediatamente para exibição na UI
    */
   async fetchContactsFromWhatsApp(): Promise<WhatsAppContact[]> {
+    console.log(`[BaileysService] fetchContactsFromWhatsApp called for session ${this.sessionId}`);
+    
     if (!this.socket) {
       const activeSocket = activeSessions.get(this.sessionId);
       if (activeSocket) {
+        console.log('[BaileysService] Using active socket from memory');
         this.socket = activeSocket;
       } else {
+        console.log('[BaileysService] No active socket, attempting to restore session');
         const restored = await this.restoreSession();
         if (!restored) throw new Error('Sessão não iniciada');
       }
@@ -1344,38 +1348,133 @@ export class BaileysService {
     if (!this.socket) throw new Error('Sessão não iniciada');
 
     try {
-      // Busca contatos do store em memória
-      const sessionContacts = contactsStore.get(this.sessionId);
+      // First, try to get from socket store (Baileys v7+ has a store property)
+      const socketStore = (this.socket as any).store;
+      const socketContacts = socketStore?.contacts;
       
-      if (!sessionContacts || sessionContacts.size === 0) {
-        console.log('[BaileysService] Nenhum contato em memória, retornando array vazio');
-        return [];
-      }
-
-      // Converte para array de contatos
-      const contactsArray: WhatsAppContact[] = Array.from(sessionContacts.values()).map((contact) => {
-        const phone = contact.id.split('@')[0];
-        const isGroup = contact.id.includes('@g.us');
-        
-        return {
-          id: `${this.sessionId}-${phone}`,
-          session_id: this.sessionId,
-          phone: phone,
-          name: contact.name || (contact as any).verifiedName || (contact as any).notify || phone,
-          profile_picture: (contact as any).imgUrl || null,
-          status: (contact as any).status || null,
-          last_message_at: undefined,
-          is_group: isGroup,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
+      console.log(`[BaileysService] Socket store check:`, {
+        hasStore: !!socketStore,
+        hasContacts: !!socketContacts,
+        contactCount: socketContacts ? Object.keys(socketContacts).length : 0
       });
+      
+      if (socketContacts && Object.keys(socketContacts).length > 0) {
+        // Convert socket contacts to WhatsAppContact format
+        const contactsArray: WhatsAppContact[] = Object.values(socketContacts)
+          .filter((contact: any) => contact && contact.id) // Filter out invalid entries
+          .map((contact: any) => {
+            const phone = contact.id.split('@')[0];
+            const isGroup = contact.id.includes('@g.us');
+            return {
+              id: `${this.sessionId}-${phone}`,
+              session_id: this.sessionId,
+              phone: phone,
+              name: contact.name || contact.verifiedName || contact.notify || phone,
+              profile_picture: contact.imgUrl || null,
+              status: contact.status || null,
+              last_message_at: undefined,
+              is_group: isGroup,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          });
+        
+        console.log(`[BaileysService] ${contactsArray.length} contacts from socket store`);
+        
+        // Also sync to our custom contactsStore for consistency
+        if (!contactsStore.has(this.sessionId)) {
+          contactsStore.set(this.sessionId, new Map());
+        }
+        const sessionContacts = contactsStore.get(this.sessionId)!;
+        Object.values(socketContacts).forEach((contact: any) => {
+          if (contact && contact.id) {
+            sessionContacts.set(contact.id, contact as Contact);
+          }
+        });
+        
+        // Sort by name
+        contactsArray.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        return contactsArray;
+      }
+      
+      // Fallback to our custom contactsStore
+      const sessionContacts = contactsStore.get(this.sessionId);
+      console.log(`[BaileysService] Custom contactsStore check:`, {
+        hasStore: contactsStore.has(this.sessionId),
+        contactCount: sessionContacts?.size || 0
+      });
+      
+      if (sessionContacts && sessionContacts.size > 0) {
+        // Converte para array de contatos
+        const contactsArray: WhatsAppContact[] = Array.from(sessionContacts.values()).map((contact) => {
+          const phone = contact.id.split('@')[0];
+          const isGroup = contact.id.includes('@g.us');
+          
+          return {
+            id: `${this.sessionId}-${phone}`,
+            session_id: this.sessionId,
+            phone: phone,
+            name: contact.name || (contact as any).verifiedName || (contact as any).notify || phone,
+            profile_picture: (contact as any).imgUrl || null,
+            status: (contact as any).status || null,
+            last_message_at: undefined,
+            is_group: isGroup,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        });
 
-      // Ordena por nome
-      contactsArray.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        // Ordena por nome
+        contactsArray.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-      console.log(`[BaileysService] Retornados ${contactsArray.length} contatos do WhatsApp`);
-      return contactsArray;
+        console.log(`[BaileysService] Retornados ${contactsArray.length} contatos do custom store`);
+        return contactsArray;
+      }
+      
+      // If both are empty, try to fetch from chats as last resort
+      // Chats often have contact info even if contacts weren't explicitly synced
+      const sessionChats = chatsStore.get(this.sessionId);
+      if (sessionChats && sessionChats.size > 0) {
+        console.log(`[BaileysService] Trying to extract contacts from ${sessionChats.size} chats`);
+        const contactsFromChats: WhatsAppContact[] = [];
+        const seenPhones = new Set<string>();
+        
+        for (const chat of sessionChats.values()) {
+          if (chat.id && !seenPhones.has(chat.id)) {
+            seenPhones.add(chat.id);
+            const phone = chat.id.split('@')[0];
+            const isGroup = chat.id.includes('@g.us');
+            
+            // Skip status broadcasts
+            if (chat.id === 'status@broadcast') continue;
+            
+            contactsFromChats.push({
+              id: `${this.sessionId}-${phone}`,
+              session_id: this.sessionId,
+              phone: phone,
+              name: (chat as any).name || phone,
+              profile_picture: (chat as any).imgUrl || undefined,
+              status: undefined,
+              last_message_at: chat.conversationTimestamp && typeof chat.conversationTimestamp === 'number' 
+                ? new Date(chat.conversationTimestamp * 1000).toISOString() 
+                : undefined,
+              is_group: isGroup,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          }
+        }
+        
+        if (contactsFromChats.length > 0) {
+          console.log(`[BaileysService] ${contactsFromChats.length} contacts extracted from chats`);
+          contactsFromChats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          return contactsFromChats;
+        }
+      }
+      
+      // If all sources are empty, return empty array (will trigger Supabase fallback)
+      console.log('[BaileysService] No contacts found in socket store, custom store, or chats');
+      return [];
     } catch (error) {
       console.error('[BaileysService] Erro ao buscar contatos do WhatsApp:', error);
       throw error;

@@ -76,10 +76,25 @@ export function useWhatsAppContacts(sessionId: string | null) {
       }
 
       const contacts = await response.json();
-      console.log(`[useWhatsAppContacts] ${contacts.length} contacts received:`, contacts);
+      console.log(`[useWhatsAppContacts] ${contacts.length} contacts received from API`);
+
+      // If API returns empty, try Supabase fallback
+      if (!contacts || contacts.length === 0) {
+        console.log('[useWhatsAppContacts] API returned empty, trying Supabase fallback...');
+        const supabaseContacts = await fetchContactsFromSupabase();
+        console.log(`[useWhatsAppContacts] ${supabaseContacts.length} contacts from Supabase fallback`);
+        
+        setState({
+          contacts: supabaseContacts,
+          loading: false,
+          error: null,
+          isSyncing: false,
+        });
+        return;
+      }
 
       setState({
-        contacts: contacts || [],
+        contacts: contacts,
         loading: false,
         error: null,
         isSyncing: false,
@@ -92,9 +107,9 @@ export function useWhatsAppContacts(sessionId: string | null) {
       console.error('[useWhatsAppContacts] Error:', errorMessage);
       
       // Tenta buscar do Supabase como fallback
-      console.log('[useWhatsAppContacts] Trying Supabase fallback...');
+      console.log('[useWhatsAppContacts] Error occurred, trying Supabase fallback...');
       const supabaseContacts = await fetchContactsFromSupabase();
-      console.log(`[useWhatsAppContacts] ${supabaseContacts.length} contacts from Supabase`);
+      console.log(`[useWhatsAppContacts] ${supabaseContacts.length} contacts from Supabase fallback`);
       
       setState({
         contacts: supabaseContacts,

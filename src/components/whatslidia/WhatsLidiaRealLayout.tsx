@@ -97,7 +97,7 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
   );
 
   // Load contacts from WhatsApp
-  const { contacts, loading: contactsLoading, error: contactsError } = useWhatsAppContacts(sessionId);
+  const { contacts, loading: contactsLoading, error: contactsError, refetch: refetchContacts } = useWhatsAppContacts(sessionId);
 
   // Debug logs para verificar dados
   useEffect(() => {
@@ -325,6 +325,8 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   connectionType="qr"
                   loading={contactsLoading}
                   hideTabs={true}
+                  isSyncing={contactsLoading && contacts.length === 0 && wabaStatus === "connected"}
+                  onRefresh={refetchContacts}
                 />
               </motion.div>
             ) : (
@@ -373,6 +375,8 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   connectionType="qr"
                   loading={contactsLoading}
                   hideTabs={true}
+                  isSyncing={contactsLoading && contacts.length === 0 && wabaStatus === "connected"}
+                  onRefresh={refetchContacts}
                 />
           <ChatWindow
             conversation={selectedConversation}
