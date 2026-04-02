@@ -147,17 +147,6 @@ export function useWhatsAppContacts(sessionId: string | null) {
     };
   }, [sessionId, supabase, fetchContacts]);
 
-  // Polling para atualizar contatos a cada 5 segundos
-  useEffect(() => {
-    if (!sessionId) return;
-
-    const interval = setInterval(() => {
-      fetchContacts();
-    }, 5000); // 5 segundos
-
-    return () => clearInterval(interval);
-  }, [sessionId, fetchContacts]);
-
   return {
     ...state,
     refetch: fetchContacts,

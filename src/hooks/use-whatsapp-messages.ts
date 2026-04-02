@@ -391,43 +391,6 @@ export function useWhatsAppMessages(
     }
   }, [sessionId, phone, fetchMessages, isCacheValid, cacheKey]);
 
-  useEffect(() => {
-    if (!sessionId || !phone) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const params = new URLSearchParams();
-        params.append('phone', phone);
-        params.append('limit', '10');
-        if (lastMessageTimeRef.current) {
-          params.append('after', lastMessageTimeRef.current);
-        }
-
-        const response = await fetch(`/api/whatsapp/sessions/${sessionId}/messages?${params}`);
-        if (response.ok) {
-          const newMessages = await response.json();
-          if (newMessages.length > 0) {
-            setState((prev) => {
-              const existingIds = new Set(prev.messages.map(m => m.message_id));
-              const uniqueNew = newMessages.filter((m: WhatsAppMessage) => !existingIds.has(m.message_id));
-              if (uniqueNew.length === 0) return prev;
-
-              const merged = [...prev.messages, ...uniqueNew].sort(
-                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-              );
-              lastMessageTimeRef.current = merged[merged.length - 1].timestamp;
-              return { ...prev, messages: merged };
-            });
-          }
-        }
-      } catch (err) {
-        console.error('[useWhatsAppMessages] Polling error:', err);
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [sessionId, phone]);
-
   const loadOlderMessages = useCallback(() => {
     if (state.messages.length > 0 && state.hasMore && !state.loading) {
       const oldestMessage = state.messages[0];

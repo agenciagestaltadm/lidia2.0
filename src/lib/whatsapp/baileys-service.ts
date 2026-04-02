@@ -279,12 +279,6 @@ export class BaileysService {
         try {
           console.log('[BaileysService] QR code gerado! Comprimento:', qr.length);
           onQR(qr);
-
-          await supabase.from('whatsapp_qr_codes').insert({
-            session_id: this.sessionId,
-            qr_code_data: qr,
-            expires_at: new Date(Date.now() + 60 * 1000).toISOString(),
-          });
         } catch (error) {
           console.error('[BaileysService] Error in QR callback:', error);
         }
@@ -390,6 +384,34 @@ export class BaileysService {
     // EVENTO: creds.update
     // ============================================================
     this.socket.ev.on('creds.update', saveCreds);
+
+    // ============================================================
+    // EVENTO: messages.upsert - NOVAS MENSAGENS
+    // ============================================================
+    this.socket.ev.on('messages.upsert', async (m) => {
+      const queue = messageQueues.get(this.sessionId);
+      if (!queue) {
+        console.warn(`[BaileysService] Queue não encontrada para sessão ${this.sessionId}`);
+        return;
+      }
+
+      console.log(`[BaileysService] messages.upsert: ${m.messages.length} mensagens (tipo: ${m.type})`);
+
+      for (const msg of m.messages) {
+        // Ignora mensagens de status do WhatsApp
+        if (msg.key.remoteJid === 'status@broadcast') continue;
+
+        queue.enqueue({
+          type: 'upsert',
+          data: {
+            msg,
+            isHistorical: m.type === 'append'
+          },
+          timestamp: Date.now(),
+          priority: 1, // Alta prioridade
+        });
+      }
+    });
 
     // ============================================================
     // EVENTO: messages.update - Atualizações de status
