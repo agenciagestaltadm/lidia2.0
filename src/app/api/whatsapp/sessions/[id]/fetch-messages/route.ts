@@ -69,17 +69,38 @@ export async function GET(
       );
     }
 
-    // Busca mensagens diretamente do Baileys
-    const service = new BaileysService(id, profile.company_id);
-    const messages = await service.fetchMessagesFromWhatsApp(phone, limit);
+    // Tenta usar socket existente em memória primeiro
+    const existingSocket = BaileysService.getSession(id);
+    let messages: any[] = [];
 
-    // Retorna imediatamente (não espera salvar no Supabase)
+    if (existingSocket) {
+      const service = new BaileysService(id, profile.company_id);
+      messages = await service.fetchMessagesFromWhatsApp(phone, limit);
+    }
+
+    // Fallback para Supabase se não encontrou mensagens em memória
+    if (messages.length === 0) {
+      console.log('[API] Nenhuma mensagem em memória, buscando do Supabase...');
+      const { data: supabaseMessages } = await supabase
+        .from('whatsapp_messages')
+        .select('*')
+        .eq('session_id', id)
+        .eq('contact_phone', phone)
+        .order('timestamp', { ascending: false })
+        .limit(limit);
+      
+      messages = supabaseMessages || [];
+    }
+
     const response = NextResponse.json(messages);
 
-    // Salva no Supabase em background (não bloqueia a resposta)
-    service.saveMessagesToSupabase(messages).catch((error: Error) => {
-      console.error('[API] Erro ao salvar mensagens no Supabase (background):', error);
-    });
+    // Salva no Supabase em background se veio do Baileys
+    if (messages.length > 0 && existingSocket) {
+      const service = new BaileysService(id, profile.company_id);
+      service.saveMessagesToSupabase(messages).catch((error: Error) => {
+        console.error('[API] Erro ao salvar mensagens no Supabase (background):', error);
+      });
+    }
 
     return response;
   } catch (error) {

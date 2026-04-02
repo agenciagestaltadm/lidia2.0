@@ -392,53 +392,9 @@ export class BaileysService {
     this.socket.ev.on('creds.update', saveCreds);
 
     // ============================================================
-    // EVENTO: messages.upsert - Mensagens novas e histórico
-    // ============================================================
-    this.socket.ev.on('messages.upsert', async (m) => {
-      const queue = messageQueues.get(this.sessionId);
-      if (!queue) return;
-
-      console.log(`[BaileysService] messages.upsert: ${m.messages.length} mensagens (tipo: ${m.type})`);
-
-      const isHistorical = m.type === 'append';
-
-      // Inicializa stores da sessão se não existirem
-      if (!messagesStore.has(this.sessionId)) {
-        messagesStore.set(this.sessionId, new Map());
-      }
-      const sessionMessages = messagesStore.get(this.sessionId)!;
-
-      for (const msg of m.messages) {
-        const jid = msg.key.remoteJid;
-        if (jid) {
-          // Armazena mensagem em memória
-          if (!sessionMessages.has(jid)) {
-            sessionMessages.set(jid, []);
-          }
-          const chatMessages = sessionMessages.get(jid)!;
-          
-          // Evita duplicatas
-          const exists = chatMessages.some(m => m.key.id === msg.key.id);
-          if (!exists) {
-            chatMessages.push(msg);
-            // Mantém apenas últimas 100 mensagens por chat
-            if (chatMessages.length > 100) {
-              chatMessages.shift();
-            }
-          }
-        }
-
-        queue.enqueue({
-          type: 'upsert',
-          data: { msg, isHistorical },
-          timestamp: Date.now(),
-          priority: isHistorical ? 2 : 1, // Mensagens novas têm prioridade
-        });
-      }
-    });
-
-    // ============================================================
     // EVENTO: messages.update - Atualizações de status
+    // ============================================================
+    // ============================================================
     // ============================================================
     this.socket.ev.on('messages.update', async (updates) => {
       const queue = messageQueues.get(this.sessionId);
@@ -680,6 +636,19 @@ export class BaileysService {
       }
 
       console.log(`[BaileysService] Mensagem salva: ${savedMessage.id} (${type})`);
+
+      // Broadcast via Supabase Realtime para entrega instantânea ao frontend
+      try {
+        const broadcastSupabase = await createClient();
+        await broadcastSupabase.channel(`whatsapp-broadcast-${this.sessionId}`)
+          .send({
+            type: 'broadcast',
+            event: 'new-message',
+            payload: savedMessage
+          });
+      } catch (broadcastError) {
+        console.error('[BaileysService] Erro ao broadcast mensagem:', broadcastError);
+      }
 
       // Atualiza ou cria contato
       await this.upsertContact(phone, msg.pushName, isGroup, new Date(msg.messageTimestamp * 1000));

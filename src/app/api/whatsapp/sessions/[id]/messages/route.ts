@@ -52,6 +52,7 @@ export async function GET(
     const phone = searchParams.get('phone');
     const limit = parseInt(searchParams.get('limit') || '50');
     const before = searchParams.get('before');
+    const after = searchParams.get('after');
 
     if (!phone) {
       return NextResponse.json(
@@ -65,12 +66,15 @@ export async function GET(
       .from('whatsapp_messages')
       .select('*')
       .eq('session_id', id)
-      .eq('contact_phone', phone)
-      .order('timestamp', { ascending: false })
-      .limit(limit);
+      .eq('contact_phone', phone);
 
-    if (before) {
-      query = query.lt('timestamp', before);
+    if (after) {
+      query = query.gt('timestamp', after).order('timestamp', { ascending: true });
+    } else {
+      query = query.order('timestamp', { ascending: false }).limit(limit);
+      if (before) {
+        query = query.lt('timestamp', before);
+      }
     }
 
     const { data: messages, error } = await query;
@@ -83,7 +87,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(messages?.reverse() || []);
+    return NextResponse.json(after ? (messages || []) : (messages?.reverse() || []));
   } catch (error) {
     console.error('Erro ao listar mensagens:', error);
     return NextResponse.json(

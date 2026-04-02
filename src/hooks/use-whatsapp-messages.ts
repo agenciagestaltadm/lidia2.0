@@ -12,14 +12,13 @@ interface UseWhatsAppMessagesState {
   hasMore: boolean;
 }
 
-// Cache global para mensagens
 const messagesCache = new Map<string, {
   messages: WhatsAppMessage[];
   timestamp: number;
   hasMore: boolean;
 }>();
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+const CACHE_DURATION = 5 * 60 * 1000;
 
 export function useWhatsAppMessages(
   sessionId: string | null,
@@ -32,18 +31,18 @@ export function useWhatsAppMessages(
     hasMore: true,
   });
 
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   const cacheKey = `${sessionId}-${phone}`;
   const previousPhoneRef = useRef<string | null>(null);
+  const lastMessageTimeRef = useRef<string | null>(null);
 
-  // Verifica se o cache é válido
   const isCacheValid = useCallback(() => {
     const cached = messagesCache.get(cacheKey);
     if (!cached) return false;
     return Date.now() - cached.timestamp < CACHE_DURATION;
   }, [cacheKey]);
 
-  // Busca mensagens do Supabase (fallback)
   const fetchMessagesFromSupabase = useCallback(
     async (before?: string) => {
       if (!sessionId || !phone) return [];
@@ -72,7 +71,6 @@ export function useWhatsAppMessages(
     [sessionId, phone]
   );
 
-  // Busca mensagens diretamente do WhatsApp (rápido)
   const fetchMessagesFromWhatsApp = useCallback(
     async (limit: number = 50) => {
       if (!sessionId || !phone) return [];
@@ -102,12 +100,10 @@ export function useWhatsAppMessages(
     [sessionId, phone]
   );
 
-  // Busca mensagens com cache (tenta WhatsApp primeiro)
   const fetchMessages = useCallback(
     async (before?: string, forceRefresh = false) => {
       if (!sessionId || !phone) return;
 
-      // Verifica cache se não for refresh forçado e não for paginação
       if (!before && !forceRefresh && isCacheValid()) {
         const cached = messagesCache.get(cacheKey);
         if (cached) {
@@ -124,10 +120,8 @@ export function useWhatsAppMessages(
       try {
         setState((prev) => ({ ...prev, loading: true, error: null }));
 
-        // Tenta buscar do WhatsApp primeiro (mais rápido)
         let messages = await fetchMessagesFromWhatsApp(50);
         
-        // Se não conseguiu do WhatsApp, tenta do Supabase
         if (messages.length === 0 && !before) {
           console.log("[useWhatsAppMessages] Tentando buscar do Supabase...");
           messages = await fetchMessagesFromSupabase(before);
@@ -135,7 +129,6 @@ export function useWhatsAppMessages(
 
         const hasMore = messages.length === 50;
 
-        // Atualiza cache apenas para carga inicial
         if (!before) {
           messagesCache.set(cacheKey, {
             messages,
@@ -161,7 +154,6 @@ export function useWhatsAppMessages(
     [sessionId, phone, cacheKey, isCacheValid, fetchMessagesFromWhatsApp, fetchMessagesFromSupabase]
   );
 
-  // Envia mensagem
   const sendMessage = useCallback(
     async (input: SendMessageInput): Promise<boolean> => {
       if (!sessionId) return false;
@@ -187,7 +179,6 @@ export function useWhatsAppMessages(
           messages: [...prev.messages, message],
         }));
         
-        // Limpa o cache após enviar mensagem
         messagesCache.delete(cacheKey);
         
         return true;
@@ -201,7 +192,6 @@ export function useWhatsAppMessages(
     [sessionId, cacheKey]
   );
 
-  // Envia mensagem com mídia
   const sendMediaMessage = useCallback(
     async (
       phone: string,
@@ -213,7 +203,6 @@ export function useWhatsAppMessages(
       if (!sessionId) return false;
 
       try {
-        // Converte Buffer para base64 para envio
         const base64Media = mediaBuffer.toString('base64');
         
         const response = await fetch(
@@ -242,7 +231,6 @@ export function useWhatsAppMessages(
           messages: [...prev.messages, message],
         }));
         
-        // Limpa o cache após enviar mensagem
         messagesCache.delete(cacheKey);
         
         return true;
@@ -256,7 +244,6 @@ export function useWhatsAppMessages(
     [sessionId, cacheKey]
   );
 
-  // Carrega mais mensagens (paginação)
   const loadMore = useCallback(() => {
     if (state.messages.length > 0 && state.hasMore && !state.loading) {
       const oldestMessage = state.messages[0];
@@ -264,17 +251,14 @@ export function useWhatsAppMessages(
     }
   }, [fetchMessages, state.messages, state.hasMore, state.loading]);
 
-  // Força refresh do cache
   const refresh = useCallback(() => {
     messagesCache.delete(cacheKey);
     fetchMessages(undefined, true);
   }, [cacheKey, fetchMessages]);
 
-  // Subscrição Realtime otimizada - recebe mensagens instantaneamente via WebSocket
   useEffect(() => {
     if (!sessionId || !phone) return;
 
-    // Canal otimizado com broadcast desabilitado para self
     const channel = supabase
       .channel(`whatsapp-messages-${sessionId}-${phone}`, {
         config: {
@@ -294,12 +278,10 @@ export function useWhatsAppMessages(
           
           if (message.contact_phone === phone) {
             setState((prev) => {
-              // Deduplicação: evita mensagens duplicadas
               if (prev.messages.some(m => m.id === message.id || m.message_id === message.message_id)) {
                 return prev;
               }
               
-              // Adiciona mensagem mantendo ordenação por timestamp
               const newMessages = [...prev.messages, message].sort(
                 (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
               );
@@ -313,7 +295,6 @@ export function useWhatsAppMessages(
               return { ...prev, messages: newMessages };
             });
             
-            // Limpa cache após receber nova mensagem
             messagesCache.delete(cacheKey);
           }
         }
@@ -360,7 +341,6 @@ export function useWhatsAppMessages(
         }
       );
 
-    // Inscreve no canal
     channel.subscribe((status) => {
       console.log(`[useWhatsAppMessages] Realtime subscription status: ${status}`);
     });
@@ -368,36 +348,86 @@ export function useWhatsAppMessages(
     return () => {
       channel.unsubscribe();
     };
-  }, [sessionId, phone, supabase, cacheKey]);
+  }, [sessionId, phone, cacheKey]);
 
-  // Sincronização inicial - apenas carga inicial, sem polling
-  // As mensagens são recebidas em tempo real via Supabase Realtime
   useEffect(() => {
     if (!sessionId || !phone) return;
 
-    // Carrega mensagens iniciais apenas se não houver cache válido
-    if (!isCacheValid()) {
+    const broadcastChannel = supabase.channel(`whatsapp-broadcast-${sessionId}`);
+    broadcastChannel
+      .on('broadcast', { event: 'new-message' }, (payload) => {
+        const message = payload.payload as WhatsAppMessage;
+        if (message.contact_phone === phone) {
+          setState((prev) => {
+            if (prev.messages.some(m => m.id === message.id || m.message_id === message.message_id)) {
+              return prev;
+            }
+            const newMessages = [...prev.messages, message].sort(
+              (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+            return { ...prev, messages: newMessages };
+          });
+          messagesCache.delete(cacheKey);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      broadcastChannel.unsubscribe();
+    };
+  }, [sessionId, phone, supabase, cacheKey]);
+
+  useEffect(() => {
+    if (!sessionId || !phone) return;
+
+    if (previousPhoneRef.current !== phone) {
+      messagesCache.delete(cacheKey);
+      previousPhoneRef.current = phone;
+      console.log('[useWhatsAppMessages] Carregando mensagens para novo contato:', phone);
+      fetchMessages(undefined, true);
+    } else if (!isCacheValid()) {
+      console.log('[useWhatsAppMessages] Carregando mensagens iniciais');
       fetchMessages();
     }
-  }, [sessionId, phone, fetchMessages, isCacheValid]);
+  }, [sessionId, phone, fetchMessages, isCacheValid, cacheKey]);
 
-  // Carrega mensagens iniciais e força refresh ao trocar de conversa
   useEffect(() => {
-    if (sessionId && phone) {
-      // Se o telefone mudou, força refresh do cache
-      if (previousPhoneRef.current !== phone) {
-        messagesCache.delete(cacheKey);
-        previousPhoneRef.current = phone;
-        console.log('[useWhatsAppMessages] Carregando mensagens para novo contato:', phone);
-        fetchMessages(undefined, true); // forceRefresh = true
-      } else {
-        console.log('[useWhatsAppMessages] Carregando mensagens iniciais');
-        fetchMessages();
-      }
-    }
-  }, [fetchMessages, sessionId, phone, cacheKey]);
+    if (!sessionId || !phone) return;
 
-  // Carrega mensagens antigas ao fazer scroll para cima
+    const interval = setInterval(async () => {
+      try {
+        const params = new URLSearchParams();
+        params.append('phone', phone);
+        params.append('limit', '10');
+        if (lastMessageTimeRef.current) {
+          params.append('after', lastMessageTimeRef.current);
+        }
+
+        const response = await fetch(`/api/whatsapp/sessions/${sessionId}/messages?${params}`);
+        if (response.ok) {
+          const newMessages = await response.json();
+          if (newMessages.length > 0) {
+            setState((prev) => {
+              const existingIds = new Set(prev.messages.map(m => m.message_id));
+              const uniqueNew = newMessages.filter((m: WhatsAppMessage) => !existingIds.has(m.message_id));
+              if (uniqueNew.length === 0) return prev;
+
+              const merged = [...prev.messages, ...uniqueNew].sort(
+                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+              );
+              lastMessageTimeRef.current = merged[merged.length - 1].timestamp;
+              return { ...prev, messages: merged };
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[useWhatsAppMessages] Polling error:', err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [sessionId, phone]);
+
   const loadOlderMessages = useCallback(() => {
     if (state.messages.length > 0 && state.hasMore && !state.loading) {
       const oldestMessage = state.messages[0];
