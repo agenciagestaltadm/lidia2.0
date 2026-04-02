@@ -94,23 +94,38 @@ class MessageQueue {
   }
 
   private async processItem(item: QueuedMessage) {
+    console.log(`[MessageQueue] Processing ${item.type} for session ${this.sessionId}:`, {
+      timestamp: item.timestamp,
+      dataKeys: Object.keys(item.data || {})
+    });
+
     const service = messageQueueServices.get(this.sessionId);
-    if (!service) return;
+    if (!service) {
+      console.error(`[MessageQueue] No service found for session ${this.sessionId}`);
+      return;
+    }
 
     try {
       switch (item.type) {
         case 'upsert':
+          console.log(`[MessageQueue] Handling upsert for message:`, item.data?.msg?.key?.id);
           await service.handleIncomingMessage(item.data.msg, item.data.isHistorical);
+          console.log(`[MessageQueue] Upsert completed successfully`);
           break;
         case 'update':
+          console.log(`[MessageQueue] Handling status update`);
           await service.handleMessageStatusUpdate(item.data.update);
           break;
         case 'delete':
+          console.log(`[MessageQueue] Handling delete`);
           await service.handleMessageDelete(item.data);
           break;
         case 'status_update':
+          console.log(`[MessageQueue] Handling status_update`);
           await service.processStatusUpdate(item.data);
           break;
+        default:
+          console.warn(`[MessageQueue] Unknown item type: ${item.type}`);
       }
     } catch (error) {
       console.error(`[MessageQueue] Error processing ${item.type}:`, error);
@@ -173,12 +188,20 @@ export class BaileysService {
   constructor(sessionId: string, companyId: string) {
     this.sessionId = sessionId;
     this.companyId = companyId;
-    
+
+    console.log(`[BaileysService] Constructor called for session ${sessionId}`);
+
     // Registra instância para uso pela fila
     if (sessionId) {
       messageQueueServices.set(sessionId, this);
+      console.log(`[BaileysService] Service registered for session ${sessionId}`);
+
       if (!messageQueues.has(sessionId)) {
-        messageQueues.set(sessionId, new MessageQueue(sessionId));
+        const queue = new MessageQueue(sessionId);
+        messageQueues.set(sessionId, queue);
+        console.log(`[BaileysService] Message queue created for session ${sessionId}. Active queues:`, messageQueues.size);
+      } else {
+        console.log(`[BaileysService] Queue already exists for session ${sessionId}`);
       }
     }
   }
@@ -397,9 +420,20 @@ export class BaileysService {
 
       console.log(`[BaileysService] messages.upsert: ${m.messages.length} mensagens (tipo: ${m.type})`);
 
+      console.log(`[BaileysService] Processing ${m.messages.length} messages from upsert event`);
+
       for (const msg of m.messages) {
         // Ignora mensagens de status do WhatsApp
-        if (msg.key.remoteJid === 'status@broadcast') continue;
+        if (msg.key.remoteJid === 'status@broadcast') {
+          console.log('[BaileysService] Skipping status broadcast message');
+          continue;
+        }
+
+        console.log(`[BaileysService] Enqueueing message:`, {
+          id: msg.key.id,
+          from: msg.key.remoteJid,
+          type: m.type
+        });
 
         queue.enqueue({
           type: 'upsert',

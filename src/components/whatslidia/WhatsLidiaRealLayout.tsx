@@ -97,15 +97,30 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
   );
 
   // Load contacts from WhatsApp
-  const { contacts, loading: contactsLoading } = useWhatsAppContacts(sessionId);
+  const { contacts, loading: contactsLoading, error: contactsError } = useWhatsAppContacts(sessionId);
+
+  // Debug logs para verificar dados
+  useEffect(() => {
+    console.log('[WhatsLidia] Session:', sessionId, 'Contacts loaded:', contacts.length, 'Error:', contactsError);
+    if (contacts.length > 0) {
+      console.log('[WhatsLidia] First contact:', contacts[0]);
+    }
+  }, [contacts, contactsError, sessionId]);
 
   // Load messages for selected conversation
   const selectedContactPhone = selectedConversationId?.replace('conv-', '') || null;
   const { 
     messages, 
     loading: messagesLoading, 
-    sendMessage: sendWhatsAppMessage 
+    sendMessage: sendWhatsAppMessage,
+    refetch: refetchMessages,
+    error: messagesError
   } = useWhatsAppMessages(sessionId, selectedContactPhone);
+
+  // Debug logs para mensagens
+  useEffect(() => {
+    console.log('[WhatsLidia] Contact phone:', selectedContactPhone, 'Messages loaded:', messages.length, 'Error:', messagesError);
+  }, [messages, selectedContactPhone, messagesError]);
 
   // Convert contacts to conversations
   const conversations = useMemo(() => {

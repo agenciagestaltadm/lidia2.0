@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { BaileysService } from '@/lib/whatsapp/baileys-service';
 
+// Configuração para Node.js runtime (não Edge) - necessário para Baileys
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
 // GET /api/whatsapp/sessions/[id]/fetch-contacts
 // Busca contatos diretamente do Baileys (não do Supabase)
 // Retorna imediatamente, salva no Supabase em background
@@ -50,16 +54,20 @@ export async function GET(
     }
 
     // Verifica se está ativa
+    console.log(`[API fetch-contacts] Session ${id} status:`, session.status);
     if (session.status !== 'active') {
+      console.log(`[API fetch-contacts] Session not active, returning error`);
       return NextResponse.json(
-        { error: 'Sessão não está ativa' },
+        { error: 'Sessão não está ativa', status: session.status },
         { status: 400 }
       );
     }
 
     // Busca contatos diretamente do Baileys
+    console.log(`[API fetch-contacts] Creating BaileysService and fetching contacts...`);
     const service = new BaileysService(id, profile.company_id);
     const contacts = await service.fetchContactsFromWhatsApp();
+    console.log(`[API fetch-contacts] ${contacts.length} contacts fetched from WhatsApp`);
 
     // Retorna imediatamente (não espera salvar no Supabase)
     const response = NextResponse.json(contacts);
@@ -72,8 +80,11 @@ export async function GET(
     return response;
   } catch (error) {
     console.error('[API] Erro ao buscar contatos do WhatsApp:', error);
+    if (error instanceof Error) {
+      console.error('[API] Stack trace:', error.stack);
+    }
     return NextResponse.json(
-      { error: 'Erro ao buscar contatos do WhatsApp' },
+      { error: 'Erro ao buscar contatos do WhatsApp', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

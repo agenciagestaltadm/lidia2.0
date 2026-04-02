@@ -51,14 +51,19 @@ export function useWhatsAppContacts(sessionId: string | null) {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
+      console.log(`[useWhatsAppContacts] Fetching contacts for session: ${sessionId}`);
       const response = await fetch(`/api/whatsapp/sessions/${sessionId}/fetch-contacts`);
+
+      console.log(`[useWhatsAppContacts] Response status:`, response.status);
 
       if (!response.ok) {
         const error = await response.json();
+        console.error(`[useWhatsAppContacts] API Error:`, error);
         throw new Error(error.error || "Erro ao buscar contatos do WhatsApp");
       }
 
       const contacts = await response.json();
+      console.log(`[useWhatsAppContacts] ${contacts.length} contacts received:`, contacts);
 
       setState({
         contacts: contacts || [],
@@ -67,13 +72,16 @@ export function useWhatsAppContacts(sessionId: string | null) {
         isSyncing: false,
       });
 
-      console.log(`[useWhatsAppContacts] ${contacts.length} contatos carregados do WhatsApp`);
+      console.log(`[useWhatsAppContacts] State updated with ${contacts.length} contacts`);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Erro ao buscar contatos";
+      console.error('[useWhatsAppContacts] Error:', errorMessage);
       
       // Tenta buscar do Supabase como fallback
+      console.log('[useWhatsAppContacts] Trying Supabase fallback...');
       const supabaseContacts = await fetchContactsFromSupabase();
+      console.log(`[useWhatsAppContacts] ${supabaseContacts.length} contacts from Supabase`);
       
       setState({
         contacts: supabaseContacts,
@@ -147,8 +155,22 @@ export function useWhatsAppContacts(sessionId: string | null) {
     };
   }, [sessionId, supabase, fetchContacts]);
 
+  // Retry automático após 3 segundos se falhar
+  useEffect(() => {
+    if (state.error && sessionId && !state.loading) {
+      console.log('[useWhatsAppContacts] Retrying in 3 seconds...');
+      const timer = setTimeout(() => {
+        fetchContacts();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [state.error, sessionId, state.loading, fetchContacts]);
+
   return {
-    ...state,
+    contacts: state.contacts,
+    loading: state.loading,
+    error: state.error,
+    isSyncing: state.isSyncing,
     refetch: fetchContacts,
     refetchFromWhatsApp: fetchContactsFromWhatsApp,
   };

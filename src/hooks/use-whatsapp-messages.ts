@@ -48,6 +48,7 @@ export function useWhatsAppMessages(
       if (!sessionId || !phone) return [];
 
       try {
+        console.log(`[useWhatsAppMessages] Fetching from Supabase for phone:`, phone);
         const params = new URLSearchParams();
         params.append("phone", phone);
         params.append("limit", "100");
@@ -56,6 +57,58 @@ export function useWhatsAppMessages(
         const response = await fetch(
           `/api/whatsapp/sessions/${sessionId}/messages?${params}`
         );
+
+        console.log(`[useWhatsAppMessages] Supabase response status:`, response.status);
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error(`[useWhatsAppMessages] Supabase API error:`, error);
+          throw new Error(error.error || "Erro ao buscar mensagens");
+        }
+
+        const messages = await response.json();
+        console.log(`[useWhatsAppMessages] ${messages.length} messages from Supabase`);
+        return messages;
+      } catch (err) {
+        console.error("[useWhatsAppMessages] Erro ao buscar do Supabase:", err);
+        return [];
+      }
+    },
+    [sessionId, phone]
+  );
+
+  const fetchMessagesFromWhatsApp = useCallback(
+    async (limit: number = 50) => {
+      if (!sessionId || !phone) return [];
+
+      try {
+        console.log(`[useWhatsAppMessages] Fetching from WhatsApp for phone:`, phone);
+        const params = new URLSearchParams();
+        params.append("phone", phone);
+        params.append("limit", limit.toString());
+
+        const response = await fetch(
+          `/api/whatsapp/sessions/${sessionId}/fetch-messages?${params}`
+        );
+
+        console.log(`[useWhatsAppMessages] WhatsApp response status:`, response.status);
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error(`[useWhatsAppMessages] WhatsApp API error:`, error);
+          throw new Error(error.error || "Erro ao buscar mensagens do WhatsApp");
+        }
+
+        const messages = await response.json();
+        console.log(`[useWhatsAppMessages] ${messages.length} messages from WhatsApp`);
+        return messages;
+      } catch (err) {
+        console.error("[useWhatsAppMessages] Erro ao buscar do WhatsApp:", err);
+        return [];
+      }
+    },
+    [sessionId, phone]
+  );
 
         if (!response.ok) {
           const error = await response.json();
@@ -378,7 +431,11 @@ export function useWhatsAppMessages(
   }, [sessionId, phone, supabase, cacheKey]);
 
   useEffect(() => {
-    if (!sessionId || !phone) return;
+    console.log('[useWhatsAppMessages] Load effect triggered:', { sessionId, phone, cacheValid: isCacheValid() });
+    if (!sessionId || !phone) {
+      console.log('[useWhatsAppMessages] Skipping load: no sessionId or phone');
+      return;
+    }
 
     if (previousPhoneRef.current !== phone) {
       messagesCache.delete(cacheKey);
@@ -386,8 +443,10 @@ export function useWhatsAppMessages(
       console.log('[useWhatsAppMessages] Carregando mensagens para novo contato:', phone);
       fetchMessages(undefined, true);
     } else if (!isCacheValid()) {
-      console.log('[useWhatsAppMessages] Carregando mensagens iniciais');
+      console.log('[useWhatsAppMessages] Carregando mensagens iniciais para:', phone);
       fetchMessages();
+    } else {
+      console.log('[useWhatsAppMessages] Using cached messages:', state.messages.length);
     }
   }, [sessionId, phone, fetchMessages, isCacheValid, cacheKey]);
 
@@ -400,7 +459,10 @@ export function useWhatsAppMessages(
   }, [fetchMessages, state.messages, state.hasMore, state.loading]);
 
    return {
-     ...state,
+     messages: state.messages,
+     loading: state.loading,
+     error: state.error,
+     hasMore: state.hasMore,
      sendMessage,
      sendMediaMessage,
      loadMore,
@@ -408,4 +470,4 @@ export function useWhatsAppMessages(
      refetch: () => fetchMessages(),
      refresh,
    };
- }
+}

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { BaileysService } from '@/lib/whatsapp/baileys-service';
 
+// Configuração para Node.js runtime (não Edge) - necessário para Baileys
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
 // GET /api/whatsapp/sessions/[id]/fetch-messages?phone=xxx
 // Busca mensagens diretamente do Baileys (não do Supabase)
 // Retorna imediatamente, salva no Supabase em background
