@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 
 interface Particle {
   id: number;
@@ -19,7 +19,12 @@ interface FloatingParticlesProps {
 }
 
 export function FloatingParticles({ count = 20, className }: FloatingParticlesProps) {
-  const particles = useMemo<Particle[]>(() => {
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    
     const colors = [
       "rgba(16, 185, 129, 0.6)",   // Emerald
       "rgba(5, 150, 105, 0.5)",    // Dark Green
@@ -27,7 +32,7 @@ export function FloatingParticles({ count = 20, className }: FloatingParticlesPr
       "rgba(4, 120, 87, 0.4)",     // Deep Green
     ];
     
-    return Array.from({ length: count }, (_, i) => ({
+    const generatedParticles: Particle[] = Array.from({ length: count }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
@@ -36,7 +41,14 @@ export function FloatingParticles({ count = 20, className }: FloatingParticlesPr
       delay: Math.random() * 5,
       color: colors[Math.floor(Math.random() * colors.length)],
     }));
+    
+    setParticles(generatedParticles);
   }, [count]);
+
+  // Não renderiza nada até estar montado no cliente para evitar mismatch de hidratação
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>

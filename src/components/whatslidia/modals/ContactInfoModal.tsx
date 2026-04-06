@@ -260,7 +260,7 @@ export function ContactInfoModal({
   };
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex">
           {/* Backdrop */}
@@ -1186,6 +1186,6 @@ export function ContactInfoModal({
         messages={[]}
         isDarkMode={isDarkMode}
       />
-    </AnimatePresence>
+    </>
   );
 }

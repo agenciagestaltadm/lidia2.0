@@ -213,6 +213,17 @@ export function useWhatsAppChat(
 
         if (!response.ok) {
           const error = await response.json();
+          console.error(`[useWhatsAppChat] API Error:`, error);
+          
+          // Se a sessão não está ativa, tenta novamente após 2 segundos
+          if (error.status && ['waiting_qr', 'connecting', 'creating'].includes(error.status)) {
+            console.log(`[useWhatsAppChat] Session status is ${error.status}, will retry in 2s...`);
+            setTimeout(() => {
+              fetchMessages(before, forceRefresh);
+            }, 2000);
+            return;
+          }
+          
           throw new Error(error.error || "Erro ao buscar mensagens");
         }
 
@@ -267,21 +278,67 @@ export function useWhatsAppChat(
     if (!sessionId || !phone) {
       // Limpa EventSource se desconectar
       if (eventSourceRef.current) {
+        console.log('[useWhatsAppChat] Cleaning up SSE - no sessionId or phone');
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
       return;
     }
 
-    console.log(`[useWhatsAppChat] Starting SSE for session: ${sessionId}, phone: ${phone}`);
+    console.log(`[useWhatsAppChat] Initializing SSE connection`);
+    console.log(`[useWhatsAppChat] Session ID: ${sessionId}`);
+    console.log(`[useWhatsAppChat] Phone: ${phone}`);
 
     const params = new URLSearchParams();
     params.append("phone", phone);
 
-    const eventSource = new EventSource(
-      `/api/whatsapp/sessions/${sessionId}/stream?${params}`
-    );
-    eventSourceRef.current = eventSource;
+    const streamUrl = `/api/whatsapp/sessions/${sessionId}/stream?${params}`;
+    console.log(`[useWhatsAppChat] Stream URL: ${streamUrl}`);
+    
+    // Testa a conexão primeiro com fetch para capturar erros HTTP
+    fetch(streamUrl, { method: 'GET', headers: { 'Accept': 'text/event-stream' } })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => {
+            const errorMsg = `HTTP ${response.status}: ${err.error || 'Unknown error'}${err.status ? ` (session status: ${err.status})` : ''}`;
+            throw new Error(errorMsg);
+          }).catch(() => {
+            throw new Error(`HTTP ${response.status}: Failed to connect to SSE stream - endpoint not responding correctly`);
+          });
+        }
+        // Se OK, cria o EventSource normal
+        console.log('[useWhatsAppChat] SSE endpoint responded OK, creating EventSource...');
+        const eventSource = new EventSource(streamUrl);
+        eventSourceRef.current = eventSource;
+        setupEventSourceListeners(eventSource, sessionId, phone);
+      })
+      .catch(error => {
+        console.error(`[useWhatsAppChat] Failed to initialize SSE: ${error.message}`);
+        console.error(`[useWhatsAppChat] Stream URL: ${streamUrl}`);
+        console.error(`[useWhatsAppChat] Session: ${sessionId}, Phone: ${phone}`);
+        
+        // Tenta novamente após 3 segundos se o componente ainda estiver montado
+        setTimeout(() => {
+          if (sessionId && phone && !eventSourceRef.current) {
+            console.log('[useWhatsAppChat] Retrying SSE connection...');
+            // O useEffect será re-executado se as dependências mudarem
+            // ou podemos forçar uma nova tentativa aqui
+          }
+        }, 3000);
+      });
+
+    return () => {
+      console.log(`[useWhatsAppChat] Closing SSE`);
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, [sessionId, phone, cacheKey]);
+
+  // Função auxiliar para configurar listeners do EventSource
+  const setupEventSourceListeners = (eventSource: EventSource, sessionId: string, phone: string) => {
+    console.log('[useWhatsAppChat] Setting up SSE listeners');
 
     eventSource.onopen = () => {
       console.log(`[useWhatsAppChat] SSE connected`);
@@ -294,14 +351,22 @@ export function useWhatsAppChat(
     eventSource.addEventListener("message", (event) => {
       try {
         const message = JSON.parse(event.data);
-        console.log(`[useWhatsAppChat] New message via SSE:`, message.id);
+        console.log(`[useWhatsAppChat] New message via SSE:`, {
+          id: message.id,
+          contact_phone: message.contact_phone,
+          content: message.content?.substring(0, 50),
+          timestamp: message.timestamp
+        });
 
         dispatch({ type: "ADD_MESSAGE", payload: message });
 
         // Invalida cache
         messagesCache.delete(cacheKey);
+        
+        console.log(`[useWhatsAppChat] Message added to state. Total messages: ${state.messages.length + 1}`);
       } catch (error) {
         console.error("[useWhatsAppChat] Error parsing SSE message:", error);
+        console.error("[useWhatsAppChat] Raw event data:", event.data);
       }
     });
 
@@ -310,22 +375,50 @@ export function useWhatsAppChat(
       console.log(`[useWhatsAppChat] Contact update via SSE:`, event.data);
     });
 
-    eventSource.onerror = (error) => {
-      console.error("[useWhatsAppChat] SSE error:", error);
-      // Tenta reconectar após 3 segundos
-      setTimeout(() => {
-        if (eventSourceRef.current?.readyState === EventSource.CLOSED) {
-          console.log("[useWhatsAppChat] Attempting SSE reconnection...");
-        }
-      }, 3000);
+    eventSource.onerror = (event) => {
+      // EventSource.onerror não fornece detalhes do erro no objeto event
+      // Precisamos verificar o estado da conexão para entender o problema
+      const readyState = eventSource.readyState;
+      
+      // Não loga erro se estiver tentando reconectar (CONNECTING é normal)
+      if (readyState === EventSource.CONNECTING) {
+        // Silenciosamente ignora - o EventSource vai tentar reconectar automaticamente
+        return;
+      }
+      
+      const stateText = readyState === EventSource.OPEN ? 'OPEN' 
+        : readyState === EventSource.CLOSED ? 'CLOSED' 
+        : `UNKNOWN (${readyState})`;
+      
+      console.error(`[useWhatsAppChat] SSE connection error - State: ${stateText}, URL: ${eventSource.url}`);
+      
+      if (readyState === EventSource.CLOSED) {
+        console.error("[useWhatsAppChat] SSE connection closed permanently - will attempt manual reconnect");
+        setTimeout(() => {
+          // Verifica se ainda precisa reconectar (componente pode ter desmontado)
+          if (eventSourceRef.current?.readyState === EventSource.CLOSED && sessionId && phone) {
+            console.log("[useWhatsAppChat] Attempting SSE reconnection...");
+            
+            // Fecha conexão antiga
+            eventSourceRef.current.close();
+            
+            // Cria nova conexão
+            const params = new URLSearchParams();
+            params.append("phone", phone);
+            const newEventSource = new EventSource(
+              `/api/whatsapp/sessions/${sessionId}/stream?${params}`
+            );
+            eventSourceRef.current = newEventSource;
+            
+            // Reconfigura listeners
+            setupEventSourceListeners(newEventSource, sessionId, phone);
+            
+            console.log("[useWhatsAppChat] SSE reconnection initiated");
+          }
+        }, 3000);
+      }
     };
-
-    return () => {
-      console.log(`[useWhatsAppChat] Closing SSE`);
-      eventSource.close();
-      eventSourceRef.current = null;
-    };
-  }, [sessionId, phone, cacheKey]);
+  };
 
   // ============================================================
   // SUPABASE REALTIME (fallback/adicional)
@@ -352,6 +445,11 @@ export function useWhatsAppChat(
           const message = payload.new as WhatsAppMessage;
 
           if (message.contact_phone === phone) {
+            console.log('[useWhatsAppChat] New message via Supabase Realtime:', {
+              id: message.id,
+              contact_phone: message.contact_phone,
+              content: message.content?.substring(0, 50)
+            });
             dispatch({ type: "ADD_MESSAGE", payload: message });
             messagesCache.delete(cacheKey);
           }
@@ -391,6 +489,11 @@ export function useWhatsAppChat(
 
     channel.subscribe((status) => {
       console.log(`[useWhatsAppChat] Realtime subscription status: ${status}`);
+      if (status === 'SUBSCRIBED') {
+        console.log('[useWhatsAppChat] Supabase Realtime is active as fallback');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.error('[useWhatsAppChat] Supabase Realtime error:', status);
+      }
     });
 
     return () => {
@@ -408,13 +511,24 @@ export function useWhatsAppChat(
       return;
     }
 
+    console.log(`[useWhatsAppChat] Effect triggered`, { 
+      sessionId, 
+      phone, 
+      previousPhone: previousPhoneRef.current,
+      cacheValid: isCacheValid() 
+    });
+
     // Se mudou o telefone, limpa e recarrega
     if (previousPhoneRef.current !== phone) {
+      console.log(`[useWhatsAppChat] Phone changed, clearing cache and reloading`);
       messagesCache.delete(cacheKey);
       previousPhoneRef.current = phone;
       fetchMessages(undefined, true);
     } else if (!isCacheValid()) {
+      console.log(`[useWhatsAppChat] Cache invalid, fetching messages`);
       fetchMessages();
+    } else {
+      console.log(`[useWhatsAppChat] Using valid cache`);
     }
   }, [sessionId, phone, fetchMessages, isCacheValid, cacheKey]);
 

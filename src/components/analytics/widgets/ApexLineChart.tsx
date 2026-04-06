@@ -7,8 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ApexOptions } from "apexcharts";
 
+// Default colors for ApexCharts
+const DEFAULT_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#64748b"];
+
 // Dynamic import to avoid SSR issues
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+const Chart = dynamic(
+  () => import("react-apexcharts").then((mod) => mod),
+  { ssr: false }
+);
 
 export interface ApexLineChartData {
   date: string;
@@ -50,13 +56,22 @@ export function ApexLineChart({
   isDark = false,
 }: ApexLineChartProps) {
   const [mounted, setMounted] = useState(false);
+  const [chartReady, setChartReady] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Wait for next tick to ensure ApexCharts is ready
+    const timer = setTimeout(() => setChartReady(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  const categories = data.map((item) => item.date);
-  const series = data.map((item) => item.value);
+  const safeData = Array.isArray(data) ? data : [];
+  const categories = safeData.length > 0 ? safeData.map((item) => item.date) : [];
+  const series = safeData.length > 0 ? safeData.map((item) => item.value) : [];
+
+  // Garante que temos dados válidos para o gráfico
+  const safeCategories = categories.length > 0 ? categories : ["Sem dados"];
+  const safeSeries = series.length > 0 ? series : [0];
 
   const options: ApexOptions = {
     chart: {
@@ -93,6 +108,10 @@ export function ApexLineChart({
         },
       },
     },
+    theme: {
+      mode: isDark ? "dark" : "light",
+      palette: "palette1",
+    },
     colors: [color],
     stroke: {
       curve: "smooth",
@@ -113,7 +132,7 @@ export function ApexLineChart({
       enabled: false,
     },
     xaxis: {
-      categories: categories,
+      categories: safeCategories,
       labels: {
         style: {
           colors: isDark ? "#94a3b8" : "#64748b",
@@ -197,11 +216,11 @@ export function ApexLineChart({
   const chartSeries = [
     {
       name: title,
-      data: series,
+      data: safeSeries,
     },
   ];
 
-  if (isLoading || !mounted) {
+  if (isLoading || !mounted || !chartReady || !data) {
     return (
       <Card className={cn("dark:bg-[#0a0a0a]/80 bg-white border dark:border-emerald-500/10 border-slate-200", className)}>
         <CardHeader className="pb-2">
@@ -214,7 +233,7 @@ export function ApexLineChart({
     );
   }
 
-  if (!data || data.length === 0) {
+  if (data.length === 0) {
     return (
       <Card className={cn("dark:bg-[#0a0a0a]/80 bg-white border dark:border-emerald-500/10 border-slate-200", className)}>
         <CardHeader className="pb-2">

@@ -72,8 +72,21 @@ export async function GET(
     // Verifica sessão
     const session = await BaileysService.getSessionById(id, profile.company_id);
     if (!session) {
+      console.error(`[API Stream] Session not found: ${id}`);
       return NextResponse.json({ error: 'Sessão não encontrada' }, { status: 404 });
     }
+
+    // Verifica se está ativa ou conectando (estados válidos para SSE)
+    const validStatuses = ['active', 'connecting'];
+    if (!validStatuses.includes(session.status)) {
+      console.warn(`[API Stream] Session ${id} not in valid state for SSE. Status: ${session.status}`);
+      return NextResponse.json(
+        { error: 'Sessão não está ativa', status: session.status },
+        { status: 400 }
+      );
+    }
+
+    console.log(`[API Stream] Starting SSE stream for session: ${id}, phone: ${phone}, status: ${session.status}`);
 
     const encoder = new TextEncoder();
 
@@ -158,9 +171,16 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('[API Stream] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[API Stream] Error creating SSE stream: ${errorMessage}`);
+    
+    // Log detalhado do erro para debugging
+    if (error instanceof Error && error.stack) {
+      console.error('[API Stream] Stack trace:', error.stack);
+    }
+    
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor ao criar stream', details: errorMessage },
       { status: 500 }
     );
   }

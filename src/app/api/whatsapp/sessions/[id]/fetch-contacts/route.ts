@@ -53,10 +53,11 @@ export async function GET(
       );
     }
 
-    // Verifica se está ativa
+    // Verifica se está ativa ou conectando (estados válidos)
     console.log(`[API fetch-contacts] Session ${id} status:`, session.status);
-    if (session.status !== 'active') {
-      console.log(`[API fetch-contacts] Session not active, returning error`);
+    const validStatuses = ['active', 'connecting'];
+    if (!validStatuses.includes(session.status)) {
+      console.log(`[API fetch-contacts] Session not in valid state: ${session.status}`);
       return NextResponse.json(
         { error: 'Sessão não está ativa', status: session.status },
         { status: 400 }
@@ -65,12 +66,37 @@ export async function GET(
 
     // Busca contatos diretamente do Baileys
     console.log(`[API fetch-contacts] Creating BaileysService and fetching contacts...`);
-    const service = new BaileysService(id, profile.company_id);
+    const service = new BaileysService(id, profile.company_id, supabase);
     const contacts = await service.fetchContactsFromWhatsApp();
     console.log(`[API fetch-contacts] ${contacts.length} contacts fetched from WhatsApp`);
 
+    // Buscar últimas mensagens dos contatos do Supabase
+    console.log(`[API fetch-contacts] Fetching last messages from Supabase...`);
+    const { data: lastMessages } = await supabase
+      .from('whatsapp_messages')
+      .select('*')
+      .eq('session_id', id)
+      .order('timestamp', { ascending: false })
+      .limit(1000);
+
+    // Mapear última mensagem por contato (primeira ocorrência é a mais recente)
+    const lastMessageByContact = new Map();
+    lastMessages?.forEach((msg: any) => {
+      if (!lastMessageByContact.has(msg.contact_phone)) {
+        lastMessageByContact.set(msg.contact_phone, msg);
+      }
+    });
+
+    console.log(`[API fetch-contacts] ${lastMessageByContact.size} last messages mapped`);
+
+    // Adicionar last_message aos contatos
+    const contactsWithLastMessage = contacts.map((contact: any) => ({
+      ...contact,
+      last_message: lastMessageByContact.get(contact.phone) || null
+    }));
+
     // Retorna imediatamente (não espera salvar no Supabase)
-    const response = NextResponse.json(contacts);
+    const response = NextResponse.json(contactsWithLastMessage);
 
     // Salva no Supabase em background (não bloqueia a resposta)
     service.saveContactsToSupabase(contacts).catch((error: Error) => {

@@ -21,9 +21,12 @@ interface ConversationListProps {
   onOpenConversation?: (id: string) => void;
   onReopen?: (id: string) => void;
   onTabChange?: (tab: 'open' | 'pending' | 'resolved') => void;
+  activeTab?: 'open' | 'pending' | 'resolved';
   connectionType?: "qr" | "oficial";
   loading?: boolean;
   hideTabs?: boolean;
+  // Badge counts for tabs
+  tabCounts?: { open: number; pending: number; resolved: number };
   // Syncing state props
   isSyncing?: boolean;
   onRefresh?: () => void;
@@ -45,15 +48,20 @@ export function ConversationList({
   onOpenConversation,
   onReopen,
   onTabChange,
+  activeTab: externalActiveTab,
   connectionType,
   loading = false,
   hideTabs = false,
+  tabCounts,
   isSyncing = false,
   onRefresh,
   lastSyncTime,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<FilterTab>("open");
+  const [internalActiveTab, setInternalActiveTab] = useState<FilterTab>("pending");
+  
+  // Use external activeTab if provided, otherwise use internal state
+  const activeTab = externalActiveTab ?? internalActiveTab;
 
   const filteredConversations = useMemo(() => {
     return conversations.filter((conv) => {
@@ -69,6 +77,10 @@ export function ConversationList({
   }, [conversations, activeTab, searchQuery, hideTabs]);
 
   const getUnreadCount = (status: ConversationStatus) => {
+    // Use tabCounts from props if provided, otherwise calculate from conversations
+    if (tabCounts) {
+      return tabCounts[status] || 0;
+    }
     return conversations
       .filter((c) => c.status === status)
       .reduce((acc, c) => acc + c.unreadCount, 0);
@@ -207,7 +219,7 @@ export function ConversationList({
                 <button
                   key={tab.id}
                   onClick={() => {
-                    setActiveTab(tab.id);
+                    setInternalActiveTab(tab.id);
                     onTabChange?.(tab.id);
                   }}
                   className={cn(
@@ -260,7 +272,7 @@ export function ConversationList({
             "flex flex-col items-center justify-center h-full px-6",
             isDarkMode ? "text-[#8696a0]" : "text-gray-500"
           )}>
-            {isSyncing || (wabaStatus === "connected" && !searchQuery) ? (
+            {isSyncing ? (
               // Syncing state - show spinner and message
               <>
                 <div className={cn(

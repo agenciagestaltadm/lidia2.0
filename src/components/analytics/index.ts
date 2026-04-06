@@ -2,6 +2,9 @@
 export { DateRangePicker, useDateRangePicker } from "./DateRangePicker";
 export { PanelCustomizer } from "./PanelCustomizer";
 
+// ApexCharts initialization
+export { ApexChartsInit } from "./ApexChartsInit";
+
 // Legacy Widgets (Recharts)
 export { PieChartWidget } from "./widgets/PieChartWidget";
 export { BarChartWidget } from "./widgets/BarChartWidget";

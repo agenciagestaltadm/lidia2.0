@@ -77,6 +77,12 @@ export interface WhatsAppContact {
   group_participants?: string[];
   created_at: string;
   updated_at: string;
+  conversation_status?: 'open' | 'pending' | 'resolved';
+  opened_at?: string;
+  resolved_at?: string;
+  unread_count?: number;
+  has_new_messages?: boolean;
+  last_message?: WhatsAppMessage;
 }
 
 export interface WhatsAppQRCode {

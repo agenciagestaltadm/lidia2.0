@@ -14,8 +14,9 @@ import { AttachmentFile } from "./AttachmentMenu";
 import { ContactsView } from "./views/ContactsView";
 import { SettingsView } from "./views/SettingsView";
 import { useWhatsAppSessions } from "@/hooks/use-whatsapp-sessions";
-import { useWhatsAppContacts } from "@/hooks/use-whatsapp-contacts";
+import { useWhatsAppContacts, ConversationStatus } from "@/hooks/use-whatsapp-contacts";
 import { useWhatsAppChat } from "@/hooks/use-whatsapp-chat";
+import { useConversationStatus } from "@/hooks/use-conversation-status";
 import { toast } from "sonner";
 
 interface WhatsLidiaRealLayoutProps {
@@ -36,9 +37,22 @@ const createConversationFromContact = (contact: any, sessionId: string): Convers
       createdAt: new Date(contact.created_at),
       updatedAt: new Date(contact.updated_at),
     },
-    status: "open",
+    status: contact.conversation_status || "pending",
     priority: "medium",
-    unreadCount: 0,
+    unreadCount: contact.unread_count || 0,
+    lastMessage: contact.last_message ? {
+      content: contact.last_message.content || '',
+      timestamp: new Date(contact.last_message.timestamp),
+      type: contact.last_message.type === 'text' ? 'text' :
+            contact.last_message.type === 'image' ? 'image' :
+            contact.last_message.type === 'video' ? 'video' :
+            contact.last_message.type === 'audio' ? 'audio' :
+            contact.last_message.type === 'document' ? 'document' : 'text',
+      isFromMe: contact.last_message.direction === 'outgoing',
+      status: contact.last_message.status === 'read' ? 'read' :
+              contact.last_message.status === 'delivered' ? 'delivered' :
+              contact.last_message.status === 'sent' ? 'sent' : 'sent'
+    } : undefined,
     tags: [],
     channel: "whatsapp",
     createdAt: new Date(contact.created_at),
@@ -87,7 +101,7 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
   const [previewConversationId, setPreviewConversationId] = useState<string | null>(null);
   
   // Active tab state for access control
-  const [activeTab, setActiveTab] = useState<'open' | 'pending' | 'resolved'>('open');
+  const [activeTab, setActiveTab] = useState<ConversationStatus>('pending');
 
   // Load WhatsApp session data
   const { sessions, loading: sessionsLoading } = useWhatsAppSessions();
@@ -96,8 +110,22 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
     [sessions, sessionId]
   );
 
-  // Load contacts from WhatsApp
-  const { contacts, loading: contactsLoading, error: contactsError, refetch: refetchContacts } = useWhatsAppContacts(sessionId);
+  // Load contacts from WhatsApp (todos os contatos, filtro é feito no ConversationList)
+  const { 
+    contacts, 
+    loading: contactsLoading, 
+    error: contactsError, 
+    refetch: refetchContacts,
+    counts 
+  } = useWhatsAppContacts(sessionId);
+
+  // Hook para gerenciar status das conversas
+  const { 
+    openConversation, 
+    resolveConversation, 
+    reopenConversation,
+    markAsRead 
+  } = useConversationStatus(sessionId);
 
   // Debug logs para verificar dados
   useEffect(() => {
@@ -156,7 +184,31 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
     (c) => c.id === selectedConversationId
   ) || null;
 
-  const handleSelectConversation = (id: string) => {
+  const handleSelectConversation = async (id: string) => {
+    const conversation = conversations.find(c => c.id === id);
+    
+    // Se a conversa está pendente, abrir automaticamente
+    if (conversation && conversation.status === 'pending') {
+      const phone = conversation.contact.phone;
+      const success = await openConversation(phone);
+      if (success) {
+        toast.success('Conversa movida para Abertas');
+        // Atualizar o status local da conversa para permitir envio imediato
+        conversation.status = 'open';
+        // Atualizar a lista de contatos para refletir a mudança de status
+        await refetchContacts();
+      }
+    }
+    
+    // Marcar como lida
+    if (conversation && conversation.unreadCount > 0) {
+      await markAsRead(conversation.contact.phone);
+      // Atualizar o unreadCount local
+      conversation.unreadCount = 0;
+      // Atualizar a lista de contatos
+      await refetchContacts();
+    }
+    
     setSelectedConversationId(id);
     if (isMobile) {
       setShowChat(true);
@@ -202,7 +254,25 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
 
   // Handle sending message via API
   const handleSendMessage = useCallback(async (content: string) => {
-    if (!selectedContactPhone || !sessionId) return;
+    if (!selectedContactPhone || !sessionId) {
+      console.error('[WhatsLidia] Cannot send message: missing phone or sessionId', { selectedContactPhone, sessionId });
+      return;
+    }
+    
+    console.log('[WhatsLidia] Sending message to:', selectedContactPhone);
+    
+    // Se a conversa está pendente, abrir automaticamente antes de enviar
+    const conversation = conversations.find(c => c.contact.phone === selectedContactPhone);
+    if (conversation && conversation.status === 'pending') {
+      console.log('[WhatsLidia] Conversation is pending, opening before sending...');
+      const opened = await openConversation(selectedContactPhone);
+      if (!opened) {
+        toast.error("Erro ao abrir conversa. Tente novamente.");
+        return;
+      }
+      // Atualiza a lista de contatos para refletir a mudança de status
+      await refetchContacts();
+    }
     
     const success = await sendWhatsAppMessage({
       phone: selectedContactPhone,
@@ -211,12 +281,26 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
 
     if (!success) {
       toast.error("Erro ao enviar mensagem");
+    } else {
+      console.log('[WhatsLidia] Message sent successfully');
     }
-  }, [selectedContactPhone, sessionId, sendWhatsAppMessage]);
+  }, [selectedContactPhone, sessionId, sendWhatsAppMessage, conversations, openConversation, refetchContacts]);
 
   // Handle sending attachments
-  const handleSendAttachments = async (files: AttachmentFile[], caption?: string) => {
+  const handleSendAttachments = useCallback(async (files: AttachmentFile[], caption?: string) => {
     if (!selectedContactPhone || !sessionId) return;
+    
+    // Se a conversa está pendente, abrir automaticamente antes de enviar
+    const conversation = conversations.find(c => c.contact.phone === selectedContactPhone);
+    if (conversation && conversation.status === 'pending') {
+      console.log('[WhatsLidia] Conversation is pending, opening before sending attachments...');
+      const opened = await openConversation(selectedContactPhone);
+      if (!opened) {
+        toast.error("Erro ao abrir conversa. Tente novamente.");
+        return;
+      }
+      await refetchContacts();
+    }
     
     for (const file of files) {
       try {
@@ -245,7 +329,7 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
         toast.error(`Erro ao processar ${file.file.name}`);
       }
     }
-  };
+  }, [selectedContactPhone, sessionId, conversations, openConversation, refetchContacts, sendWhatsAppMessage]);
 
   // Handle sending location
   const handleSendLocation = (type: "location" | "address" | "request") => {
@@ -268,7 +352,7 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
   };
 
   // Handle tab change
-  const handleTabChange = (tab: 'open' | 'pending' | 'resolved') => {
+  const handleTabChange = (tab: ConversationStatus) => {
     setActiveTab(tab);
     setSelectedConversationId(null);
     if (isMobile) {
@@ -276,11 +360,44 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
     }
   };
 
+  // Handle resolve conversation
+  const handleResolveConversation = async (id: string) => {
+    const conversation = conversations.find(c => c.id === id);
+    if (!conversation) return;
+    
+    const success = await resolveConversation(conversation.contact.phone);
+    if (success) {
+      toast.success('Conversa resolvida');
+      setSelectedConversationId(null);
+    } else {
+      toast.error('Erro ao resolver conversa');
+    }
+  };
+
+  // Handle reopen conversation
+  const handleReopenConversation = async (id: string) => {
+    const conversation = conversations.find(c => c.id === id);
+    if (!conversation) return;
+    
+    const success = await reopenConversation(conversation.contact.phone);
+    if (success) {
+      toast.success('Conversa reaberta');
+    } else {
+      toast.error('Erro ao reabrir conversa');
+    }
+  };
+
   // Determine if the current conversation is read-only
   const isChatReadOnly = useMemo(() => {
     if (!session) return true;
-    return session.status !== 'active';
-  }, [session]);
+    // Sessão não está ativa
+    if (session.status !== 'active') return true;
+    // Conversa pendente não pode enviar mensagens (só visualização)
+    if (selectedConversation?.status === 'pending') return true;
+    // Conversa resolvida não pode enviar mensagens
+    if (selectedConversation?.status === 'resolved') return true;
+    return false;
+  }, [session, selectedConversation]);
 
   // Apply dark mode class to body
   useEffect(() => {
@@ -322,11 +439,15 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   onToggleTheme={handleToggleTheme}
                   wabaStatus={wabaStatus}
                   onTabChange={handleTabChange}
+                  activeTab={activeTab}
+                  tabCounts={counts}
                   connectionType="qr"
                   loading={contactsLoading}
-                  hideTabs={true}
+                  hideTabs={false}
                   isSyncing={contactsLoading && contacts.length === 0 && wabaStatus === "connected"}
                   onRefresh={refetchContacts}
+                  onForceClose={handleResolveConversation}
+                  onReopen={handleReopenConversation}
                 />
               </motion.div>
             ) : (
@@ -354,6 +475,8 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   loadingMore={loadingMore}
                   hasMore={hasMore}
                   onLoadMore={loadMore}
+                  onResolve={() => selectedConversation && handleResolveConversation(selectedConversation.id)}
+                  onReopen={() => selectedConversation && handleReopenConversation(selectedConversation.id)}
                 />
               </motion.div>
             )}
@@ -372,11 +495,15 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
                   onToggleTheme={handleToggleTheme}
                   wabaStatus={wabaStatus}
                   onTabChange={handleTabChange}
+                  activeTab={activeTab}
+                  tabCounts={counts}
                   connectionType="qr"
                   loading={contactsLoading}
-                  hideTabs={true}
+                  hideTabs={false}
                   isSyncing={contactsLoading && contacts.length === 0 && wabaStatus === "connected"}
                   onRefresh={refetchContacts}
+                  onForceClose={handleResolveConversation}
+                  onReopen={handleReopenConversation}
                 />
           <ChatWindow
             conversation={selectedConversation}
@@ -393,6 +520,8 @@ export function WhatsLidiaRealLayout({ sessionId }: WhatsLidiaRealLayoutProps) {
             loadingMore={loadingMore}
             hasMore={hasMore}
             onLoadMore={loadMore}
+            onResolve={() => selectedConversation && handleResolveConversation(selectedConversation.id)}
+            onReopen={() => selectedConversation && handleReopenConversation(selectedConversation.id)}
           />
         </>
       );

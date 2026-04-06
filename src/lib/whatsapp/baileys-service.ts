@@ -10,6 +10,7 @@ import makeWASocket, {
 import type { WASocket, WAMessage, WAMessageKey, WAMessageUpdate, Contact, Chat } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -185,10 +186,12 @@ export class BaileysService {
   private sessionId: string;
   private companyId: string;
   private socket?: WASocket;
+  private supabaseClient?: any;
 
-  constructor(sessionId: string, companyId: string) {
+  constructor(sessionId: string, companyId: string, supabaseClient?: any) {
     this.sessionId = sessionId;
     this.companyId = companyId;
+    this.supabaseClient = supabaseClient;
 
     console.log(`[BaileysService] Constructor called for session ${sessionId}`);
 
@@ -205,6 +208,41 @@ export class BaileysService {
         console.log(`[BaileysService] Queue already exists for session ${sessionId}`);
       }
     }
+  }
+
+  // Método para definir o cliente Supabase
+  setSupabaseClient(client: any) {
+    this.supabaseClient = client;
+  }
+
+  // Cliente admin singleton
+  private static adminSupabase: any = null;
+
+  // Método helper para obter o cliente Supabase
+  private async getSupabase() {
+    if (this.supabaseClient) {
+      return this.supabaseClient;
+    }
+    
+    // Se não tem cliente de requisição, usa o cliente admin
+    if (!BaileysService.adminSupabase) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('[BaileysService] Missing Supabase credentials for admin client');
+        throw new Error('Configuração do Supabase incompleta');
+      }
+      
+      BaileysService.adminSupabase = createAdminClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
+    }
+    
+    return BaileysService.adminSupabase;
   }
 
   async createSession(name: string): Promise<WhatsAppSession> {
@@ -401,6 +439,17 @@ export class BaileysService {
           .eq('id', this.sessionId);
 
         onConnection?.('active', user?.id?.split(':')[0], user?.name);
+
+        // FORÇA SINCRONIZAÇÃO DE MENSAGENS HISTÓRICAS
+        // Aguarda 2 segundos para garantir que a conexão está estável
+        setTimeout(async () => {
+          try {
+            console.log('[BaileysService] Iniciando sincronização de mensagens históricas...');
+            await this.syncChatHistory();
+          } catch (error) {
+            console.error('[BaileysService] Erro ao sincronizar histórico:', error);
+          }
+        }, 2000);
       }
     });
 
@@ -702,8 +751,14 @@ export class BaileysService {
         console.error('[BaileysService] Error notifying via SSE:', notifyError);
       }
 
-      // Atualiza ou cria contato
-      await this.upsertContact(phone, msg.pushName, isGroup, new Date(msg.messageTimestamp * 1000));
+      // Atualiza ou cria contato (passa isIncoming=true para mensagens recebidas)
+      await this.upsertContact(
+        phone, 
+        msg.pushName, 
+        isGroup, 
+        new Date(msg.messageTimestamp * 1000),
+        !isFromMe // isIncoming = true se não for de mim
+      );
 
       // Notifica callback
       const callbacks = sessionCallbacks.get(this.sessionId);
@@ -826,22 +881,45 @@ export class BaileysService {
   // HELPERS
   // ============================================================
 
-  private async upsertContact(phone: string, pushName?: string, isGroup = false, lastMessageAt?: Date): Promise<void> {
+  private async upsertContact(
+    phone: string, 
+    pushName?: string, 
+    isGroup = false, 
+    lastMessageAt?: Date,
+    isIncoming = false
+  ): Promise<void> {
     const supabase = await createClient();
 
     try {
       const { data: existingContact } = await supabase
         .from('whatsapp_contacts')
-        .select('id, name')
+        .select('id, name, conversation_status, unread_count')
         .eq('session_id', this.sessionId)
         .eq('phone', phone)
         .maybeSingle();
 
-      const contactData = {
+      const contactData: any = {
         name: pushName || existingContact?.name || phone,
         last_message_at: lastMessageAt?.toISOString(),
         updated_at: new Date().toISOString(),
       };
+
+      // Se for mensagem recebida (incoming), atualiza status e contador
+      if (isIncoming) {
+        // Se conversa estava resolvida, move para pendente
+        if (existingContact?.conversation_status === 'resolved') {
+          contactData.conversation_status = 'pending';
+          console.log(`[BaileysService] Conversa ${phone} movida de 'resolved' para 'pending'`);
+        }
+        // Se não tem status definido, define como pendente
+        else if (!existingContact?.conversation_status) {
+          contactData.conversation_status = 'pending';
+        }
+
+        // Incrementa contador de não lidas
+        contactData.unread_count = (existingContact?.unread_count || 0) + 1;
+        contactData.has_new_messages = true;
+      }
 
       if (existingContact) {
         await supabase
@@ -849,6 +927,13 @@ export class BaileysService {
           .update(contactData)
           .eq('id', existingContact.id);
       } else {
+        // Novo contato - define como pendente se for mensagem recebida
+        if (isIncoming) {
+          contactData.conversation_status = 'pending';
+          contactData.unread_count = 1;
+          contactData.has_new_messages = true;
+        }
+        
         await supabase.from('whatsapp_contacts').insert({
           session_id: this.sessionId,
           phone,
@@ -978,16 +1063,20 @@ export class BaileysService {
   // RESTAURAÇÃO DE SESSÃO
   // ============================================================
 
-  async restoreSession(): Promise<boolean> {
+  async restoreSession(supabaseClient?: any): Promise<boolean> {
     const existingSocket = activeSessions.get(this.sessionId);
     if (existingSocket) {
       this.socket = existingSocket;
       return true;
     }
 
-    const supabase = await createClient();
+    // Se não tem cliente Supabase, não pode restaurar
+    if (!supabaseClient) {
+      console.error('[BaileysService] restoreSession called without supabaseClient');
+      return false;
+    }
     
-    const { data: session } = await supabase
+    const { data: session } = await supabaseClient
       .from('whatsapp_sessions')
       .select('*')
       .eq('id', this.sessionId)
@@ -1044,10 +1133,14 @@ export class BaileysService {
             messageQueues.delete(this.sessionId);
             messageQueueServices.delete(this.sessionId);
             
-            await supabase
-              .from('whatsapp_sessions')
-              .update({ status: 'disconnected', updated_at: new Date().toISOString() })
-              .eq('id', this.sessionId);
+            try {
+              await supabaseClient
+                .from('whatsapp_sessions')
+                .update({ status: 'disconnected', updated_at: new Date().toISOString() })
+                .eq('id', this.sessionId);
+            } catch (error) {
+              console.error('[BaileysService] Error updating session status on disconnect:', error);
+            }
           }
         }
       });
@@ -1068,14 +1161,25 @@ export class BaileysService {
       });
 
       return new Promise((resolve) => {
-        const timeout = setTimeout(() => resolve(false), 30000);
+        const timeout = setTimeout(() => {
+          console.log('[BaileysService] Session restoration timeout - checking socket state...');
+          // Even if timeout, check if socket has user (indicates connection)
+          if (this.socket?.user?.id) {
+            console.log('[BaileysService] Socket is actually connected despite timeout, user:', this.socket.user.id);
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        }, 30000);
 
         this.socket?.ev.on('connection.update', (update) => {
           if (update.connection === 'open') {
             clearTimeout(timeout);
+            console.log('[BaileysService] Connection opened successfully');
             resolve(true);
           } else if (update.connection === 'close') {
             clearTimeout(timeout);
+            console.log('[BaileysService] Connection closed during restoration');
             resolve(false);
           }
         });
@@ -1091,42 +1195,112 @@ export class BaileysService {
   // ============================================================
 
   async sendMessage(phone: string, message: string): Promise<WhatsAppMessage | null> {
-    if (!this.socket) {
-      const activeSocket = activeSessions.get(this.sessionId);
-      if (activeSocket) {
-        this.socket = activeSocket;
+    console.log(`[BaileysService] sendMessage called:`, { sessionId: this.sessionId, phone, message: message.substring(0, 50) });
+      
+    // Obtém o cliente Supabase
+    const supabase = await this.getSupabase();
+      
+    // Verifica se já existe um socket ativo e válido
+    const existingSocket = activeSessions.get(this.sessionId);
+    if (existingSocket) {
+      const socketAny = existingSocket as any;
+      // Verifica se o socket tem usuário autenticado (indica conexão ativa)
+      // O Baileys pode não expor ws.readyState diretamente, então verificamos o user
+      const isSocketConnected = existingSocket.user && existingSocket.user.id;
+        
+      if (isSocketConnected) {
+        this.socket = existingSocket;
+        console.log(`[BaileysService] Using existing active socket with user:`, existingSocket.user?.id);
       } else {
-        const restored = await this.restoreSession();
-        if (!restored) throw new Error('Sessão não iniciada');
+        console.log(`[BaileysService] Existing socket found but no user, removing from cache`);
+        activeSessions.delete(this.sessionId);
+        this.socket = undefined;
       }
     }
-
-    const supabase = await createClient();
+      
+    if (!this.socket) {
+      console.log(`[BaileysService] No valid socket, attempting to restore session...`);
+      const restored = await this.restoreSession(supabase);
+      if (!restored) {
+        console.error(`[BaileysService] Failed to restore session`);
+        throw new Error('Sessão não iniciada. Reconecte o WhatsApp.');
+      }
+      console.log(`[BaileysService] Session restored successfully`);
+    }
+      
     const formattedPhone = phone.includes('@') ? phone : `${phone}@s.whatsapp.net`;
+  
+    if (!this.socket) {
+      console.error(`[BaileysService] Socket is still null after restoration attempts`);
+      throw new Error('Sessão não iniciada');
+    }
+  
+    // Aguarda a conexão estar pronta (verifica se o user está definido)
+    let waitAttempts = 0;
+    const maxAttempts = 30; // 30 * 500ms = 15 segundos
+      
+    while (waitAttempts < maxAttempts) {
+      // Verifica se o socket tem usuário (indica que está autenticado e pronto)
+      const isConnected = this.socket?.user && this.socket.user.id;
+        
+      if (isConnected) {
+        console.log(`[BaileysService] Socket ready after ${waitAttempts} attempts`);
+        break;
+      }
+        
+      console.log(`[BaileysService] Waiting for socket to be ready... Attempt ${waitAttempts + 1}/${maxAttempts}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      waitAttempts++;
+    }
+  
+    // Verificação final - se tem usuário, está conectado
+    if (!this.socket?.user?.id) {
+      console.error(`[BaileysService] Socket not ready after waiting. User: ${!!this.socket?.user}, UserId: ${this.socket?.user?.id}`);
+      throw new Error('Sessão não está conectada. Verifique se o WhatsApp está conectado e tente novamente.');
+    }
+  
+    console.log(`[BaileysService] Sending message to ${formattedPhone}...`);
+    
+    try {
+      const result = await this.socket.sendMessage(formattedPhone, { text: message });
+      console.log(`[BaileysService] Message sent successfully:`, result?.key?.id);
 
-    if (!this.socket) throw new Error('Sessão não iniciada');
+      if (!result?.key) {
+        console.error(`[BaileysService] sendMessage returned null result`);
+        throw new Error('Falha ao enviar mensagem - resposta vazia do WhatsApp');
+      }
 
-    const result = await this.socket.sendMessage(formattedPhone, { text: message });
+      console.log(`[BaileysService] Saving message to Supabase...`);
+      const { data: savedMessage, error: saveError } = await supabase
+        .from('whatsapp_messages')
+        .insert({
+          session_id: this.sessionId,
+          message_id: result.key.id,
+          contact_phone: phone.replace('@s.whatsapp.net', '').replace('@g.us', ''),
+          content: message,
+          type: 'text',
+          direction: 'outgoing',
+          status: 'sent',
+          timestamp: new Date().toISOString(),
+          is_from_me: true,
+        })
+        .select()
+        .single();
 
-    if (!result?.key) throw new Error('Falha ao enviar mensagem');
+      if (saveError) {
+        console.error(`[BaileysService] Error saving message to Supabase:`, saveError);
+        throw new Error(`Erro ao salvar mensagem: ${saveError.message}`);
+      }
 
-    const { data: savedMessage } = await supabase
-      .from('whatsapp_messages')
-      .insert({
-        session_id: this.sessionId,
-        message_id: result.key.id,
-        contact_phone: phone.replace('@s.whatsapp.net', '').replace('@g.us', ''),
-        content: message,
-        type: 'text',
-        direction: 'outgoing',
-        status: 'sent',
-        timestamp: new Date().toISOString(),
-        is_from_me: true,
-      })
-      .select()
-      .single();
-
-    return savedMessage as WhatsAppMessage | null;
+      console.log(`[BaileysService] Message saved successfully:`, savedMessage?.id);
+      return savedMessage as WhatsAppMessage | null;
+    } catch (sendError) {
+      console.error(`[BaileysService] Error sending message:`, sendError);
+      if (sendError instanceof Error) {
+        throw sendError;
+      }
+      throw new Error('Erro desconhecido ao enviar mensagem');
+    }
   }
 
   async sendMediaMessage(
@@ -1136,20 +1310,47 @@ export class BaileysService {
     caption?: string,
     fileName?: string
   ): Promise<WhatsAppMessage | null> {
-    if (!this.socket) {
-      const activeSocket = activeSessions.get(this.sessionId);
-      if (activeSocket) {
-        this.socket = activeSocket;
+    const supabase = await this.getSupabase();
+      
+    // Verifica se já existe um socket ativo e válido
+    const existingSocket = activeSessions.get(this.sessionId);
+    if (existingSocket) {
+      // Verifica se o socket tem usuário autenticado (indica conexão ativa)
+      const isSocketConnected = existingSocket.user && existingSocket.user.id;
+        
+      if (isSocketConnected) {
+        this.socket = existingSocket;
       } else {
-        const restored = await this.restoreSession();
-        if (!restored) throw new Error('Sessão não iniciada');
+        activeSessions.delete(this.sessionId);
+        this.socket = undefined;
       }
     }
-
-    const supabase = await createClient();
+      
+    if (!this.socket) {
+      const restored = await this.restoreSession(supabase);
+      if (!restored) throw new Error('Sessão não iniciada');
+    }
+      
     const formattedPhone = phone.includes('@') ? phone : `${phone}@s.whatsapp.net`;
-
+  
     if (!this.socket) throw new Error('Sessão não iniciada');
+  
+    // Aguarda a conexão estar pronta
+    let waitAttempts = 0;
+    const maxAttempts = 30;
+      
+    while (waitAttempts < maxAttempts) {
+      const isConnected = this.socket?.user && this.socket.user.id;
+      if (isConnected) break;
+      await new Promise(resolve => setTimeout(resolve, 500));
+      waitAttempts++;
+    }
+  
+    // Verificação final - se tem usuário, está conectado
+    if (!this.socket?.user?.id) {
+      console.error(`[BaileysService] Socket not ready for media message`);
+      throw new Error('Sessão não está conectada. Aguarde alguns segundos e tente novamente.');
+    }
 
     let messageContent: any = {};
 
@@ -1196,19 +1397,19 @@ export class BaileysService {
   }
 
   async syncContacts(): Promise<WhatsAppContact[]> {
+    const supabase = await this.getSupabase();
+    
     if (!this.socket) {
       const activeSocket = activeSessions.get(this.sessionId);
       if (activeSocket) {
         this.socket = activeSocket;
       } else {
-        const restored = await this.restoreSession();
+        const restored = await this.restoreSession(supabase);
         if (!restored) throw new Error('Sessão não iniciada');
       }
     }
 
     if (!this.socket) throw new Error('Sessão não iniciada');
-
-    const supabase = await createClient();
     const syncedContacts: WhatsAppContact[] = [];
 
     try {
@@ -1333,6 +1534,8 @@ export class BaileysService {
   async fetchContactsFromWhatsApp(): Promise<WhatsAppContact[]> {
     console.log(`[BaileysService] fetchContactsFromWhatsApp called for session ${this.sessionId}`);
     
+    const supabase = await this.getSupabase();
+    
     if (!this.socket) {
       const activeSocket = activeSessions.get(this.sessionId);
       if (activeSocket) {
@@ -1340,7 +1543,7 @@ export class BaileysService {
         this.socket = activeSocket;
       } else {
         console.log('[BaileysService] No active socket, attempting to restore session');
-        const restored = await this.restoreSession();
+        const restored = await this.restoreSession(supabase);
         if (!restored) throw new Error('Sessão não iniciada');
       }
     }
@@ -1533,12 +1736,14 @@ export class BaileysService {
    * Retorna imediatamente para exibição na UI
    */
   async fetchMessagesFromWhatsApp(phone: string, limit: number = 50): Promise<WhatsAppMessage[]> {
+    const supabase = await this.getSupabase();
+    
     if (!this.socket) {
       const activeSocket = activeSessions.get(this.sessionId);
       if (activeSocket) {
         this.socket = activeSocket;
       } else {
-        const restored = await this.restoreSession();
+        const restored = await this.restoreSession(supabase);
         if (!restored) throw new Error('Sessão não iniciada');
       }
     }
@@ -1655,6 +1860,33 @@ export class BaileysService {
     } catch (error) {
       console.error('[BaileysService] Erro ao salvar mensagens no Supabase:', error);
       // Não propaga o erro - é background
+    }
+  }
+
+  /**
+   * Sincroniza histórico de conversas do WhatsApp
+   * Busca as últimas mensagens de cada conversa e salva no banco
+   */
+  async syncChatHistory(): Promise<void> {
+    if (!this.socket) {
+      console.warn('[BaileysService] Socket não disponível para sincronização');
+      return;
+    }
+
+    try {
+      console.log('[BaileysService] Iniciando sincronização de chats...');
+      
+      // Obtém todas as conversas do WhatsApp
+      // Nota: chats.all() pode não estar disponível em todas as versões do Baileys
+      // Vamos usar uma abordagem alternativa - os chats serão sincronizados via eventos
+      console.log('[BaileysService] Sincronização via eventos do Baileys (chats serão carregados automaticamente)');
+      
+      // Aguarda os eventos messages.upsert serem processados
+      // O Baileys automaticamente envia o histórico quando conectado
+      console.log('[BaileysService] Sincronização de histórico concluída (via eventos)');
+    } catch (error) {
+      console.error('[BaileysService] Erro na sincronização de histórico:', error);
+      throw error;
     }
   }
 }

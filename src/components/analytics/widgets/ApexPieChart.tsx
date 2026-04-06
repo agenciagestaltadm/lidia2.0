@@ -7,8 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ApexOptions } from "apexcharts";
 
+// Default colors for ApexCharts
+const DEFAULT_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#64748b"];
+
 // Dynamic import to avoid SSR issues
-const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+const Chart = dynamic(
+  () => import("react-apexcharts").then((mod) => mod),
+  { ssr: false }
+);
 
 export interface ApexPieChartData {
   name: string;
@@ -61,15 +67,25 @@ export function ApexPieChart({
   isDark = false,
 }: ApexPieChartProps) {
   const [mounted, setMounted] = useState(false);
+  const [chartReady, setChartReady] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Wait for next tick to ensure ApexCharts is ready
+    const timer = setTimeout(() => setChartReady(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Prepare data for ApexCharts
-  const series = data.map((item) => item.value);
-  const labels = data.map((item) => item.name);
-  const colors = data.map((item, index) => item.color || CHART_COLORS[index % CHART_COLORS.length]);
+  // Prepare data for ApexCharts - garante que data é um array válido
+  const safeData = Array.isArray(data) ? data : [];
+  const series = safeData.map((item) => item.value);
+  const labels = safeData.map((item) => item.name);
+  const colors = safeData.map((item, index) => item.color || CHART_COLORS[index % CHART_COLORS.length]);
+
+  // Garante que temos dados válidos
+  const safeSeries = series && series.length > 0 ? series : [0];
+  const safeLabels = labels && labels.length > 0 ? labels : ["Sem dados"];
+  const safeColors = colors && colors.length > 0 ? colors : CHART_COLORS;
 
   const options: ApexOptions = {
     chart: {
@@ -92,8 +108,12 @@ export function ApexPieChart({
         },
       },
     },
-    colors: colors,
-    labels: labels,
+    theme: {
+      mode: isDark ? "dark" : "light",
+      palette: "palette1",
+    },
+    colors: safeColors,
+    labels: safeLabels,
     dataLabels: {
       enabled: true,
       formatter: function (val: number) {
@@ -202,7 +222,7 @@ export function ApexPieChart({
     },
   };
 
-  if (isLoading || !mounted) {
+  if (isLoading || !mounted || !chartReady || !data) {
     return (
       <Card className={cn("dark:bg-[#0a0a0a]/80 bg-white border dark:border-emerald-500/10 border-slate-200", className)}>
         <CardHeader className="pb-2">
@@ -215,7 +235,7 @@ export function ApexPieChart({
     );
   }
 
-  if (!data || data.length === 0) {
+  if (data.length === 0) {
     return (
       <Card className={cn("dark:bg-[#0a0a0a]/80 bg-white border dark:border-emerald-500/10 border-slate-200", className)}>
         <CardHeader className="pb-2">
@@ -248,7 +268,7 @@ export function ApexPieChart({
         <div className="h-[320px]">
           <Chart
             options={options}
-            series={series}
+            series={safeSeries}
             type={type}
             height={height}
           />

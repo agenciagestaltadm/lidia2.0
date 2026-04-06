@@ -131,10 +131,11 @@ export async function POST(
      );
    }
 
-   // Verifica se está ativa
-   if (session.status !== 'active') {
+   // Verifica se está ativa ou conectando (estados válidos)
+   const validStatuses = ['active', 'connecting'];
+   if (!validStatuses.includes(session.status)) {
      return NextResponse.json(
-       { error: 'Sessão não está ativa' },
+       { error: 'Sessão não está ativa', status: session.status },
        { status: 400 }
      );
    }

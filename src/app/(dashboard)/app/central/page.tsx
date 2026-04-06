@@ -13,6 +13,7 @@ import {
   SummaryCards,
   TeamPerformanceTable,
   CompanyEmailsWidget,
+  ApexChartsInit,
 } from "@/components/analytics";
 import {
   useDateRangePicker,
@@ -101,6 +102,9 @@ export default function CentralPage() {
 
   return (
     <div className="space-y-6">
+      {/* Initialize ApexCharts globally */}
+      <ApexChartsInit />
+      
       {/* Header with Date Range and Panel Customizer */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

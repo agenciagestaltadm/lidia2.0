@@ -142,10 +142,11 @@ export async function POST(
       );
     }
 
-    // Verifica se está ativa
+    // Verifica se está ativa (estado válido para envio)
+    console.log('[API] Session status:', session.status);
     if (session.status !== 'active') {
       return NextResponse.json(
-        { error: 'Sessão não está ativa' },
+        { error: 'Sessão não está ativa', status: session.status },
         { status: 400 }
       );
     }
@@ -171,8 +172,11 @@ export async function POST(
       }
 
       // Envia a mensagem de texto
-      const service = new BaileysService(id, profile.company_id);
+      console.log('[API] Creating BaileysService...');
+      const service = new BaileysService(id, profile.company_id, supabase);
+      console.log('[API] BaileysService created, sending message...');
       const savedMessage = await service.sendMessage(phone, message.trim());
+      console.log('[API] Message sent successfully:', savedMessage?.id);
 
       return NextResponse.json(savedMessage, { status: 201 });
     }
@@ -197,7 +201,7 @@ export async function POST(
     const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
 
      // Envia a mensagem com mídia
-     const service = new BaileysService(id, profile.company_id);
+     const service = new BaileysService(id, profile.company_id, supabase);
      
      // Para áudio, tenta converter para formato suportado
      let finalMediaBuffer = mediaBuffer;
@@ -220,8 +224,9 @@ export async function POST(
      return NextResponse.json(savedMessage, { status: 201 });
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro interno do servidor';
     return NextResponse.json(
-      { error: 'Erro ao enviar mensagem' },
+      { error: 'Erro ao enviar mensagem', details: errorMessage },
       { status: 500 }
     );
   }

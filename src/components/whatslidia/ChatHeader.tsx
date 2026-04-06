@@ -43,6 +43,7 @@ interface ChatHeaderProps {
   onBack?: () => void;
   showBackButton?: boolean;
   isDarkMode?: boolean;
+  onResolve?: () => void;
 }
 
 interface MenuOption {
@@ -58,6 +59,7 @@ export function ChatHeader({
   onBack,
   showBackButton = false,
   isDarkMode = true,
+  onResolve,
 }: ChatHeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
   
@@ -126,11 +128,8 @@ export function ChatHeader({
 
   const handleResolveTicket = async (notes?: string) => {
     console.log("Resolving ticket:", conversation.id, notes);
-    // TODO: Implement API call
-    // await fetch(`/api/tickets/${conversation.id}/resolve`, {
-    //   method: 'POST',
-    //   body: JSON.stringify({ notes })
-    // });
+    // Chamar o handler externo se fornecido
+    onResolve?.();
   };
 
   const handleTransferTicket = async (userId: string, userName: string) => {

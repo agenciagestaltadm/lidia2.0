@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { WhatsAppContact } from "@/types/whatsapp";
 import { toast } from "sonner";
@@ -11,6 +11,8 @@ interface UseWhatsAppContactsState {
   error: string | null;
   isSyncing: boolean;
 }
+
+export type ConversationStatus = 'open' | 'pending' | 'resolved';
 
 export function useWhatsAppContacts(sessionId: string | null) {
   console.log('[useWhatsAppContacts] Hook called with sessionId:', sessionId);
@@ -40,9 +42,11 @@ export function useWhatsAppContacts(sessionId: string | null) {
     if (!sessionId) return [];
 
     try {
+      // Buscar TODOS os contatos da sessão (sem filtro de status)
+      // para que os badges das abas funcionem corretamente
       const { data: contacts, error } = await supabase
         .from("whatsapp_contacts")
-        .select("*")
+        .select("id, session_id, phone, name, profile_picture, status, last_message_at, is_group, group_participants, created_at, updated_at, conversation_status, opened_at, resolved_at, unread_count, has_new_messages")
         .eq("session_id", sessionId)
         .order("last_message_at", { ascending: false });
 
@@ -50,7 +54,29 @@ export function useWhatsAppContacts(sessionId: string | null) {
         throw new Error(error.message);
       }
 
-      return contacts || [];
+      // Buscar últimas mensagens para os contatos
+      const { data: lastMessages } = await supabase
+        .from("whatsapp_messages")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("timestamp", { ascending: false })
+        .limit(1000);
+
+      // Mapear última mensagem por contato
+      const lastMessageByContact = new Map();
+      lastMessages?.forEach((msg: any) => {
+        if (!lastMessageByContact.has(msg.contact_phone)) {
+          lastMessageByContact.set(msg.contact_phone, msg);
+        }
+      });
+
+      // Adicionar last_message aos contatos
+      const contactsWithLastMessage = (contacts || []).map((contact: any) => ({
+        ...contact,
+        last_message: lastMessageByContact.get(contact.phone) || null
+      }));
+
+      return contactsWithLastMessage;
     } catch (err) {
       console.error("[useWhatsAppContacts] Erro ao buscar do Supabase:", err);
       return [];
@@ -65,17 +91,56 @@ export function useWhatsAppContacts(sessionId: string | null) {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
       console.log(`[useWhatsAppContacts] Fetching contacts for session: ${sessionId}`);
-      const response = await fetch(`/api/whatsapp/sessions/${sessionId}/fetch-contacts`);
-
-      console.log(`[useWhatsAppContacts] Response status:`, response.status);
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error(`[useWhatsAppContacts] API Error:`, error);
-        throw new Error(error.error || "Erro ao buscar contatos do WhatsApp");
+      
+      // Testa a conexão primeiro para capturar erros HTTP detalhados
+      const testResponse = await fetch(`/api/whatsapp/sessions/${sessionId}/fetch-contacts`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (!testResponse.ok) {
+        // Tenta extrair JSON, mas se falhar, usa o texto da resposta
+        let errorData: { error?: string; status?: string; details?: string } = {};
+        let errorText = '';
+        
+        try {
+          const contentType = testResponse.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await testResponse.json();
+          } else {
+            errorText = await testResponse.text();
+            errorData = { error: errorText || `HTTP ${testResponse.status}: ${testResponse.statusText}` };
+          }
+        } catch (parseError) {
+          errorText = await testResponse.text().catch(() => '');
+          errorData = { error: errorText || `HTTP ${testResponse.status}: ${testResponse.statusText}` };
+        }
+        
+        console.error(`[useWhatsAppContacts] API Error Response:`, {
+          status: testResponse.status,
+          statusText: testResponse.statusText,
+          error: errorData.error || errorData,
+          details: errorData.details || errorText
+        });
+        
+        // Se a sessão não está ativa, tenta novamente após 2 segundos
+        if (errorData.status && ['waiting_qr', 'connecting', 'creating'].includes(errorData.status)) {
+          console.log(`[useWhatsAppContacts] Session status is ${errorData.status}, will retry in 2s...`);
+          setTimeout(() => {
+            fetchContactsFromWhatsApp();
+          }, 2000);
+          setState((prev) => ({ ...prev, loading: false }));
+          return;
+        }
+        
+        const errorMessage = errorData.error || errorData.details || errorText || `HTTP ${testResponse.status}: ${testResponse.statusText}`;
+        throw new Error(errorMessage);
       }
-
+      
+      // Se OK, faz a requisição real
+      const response = await fetch(`/api/whatsapp/sessions/${sessionId}/fetch-contacts`);
       const contacts = await response.json();
+      
       console.log(`[useWhatsAppContacts] ${contacts.length} contacts received from API`);
 
       // If API returns empty, try Supabase fallback
@@ -194,6 +259,17 @@ export function useWhatsAppContacts(sessionId: string | null) {
     }
   }, [state.error, sessionId, state.loading, fetchContacts]);
 
+  // Contadores por status (baseado em unread_count para badges)
+  const counts = useMemo(() => {
+    // Garante que contacts é sempre um array
+    const contacts = Array.isArray(state.contacts) ? state.contacts : [];
+    return {
+      open: contacts.filter(c => c.conversation_status === 'open').reduce((acc, c) => acc + (c.unread_count || 0), 0),
+      pending: contacts.filter(c => c.conversation_status === 'pending').reduce((acc, c) => acc + (c.unread_count || 0), 0),
+      resolved: contacts.filter(c => c.conversation_status === 'resolved').reduce((acc, c) => acc + (c.unread_count || 0), 0),
+    };
+  }, [state.contacts]);
+
   return {
     contacts: state.contacts,
     loading: state.loading,
@@ -201,5 +277,6 @@ export function useWhatsAppContacts(sessionId: string | null) {
     isSyncing: state.isSyncing,
     refetch: fetchContacts,
     refetchFromWhatsApp: fetchContactsFromWhatsApp,
+    counts,
   };
 }

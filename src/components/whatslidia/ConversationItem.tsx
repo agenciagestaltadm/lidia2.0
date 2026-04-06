@@ -102,12 +102,19 @@ export function ConversationItem({
   };
 
   return (
-    <motion.button
+    <motion.div
       onClick={onClick}
       whileHover={{ scale: 1.005 }}
       whileTap={{ scale: 0.995 }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onClick();
+        }
+      }}
       className={cn(
-        "w-full p-3 flex items-start gap-3 transition-all duration-200 border-b group",
+        "w-full p-3 flex items-start gap-3 transition-all duration-200 border-b group cursor-pointer",
         isDarkMode ? "border-[#2a2a2a]" : "border-gray-200",
         isSelected
           ? isDarkMode 
@@ -342,6 +349,6 @@ export function ConversationItem({
           </div>
         )}
       </div>
-    </motion.button>
+    </motion.div>
   );
 }

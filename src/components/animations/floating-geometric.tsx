@@ -1,8 +1,39 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+
+interface Dot {
+  id: number;
+  left: number;
+  top: number;
+  duration: number;
+  delay: number;
+}
 
 export function FloatingGeometric() {
+  const [dots, setDots] = useState<Dot[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    
+    const generatedDots: Dot[] = Array.from({ length: 6 }, (_, i) => ({
+      id: i,
+      left: 15 + Math.random() * 70,
+      top: 10 + Math.random() * 80,
+      duration: 3 + Math.random() * 2,
+      delay: Math.random() * 3,
+    }));
+    
+    setDots(generatedDots);
+  }, []);
+
+  // Não renderiza nada até estar montado no cliente para evitar mismatch de hidratação
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {/* Floating Hexagon */}
@@ -176,22 +207,22 @@ export function FloatingGeometric() {
       </motion.div>
 
       {/* Small dots */}
-      {[...Array(6)].map((_, i) => (
+      {dots.map((dot) => (
         <motion.div
-          key={i}
+          key={dot.id}
           className="absolute w-1 h-1 rounded-full bg-emerald-400/40"
           style={{
-            left: `${15 + Math.random() * 70}%`,
-            top: `${10 + Math.random() * 80}%`,
+            left: `${dot.left}%`,
+            top: `${dot.top}%`,
           }}
           animate={{
             opacity: [0.2, 0.8, 0.2],
             scale: [1, 1.5, 1],
           }}
           transition={{
-            duration: 3 + Math.random() * 2,
+            duration: dot.duration,
             repeat: Infinity,
-            delay: Math.random() * 3,
+            delay: dot.delay,
             ease: "easeInOut",
           }}
         />

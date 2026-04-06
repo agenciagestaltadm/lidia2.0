@@ -9,7 +9,7 @@ import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { AttachmentFile } from "./AttachmentMenu";
 import { getConversationMessages } from "@/lib/mock/chat-data";
-import { Lock, Shield, Eye, RotateCcw, AlertCircle, Loader2 } from "lucide-react";
+import { Lock, Shield, Eye, RotateCcw, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 
 interface ChatWindowProps {
   conversation: Conversation | null;
@@ -18,6 +18,7 @@ interface ChatWindowProps {
   isDarkMode?: boolean;
   isReadOnly?: boolean;
   onReopen?: () => void;
+  onResolve?: () => void;
   onSendMessage?: (content: string) => void;
   onSendAttachments?: (files: AttachmentFile[], caption?: string) => void;
   onSendLocation?: (type: "location" | "address" | "request") => void;
@@ -40,6 +41,7 @@ export function ChatWindow({
   isDarkMode = true,
   isReadOnly = false,
   onReopen,
+  onResolve,
   onSendMessage,
   onSendAttachments,
   onSendLocation,
@@ -256,6 +258,7 @@ export function ChatWindow({
         onBack={onBack}
         showBackButton={showBackButton}
         isDarkMode={isDarkMode}
+        onResolve={conversation?.status === 'open' ? onResolve : undefined}
       />
 
       {/* Read-only Overlay */}
