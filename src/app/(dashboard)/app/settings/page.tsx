@@ -32,7 +32,7 @@ import { GlowBadge } from "@/components/ui/glow-badge";
 import { AnimatedInput } from "@/components/ui/animated-input";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
-import { useWABAWebhook } from "@/hooks/use-waba-webhook";
+import { useWABAWebhook, buildWebhookUrl } from "@/hooks/use-waba-webhook";
 import { useAuth } from "@/hooks/use-auth";
 import { CopyToClipboardButton } from "@/components/ui/copy-to-clipboard-button";
 import { createClient } from "@/lib/supabase/client";
@@ -89,9 +89,13 @@ function WhatsAppBusinessIntegration() {
         
         if (existingConfig) {
           console.log("Found existing config, setting state");
+          // Always generate webhook URL dynamically based on current environment
+          const dynamicWebhookUrl = existingConfig.account_uuid 
+            ? buildWebhookUrl(existingConfig.account_uuid)
+            : existingConfig.webhook_url;
           setConfig({
             id: existingConfig.id,
-            webhookUrl: existingConfig.webhook_url,
+            webhookUrl: dynamicWebhookUrl,
             verifyToken: existingConfig.webhook_verify_token,
             events: existingConfig.webhook_events,
             accountUuid: existingConfig.account_uuid || ""
