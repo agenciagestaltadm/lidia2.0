@@ -2,8 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
-import { WhatsLidiaLayout } from "@/components/whatslidia";
+import { WhatsLidiaLayoutOficial } from "@/components/whatslidia";
 
 export default function WhatsAppOficialPage() {
-  return <WhatsLidiaLayout connectionType="oficial" />;
+  return <WhatsLidiaLayoutOficial connectionType="oficial" />;
 }

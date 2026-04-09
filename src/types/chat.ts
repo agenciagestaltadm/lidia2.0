@@ -3,7 +3,7 @@
 export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed';
 export type MessageType = 'text' | 'image' | 'video' | 'document' | 'audio' | 'template' | 'sticker';
 export type ConversationStatus = 'open' | 'pending' | 'resolved';
-export type ContactSource = 'whatsapp' | 'instagram' | 'facebook' | 'email';
+export type ContactSource = 'whatsapp' | 'instagram' | 'facebook' | 'email' | 'whatsapp_official';
 
 export interface Contact {
   id: string;

@@ -2,8 +2,8 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings,
   Bell,
@@ -16,13 +16,27 @@ import {
   Check,
   Moon,
   Sun,
-  MessageSquare
+  MessageSquare,
+  ChevronDown,
+  Webhook,
+  RefreshCw,
+  Copy,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { GlowBadge } from "@/components/ui/glow-badge";
 import { AnimatedInput } from "@/components/ui/animated-input";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
+import { useWABAWebhook } from "@/hooks/use-waba-webhook";
+import { useAuth } from "@/hooks/use-auth";
+import { CopyToClipboardButton } from "@/components/ui/copy-to-clipboard-button";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 const settingSections = [
   { id: "general", label: "Geral", icon: Settings },
@@ -32,6 +46,295 @@ const settingSections = [
   { id: "integrations", label: "Integrações", icon: Globe },
   { id: "data", label: "Dados", icon: Database },
 ];
+
+// WhatsApp Business Integration Component
+function WhatsAppBusinessIntegration() {
+  const { user } = useAuth();
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [config, setConfig] = useState<{
+    id: string;
+    webhookUrl: string;
+    verifyToken: string;
+    events: string[];
+    accountUuid: string;
+  } | null>(null);
+  const [showToken, setShowToken] = useState(false);
+  
+  const {
+    initializeWebhook,
+    regenerateToken,
+    updateWebhookEvents,
+    getWebhookConfig,
+    isLoading: hookLoading
+  } = useWABAWebhook();
+
+  const supabase = createClient();
+
+  // Load or initialize webhook config
+  useEffect(() => {
+    const loadConfig = async () => {
+      if (!user?.companyId) {
+        console.log("No companyId available, skipping config load");
+        return;
+      }
+      
+      console.log("Loading webhook config for company:", user.companyId);
+      setIsLoading(true);
+      try {
+        // Try to get existing config
+        console.log("Fetching existing config...");
+        const existingConfig = await getWebhookConfig(user.companyId);
+        console.log("Existing config:", existingConfig);
+        
+        if (existingConfig) {
+          console.log("Found existing config, setting state");
+          setConfig({
+            id: existingConfig.id,
+            webhookUrl: existingConfig.webhook_url,
+            verifyToken: existingConfig.webhook_verify_token,
+            events: existingConfig.webhook_events,
+            accountUuid: existingConfig.account_uuid || ""
+          });
+        } else {
+          console.log("No existing config found, creating new one...");
+          // Create new config if none exists
+          const insertData = {
+            company_id: user.companyId,
+            name: "Configuração Padrão",
+            phone_number_id: "",
+            business_account_id: "",
+            access_token: "",
+            status: "pending"
+            // Not setting created_by to avoid FK constraint issues
+          };
+          console.log("Inserting config:", insertData);
+          
+          const { data: newConfig, error } = await supabase
+            .from("waba_configs")
+            .insert(insertData)
+            .select()
+            .single();
+
+          if (error) {
+            console.error("Error inserting config:", error);
+            throw error;
+          }
+          
+          console.log("New config created:", newConfig);
+
+          // Initialize webhook
+          console.log("Initializing webhook...");
+          const result = await initializeWebhook(newConfig.id, user?.companyId || "");
+          console.log("Webhook initialized:", result);
+          
+          if (result) {
+            setConfig({
+              id: newConfig.id,
+              webhookUrl: result.webhookUrl,
+              verifyToken: result.verifyToken,
+              events: ["messages", "message_template_status_update", "account_alerts"],
+              accountUuid: ""
+            });
+          }
+        }
+      } catch (error: unknown) {
+        console.error("Error loading config:", error);
+        if (error instanceof Error) {
+          console.error("Error name:", error.name);
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
+        } else {
+          console.error("Unknown error type:", typeof error);
+          console.error("Error details:", JSON.stringify(error, null, 2));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadConfig();
+  }, [user?.companyId, user?.id]);
+
+  const handleRegenerateToken = async () => {
+    if (!config) return;
+    const newToken = await regenerateToken(config.id);
+    if (newToken) {
+      setConfig(prev => prev ? { ...prev, verifyToken: newToken } : null);
+    }
+  };
+
+  if (isLoading || hookLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* WhatsApp Business Header */}
+      <div
+        className="flex items-center justify-between p-4 rounded-xl dark:bg-white/5 bg-slate-100 cursor-pointer hover:dark:bg-white/10 hover:bg-slate-200 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: "#25D36620" }}
+          >
+            <MessageSquare className="w-6 h-6" style={{ color: "#25D366" }} />
+          </div>
+          <div>
+            <h3 className="font-semibold dark:text-white text-slate-900">
+              WhatsApp Business API
+            </h3>
+            <p className="text-sm dark:text-slate-400 text-slate-500">
+              Configure webhooks e integração oficial com a Meta
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <GlowBadge variant="emerald">Oficial</GlowBadge>
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDown className="w-5 h-5 dark:text-slate-400 text-slate-500" />
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Expanded Content */}
+      <AnimatePresence>
+        {isExpanded && config && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <GlassCard className="p-6 space-y-6">
+              {/* Webhook Configuration Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Webhook className="w-5 h-5 text-emerald-400" />
+                  <h4 className="font-semibold dark:text-white text-slate-900">
+                    Configuração do Webhook
+                  </h4>
+                </div>
+                
+                <p className="text-sm dark:text-slate-400 text-slate-500">
+                  Use estas informações para configurar o webhook no Facebook Developers.
+                  O URL e o token são únicos para esta conta.
+                </p>
+
+                {/* Webhook URL */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium dark:text-slate-300 text-slate-700">
+                    URL do Webhook
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 px-4 py-3 rounded-lg dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-200 font-mono text-sm dark:text-emerald-400 text-emerald-600 truncate">
+                      {config.webhookUrl}
+                    </div>
+                    <CopyToClipboardButton
+                      text={config.webhookUrl}
+                      label="Copiar URL"
+                      showLabel
+                    />
+                  </div>
+                </div>
+
+                {/* Verify Token */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium dark:text-slate-300 text-slate-700">
+                      Token de Verificação
+                    </label>
+                    <button
+                      onClick={handleRegenerateToken}
+                      disabled={hookLoading}
+                      className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className={cn("w-3.5 h-3.5", hookLoading && "animate-spin")} />
+                      Gerar Novo Token
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 px-4 py-3 rounded-lg dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-200 font-mono text-sm dark:text-slate-300 text-slate-700">
+                      {showToken ? config.verifyToken : "•".repeat(32)}
+                    </div>
+                    <button
+                      onClick={() => setShowToken(!showToken)}
+                      className="p-3 rounded-lg dark:bg-white/10 bg-slate-200 dark:text-slate-300 text-slate-600 hover:dark:bg-white/20 hover:bg-slate-300 transition-colors"
+                      title={showToken ? "Ocultar" : "Mostrar"}
+                    >
+                      {showToken ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                    <CopyToClipboardButton
+                      text={config.verifyToken}
+                      label="Copiar Token"
+                      isSensitive
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t dark:border-white/10 border-slate-200" />
+
+              {/* Webhook Events Info */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  <h4 className="font-semibold dark:text-white text-slate-900">
+                    Eventos do Webhook
+                  </h4>
+                </div>
+
+                <p className="text-sm dark:text-slate-400 text-slate-500">
+                  Este webhook está configurado para receber <strong>todos os eventos</strong> da API do WhatsApp Business.
+                  Inclui mensagens recebidas, status de entrega, atualizações de templates e alertas da conta.
+                </p>
+
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  <span className="text-sm text-emerald-400">
+                    Todos os eventos ativos - pronto para receber webhooks
+                  </span>
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div className="flex items-start gap-3 p-4 rounded-lg dark:bg-blue-500/10 bg-blue-50 border dark:border-blue-500/20 border-blue-200">
+                <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-blue-400">
+                    Como configurar no Facebook Developers
+                  </p>
+                  <ol className="text-sm dark:text-slate-300 text-slate-600 list-decimal list-inside space-y-1">
+                    <li>Acesse o painel de desenvolvedores do Facebook</li>
+                    <li>Vá em WhatsApp &gt; Configuração &gt; Webhook</li>
+                    <li>Cole a URL do webhook acima no campo "URL de callback"</li>
+                    <li>Cole o token de verificação no campo "Token de verificação"</li>
+                    <li>Clique em "Verificar e salvar"</li>
+                    <li>Assine todos os campos de webhook disponíveis</li>
+                  </ol>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("general");
@@ -255,10 +558,22 @@ export default function SettingsPage() {
             {activeSection === "integrations" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">Integrações</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">
+                    Integrações
+                  </h3>
+                  <p className="text-sm dark:text-slate-400 text-slate-500 mb-6">
+                    Gerencie as integrações com serviços externos e APIs oficiais.
+                  </p>
+                  
+                  {/* WhatsApp Business Integration */}
+                  <WhatsAppBusinessIntegration />
+
+                  {/* Other Integrations */}
+                  <div className="mt-6 space-y-4">
+                    <h4 className="font-medium dark:text-slate-300 text-slate-700">
+                      Outras Integrações
+                    </h4>
                     {[
-                      { name: "WhatsApp Business", icon: MessageSquare, status: "connected", color: "#25D366" },
                       { name: "E-mail SMTP", icon: Mail, status: "connected", color: "#EA4335" },
                       { name: "Google Calendar", icon: Globe, status: "disconnected", color: "#4285F4" },
                     ].map((integration) => {

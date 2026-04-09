@@ -29,6 +29,7 @@ import { useChannels } from "@/hooks/use-channels";
 import { useWhatsAppSessions } from "@/hooks/use-whatsapp-sessions";
 import { ConnectionTypeModal } from "@/components/connection/ConnectionTypeModal";
 import { CreateQRSessionModal } from "@/components/connection/CreateQRSessionModal";
+import { CreateWABAConnectionModal } from "@/components/connection/CreateWABAConnectionModal";
 import { useRouter } from "next/navigation";
 import type { WhatsAppSession } from "@/types/whatsapp";
 
@@ -186,9 +187,16 @@ export default function ConnectionPage() {
     setShowQRModal(true);
   };
 
+  const [showWABAModal, setShowWABAModal] = useState(false);
+
   const handleSelectOfficial = () => {
     setShowTypeModal(false);
-    router.push("/app/atendimento/wa-oficial");
+    setShowWABAModal(true);
+  };
+
+  const handleCloseWABAModal = () => {
+    setShowWABAModal(false);
+    refetchChannels();
   };
 
   const handleCloseQRModal = () => {
@@ -500,6 +508,12 @@ export default function ConnectionPage() {
         onClose={handleCloseQRModal}
         session={createdSession}
         onCreateSession={handleCreateSession}
+      />
+
+      <CreateWABAConnectionModal
+        isOpen={showWABAModal}
+        onClose={handleCloseWABAModal}
+        onSuccess={refetchChannels}
       />
     </motion.div>
   );

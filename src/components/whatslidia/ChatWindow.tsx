@@ -32,6 +32,11 @@ interface ChatWindowProps {
   loadingMore?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  // WABA props
+  messages?: import("@/hooks/use-waba-messages").WABAMessage[];
+  isLoadingMessages?: boolean;
+  isSending?: boolean;
+  connectionType?: "qr" | "oficial";
 }
 
 export function ChatWindow({
@@ -53,6 +58,10 @@ export function ChatWindow({
   loadingMore = false,
   hasMore = false,
   onLoadMore,
+  messages: wabaMessages,
+  isLoadingMessages,
+  isSending,
+  connectionType,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
