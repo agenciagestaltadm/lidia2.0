@@ -431,7 +431,8 @@ async function processMessageStatus(
       updateData.read_at = new Date(parseInt(timestamp) * 1000).toISOString();
     } else if (statusValue === "failed") {
       updateData.failed_at = new Date(parseInt(timestamp) * 1000).toISOString();
-      updateData.error_message = (status.errors?.[0] as Record<string, string>)?.message || "Failed to deliver";
+      const errors = status.errors as Array<Record<string, string>> | undefined;
+      updateData.error_message = errors?.[0]?.message || "Failed to deliver";
     }
 
     // Update message status in waba_messages
