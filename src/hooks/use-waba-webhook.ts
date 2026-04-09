@@ -49,6 +49,17 @@ export function buildWebhookUrl(accountId: string): string {
     return `/api/webhook/whatsapp/${accountId}`;
   }
   
+  // Detect production environment
+  const isProduction = process.env.NODE_ENV === "production" || 
+                       window.location.hostname === "lidia20.vercel.app" ||
+                       !window.location.hostname.includes("localhost");
+  
+  if (isProduction) {
+    // Use production domain
+    return `https://lidia20.vercel.app/api/webhook/whatsapp/${accountId}`;
+  }
+  
+  // Use current domain for development
   const protocol = window.location.protocol;
   const host = window.location.host;
   return `${protocol}//${host}/api/webhook/whatsapp/${accountId}`;
