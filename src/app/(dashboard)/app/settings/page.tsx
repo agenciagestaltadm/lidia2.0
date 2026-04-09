@@ -258,19 +258,25 @@ function WhatsAppBusinessIntegration() {
                     <label className="text-sm font-medium dark:text-slate-300 text-slate-700">
                       Token de Verificação
                     </label>
-                    <button
-                      onClick={handleRegenerateToken}
-                      disabled={hookLoading}
-                      className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
-                    >
-                      <RefreshCw className={cn("w-3.5 h-3.5", hookLoading && "animate-spin")} />
-                      Gerar Novo Token
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleRegenerateToken}
+                        disabled={hookLoading}
+                        className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+                      >
+                        <RefreshCw className={cn("w-3.5 h-3.5", hookLoading && "animate-spin")} />
+                        Gerar Novo
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 px-4 py-3 rounded-lg dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-200 font-mono text-sm dark:text-slate-300 text-slate-700">
-                      {showToken ? config.verifyToken : "•".repeat(32)}
-                    </div>
+                    <input
+                      type={showToken ? "text" : "password"}
+                      value={config.verifyToken}
+                      onChange={(e) => setConfig(prev => prev ? { ...prev, verifyToken: e.target.value } : null)}
+                      className="flex-1 px-4 py-3 rounded-lg dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-200 font-mono text-sm dark:text-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Digite o token de verificação"
+                    />
                     <button
                       onClick={() => setShowToken(!showToken)}
                       className="p-3 rounded-lg dark:bg-white/10 bg-slate-200 dark:text-slate-300 text-slate-600 hover:dark:bg-white/20 hover:bg-slate-300 transition-colors"
@@ -284,10 +290,44 @@ function WhatsAppBusinessIntegration() {
                     </button>
                     <CopyToClipboardButton
                       text={config.verifyToken}
-                      label="Copiar Token"
+                      label="Copiar"
                       isSensitive
                     />
                   </div>
+                  <p className="text-xs dark:text-slate-500 text-slate-400">
+                    Digite o token manualmente ou clique em "Gerar Novo" para criar um automaticamente.
+                  </p>
+                </div>
+
+                {/* Save Token Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={async () => {
+                      if (!config) return;
+                      setIsLoading(true);
+                      try {
+                        const { error } = await supabase
+                          .from("waba_configs")
+                          .update({ 
+                            verify_token: config.verifyToken,
+                            updated_at: new Date().toISOString()
+                          })
+                          .eq("id", config.id);
+                        
+                        if (error) throw error;
+                        toast.success("Token salvo com sucesso!");
+                      } catch (error) {
+                        console.error("Error saving token:", error);
+                        toast.error("Erro ao salvar token");
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    disabled={isLoading || !config.verifyToken}
+                    className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? "Salvando..." : "Salvar Token"}
+                  </button>
                 </div>
               </div>
 

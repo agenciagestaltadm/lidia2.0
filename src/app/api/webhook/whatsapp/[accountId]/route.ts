@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import crypto from "crypto";
 
+// CORS headers for webhook endpoint
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Handle OPTIONS request for CORS
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
+
 // Meta webhook verification endpoint (GET)
 export async function GET(
   request: NextRequest,
@@ -15,8 +30,16 @@ export async function GET(
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
+  console.log("[WEBHOOK GET] Received verification request:");
+  console.log("  accountId:", accountId);
+  console.log("  mode:", mode);
+  console.log("  token:", token);
+  console.log("  challenge:", challenge);
+  console.log("  full URL:", request.url);
+
   // Validate required parameters
   if (!mode || !token || !challenge) {
+    console.error("[WEBHOOK GET] Missing required parameters");
     return NextResponse.json(
       { error: "Missing required parameters" },
       { status: 400 }
@@ -25,6 +48,7 @@ export async function GET(
 
   // Only handle subscribe mode
   if (mode !== "subscribe") {
+    console.error("[WEBHOOK GET] Invalid mode:", mode);
     return NextResponse.json(
       { error: "Invalid mode" },
       { status: 400 }
@@ -35,31 +59,53 @@ export async function GET(
     const supabase = await createClient();
 
     // Find config by account UUID
+    console.log("[WEBHOOK GET] Looking for config with account_uuid:", accountId);
     const { data: config, error } = await supabase
       .from("waba_configs")
-      .select("id, verify_token, status")
+      .select("id, verify_token, status, account_uuid")
       .eq("account_uuid", accountId)
       .single();
 
-    if (error || !config) {
-      console.error("Config not found for account:", accountId, error);
+    if (error) {
+      console.error("[WEBHOOK GET] Database error:", error);
+    }
+
+    if (!config) {
+      console.error("[WEBHOOK GET] Config not found for account:", accountId);
       return NextResponse.json(
         { error: "Config not found" },
         { status: 404 }
       );
     }
 
-    const verifyToken = config?.verify_token;
+    console.log("[WEBHOOK GET] Found config:", {
+      id: config.id,
+      account_uuid: config.account_uuid,
+      has_token: !!config.verify_token,
+    });
 
-    if (!verifyToken || verifyToken !== token) {
-      console.error("Webhook verification failed: Invalid token");
-      console.error("Expected:", verifyToken);
-      console.error("Received:", token);
+    const verifyToken = config.verify_token;
+
+    if (!verifyToken) {
+      console.error("[WEBHOOK GET] No verify_token in config");
+      return NextResponse.json(
+        { error: "Verification token not set" },
+        { status: 403 }
+      );
+    }
+
+    if (verifyToken !== token) {
+      console.error("[WEBHOOK GET] Token mismatch:");
+      console.error("  Expected:", verifyToken);
+      console.error("  Received:", token);
       return NextResponse.json(
         { error: "Verification failed" },
         { status: 403 }
       );
     }
+
+    console.log("[WEBHOOK GET] Token verified successfully!");
+    console.log("[WEBHOOK GET] Returning challenge:", challenge);
 
     // Update config status to connected
     await supabase
@@ -71,14 +117,16 @@ export async function GET(
       .eq("id", config.id);
 
     // Return the challenge to verify the webhook
-    return new NextResponse(challenge, {
+    // MUST return exactly the challenge value as plain text
+    return new Response(challenge, {
       status: 200,
       headers: {
         "Content-Type": "text/plain",
+        ...corsHeaders,
       },
     });
   } catch (error) {
-    console.error("Error verifying webhook:", error);
+    console.error("[WEBHOOK GET] Error verifying webhook:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -193,18 +193,26 @@ export function useWABAWebhook() {
       let accountUuid = config?.account_uuid;
       let verifyToken = config?.verify_token;
 
+      console.log("[initializeWebhook] Current config:", {
+        hasAccountUuid: !!accountUuid,
+        hasVerifyToken: !!verifyToken,
+      });
+
       // Generate new UUID if not exists
       if (!accountUuid) {
         // Generate UUID locally using crypto API
         accountUuid = crypto.randomUUID();
+        console.log("[initializeWebhook] Generated new account_uuid:", accountUuid);
       }
 
       // Generate new token if not exists
       if (!verifyToken) {
         verifyToken = generateVerifyToken();
+        console.log("[initializeWebhook] Generated new verify_token:", verifyToken);
       }
 
       const webhookUrl = buildWebhookUrl(accountUuid);
+      console.log("[initializeWebhook] Webhook URL:", webhookUrl);
 
       // Update config with webhook info
       const { error: updateError } = await supabase
@@ -217,7 +225,12 @@ export function useWABAWebhook() {
         })
         .eq("id", configId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("[initializeWebhook] Error updating config:", updateError);
+        throw updateError;
+      }
+
+      console.log("[initializeWebhook] Config saved successfully");
 
       return {
         webhookUrl,
