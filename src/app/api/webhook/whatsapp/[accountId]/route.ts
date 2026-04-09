@@ -5,9 +5,9 @@ import crypto from "crypto";
 // Meta webhook verification endpoint (GET)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
-  const { accountId } = params;
+  const { accountId } = await params;
   
   // Get query parameters
   const searchParams = request.nextUrl.searchParams;
@@ -98,9 +98,9 @@ export async function GET(
 // Meta webhook event receiver (POST)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
-  const { accountId } = params;
+  const { accountId } = await params;
 
   try {
     const supabase = await createClient();
