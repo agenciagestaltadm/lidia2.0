@@ -34,50 +34,41 @@ export async function GET(
   try {
     const supabase = await createClient();
 
-    // Find connection by account UUID
-    const { data: connection, error } = await supabase
-      .from("waba_connections")
-      .select("id, webhook_verify_token, status")
-      .eq("webhook_url", `${request.nextUrl.origin}/api/webhook/whatsapp/${accountId}`)
-      .single();
-
-    // Also check waba_configs table
-    const { data: config } = await supabase
+    // Find config by account UUID
+    const { data: config, error } = await supabase
       .from("waba_configs")
       .select("id, verify_token, status")
       .eq("account_uuid", accountId)
       .single();
 
-    const verifyToken = connection?.webhook_verify_token || config?.verify_token;
+    if (error || !config) {
+      console.error("Config not found for account:", accountId, error);
+      return NextResponse.json(
+        { error: "Config not found" },
+        { status: 404 }
+      );
+    }
+
+    const verifyToken = config?.verify_token;
 
     if (!verifyToken || verifyToken !== token) {
       console.error("Webhook verification failed: Invalid token");
+      console.error("Expected:", verifyToken);
+      console.error("Received:", token);
       return NextResponse.json(
         { error: "Verification failed" },
         { status: 403 }
       );
     }
 
-    // Update connection status to connected
-    if (connection) {
-      await supabase
-        .from("waba_connections")
-        .update({ 
-          status: "connected",
-          last_sync_at: new Date().toISOString()
-        })
-        .eq("id", connection.id);
-    }
-
-    if (config) {
-      await supabase
-        .from("waba_configs")
-        .update({ 
-          status: "connected",
-          last_sync_at: new Date().toISOString()
-        })
-        .eq("id", config.id);
-    }
+    // Update config status to connected
+    await supabase
+      .from("waba_configs")
+      .update({ 
+        status: "connected",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", config.id);
 
     // Return the challenge to verify the webhook
     return new NextResponse(challenge, {
@@ -109,29 +100,23 @@ export async function POST(
     const rawBody = await request.text();
     const body = JSON.parse(rawBody);
 
-    // Find connection by account UUID
-    const { data: connection } = await supabase
-      .from("waba_connections")
-      .select("id, company_id, webhook_verify_token, access_token")
-      .eq("webhook_url", `${request.nextUrl.origin}/api/webhook/whatsapp/${accountId}`)
-      .single();
-
-    const { data: config } = await supabase
+    // Find config by account UUID
+    const { data: config, error: configError } = await supabase
       .from("waba_configs")
       .select("id, company_id, verify_token, access_token")
       .eq("account_uuid", accountId)
       .single();
 
-    const connectionId = connection?.id || config?.id;
-    const companyId = connection?.company_id || config?.company_id;
-
-    if (!connectionId || !companyId) {
-      console.error("Connection not found for account:", accountId);
+    if (configError || !config) {
+      console.error("Config not found for account:", accountId, configError);
       return NextResponse.json(
-        { error: "Connection not found" },
+        { error: "Config not found" },
         { status: 404 }
       );
     }
+
+    const connectionId = config.id;
+    const companyId = config.company_id;
 
     // Process webhook events
     const entries = body.entry || [];
