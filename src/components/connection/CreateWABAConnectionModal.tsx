@@ -145,6 +145,10 @@ export function CreateWABAConnectionModal({
       toast.error("Empresa não encontrada");
       return;
     }
+    if (!user?.id) {
+      toast.error("Usuário não autenticado. Faça login novamente.");
+      return;
+    }
     
     const result = await createConnection({
       company_id: user.companyId,
@@ -152,12 +156,16 @@ export function CreateWABAConnectionModal({
       phone_number_id: formData.phoneNumberId,
       business_account_id: formData.businessAccountId,
       access_token: formData.accessToken,
-      api_version: formData.apiVersion
+      api_version: formData.apiVersion,
+      created_by: user.id
     });
     
     if (result) {
       setCreatedConnection(result);
       toast.success("Conexão criada com sucesso!");
+    } else {
+      // createConnection already shows toast.error internally
+      console.error("[CreateWABAConnectionModal] createConnection returned null - check RLS policies and user permissions");
     }
   }, [formData, user?.companyId, user?.id, createConnection, validateForm]);
 

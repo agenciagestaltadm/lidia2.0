@@ -321,6 +321,7 @@ export function useWABAConnections() {
     business_account_id: string;
     access_token: string;
     api_version?: string;
+    created_by?: string;
   }): Promise<{ id: string; webhookUrl: string; verifyToken: string } | null> => {
     setIsLoading(true);
     try {
@@ -332,20 +333,27 @@ export function useWABAConnections() {
       console.log("[createConnection] Creating connection with account_uuid:", accountUuid);
       console.log("[createConnection] Webhook URL:", webhookUrl);
 
+      const insertData: Record<string, unknown> = {
+        company_id: data.company_id,
+        name: data.name,
+        phone_number_id: data.phone_number_id,
+        business_account_id: data.business_account_id,
+        access_token: data.access_token,
+        api_version: data.api_version || "v18.0",
+        account_uuid: accountUuid,
+        webhook_url: webhookUrl,
+        verify_token: verifyToken,
+        status: "pending"
+      };
+
+      // Add created_by if provided (required for RLS policies)
+      if (data.created_by) {
+        insertData.created_by = data.created_by;
+      }
+
       const { data: connection, error } = await supabase
         .from("waba_configs")
-        .insert({
-          company_id: data.company_id,
-          name: data.name,
-          phone_number_id: data.phone_number_id,
-          business_account_id: data.business_account_id,
-          access_token: data.access_token,
-          api_version: data.api_version || "v18.0",
-          account_uuid: accountUuid,
-          webhook_url: webhookUrl,
-          verify_token: verifyToken,
-          status: "pending"
-        })
+        .insert(insertData)
         .select()
         .single();
 
