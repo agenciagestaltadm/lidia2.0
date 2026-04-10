@@ -16,15 +16,19 @@ export function ApexChartsInit() {
           try {
             // Set defaults using the static defaults property
             const currentDefaults = (ApexCharts as any).defaults || {};
+            const currentChart = currentDefaults.chart || {};
+            const currentTheme = currentDefaults.theme || {};
             (ApexCharts as any).defaults = {
               ...currentDefaults,
               theme: {
-                mode: "light",
-                palette: "palette1",
+                ...currentTheme,
+                mode: currentTheme.mode || "light",
+                palette: currentTheme.palette || "palette1",
+                monochrome: currentTheme.monochrome || { enabled: false },
               },
               colors: DEFAULT_COLORS,
               chart: {
-                ...currentDefaults.chart,
+                ...currentChart,
                 fontFamily: "inherit",
                 background: "transparent",
               },

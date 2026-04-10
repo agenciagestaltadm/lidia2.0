@@ -12,7 +12,7 @@ const DEFAULT_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "
 
 // Dynamic import to avoid SSR issues
 const Chart = dynamic(
-  () => import("react-apexcharts").then((mod) => mod),
+  () => import("react-apexcharts"),
   { ssr: false }
 );
 
@@ -111,6 +111,9 @@ export function ApexLineChart({
     theme: {
       mode: isDark ? "dark" : "light",
       palette: "palette1",
+      monochrome: {
+        enabled: false,
+      },
     },
     colors: [color],
     stroke: {

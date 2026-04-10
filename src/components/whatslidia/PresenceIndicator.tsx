@@ -87,7 +87,7 @@ export function TypingIndicator({ isDarkMode = true }: TypingIndicatorProps) {
 }
 
 interface MessageStatusIconProps {
-  status: "sent" | "delivered" | "read" | "failed";
+  status: "sent" | "delivered" | "read" | "failed" | "pending";
   isDarkMode?: boolean;
   size?: "sm" | "md";
 }
@@ -102,10 +102,16 @@ export function MessageStatusIcon({
     md: "w-5 h-5",
   };
 
+  // Color scheme following WhatsApp style:
+  // pending/sent: 1 check gray
+  // delivered: 2 checks gray
+  // read: 2 checks blue
+  // failed: red X
   const statusColors = {
+    pending: isDarkMode ? "text-[#8696a0]" : "text-gray-400",
     sent: isDarkMode ? "text-[#8696a0]" : "text-gray-400",
     delivered: isDarkMode ? "text-[#8696a0]" : "text-gray-400",
-    read: "text-blue-500",
+    read: "text-[#53bdeb]",
     failed: "text-red-500",
   };
 
@@ -116,22 +122,28 @@ export function MessageStatusIcon({
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      {status === "sent" && (
+      {/* pending/sent: single check mark */}
+      {(status === "pending" || status === "sent") && (
         <polyline points="20 6 9 17 4 12" />
       )}
+      {/* delivered: double check mark (gray) */}
       {status === "delivered" && (
         <>
-          <polyline points="20 6 9 17 4 12" />
-          <polyline points="9 17 20 6" />
+          <polyline points="18 6 7 17 2 12" />
+          <polyline points="22 6 11 17" />
         </>
       )}
+      {/* read: double check mark (blue via className) */}
       {status === "read" && (
         <>
-          <polyline points="20 6 9 17 4 12" />
-          <polyline points="9 17 20 6" />
+          <polyline points="18 6 7 17 2 12" />
+          <polyline points="22 6 11 17" />
         </>
       )}
+      {/* failed: X mark */}
       {status === "failed" && (
         <>
           <line x1="18" y1="6" x2="6" y2="18" />

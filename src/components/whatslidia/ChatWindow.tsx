@@ -1,15 +1,62 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Conversation, Message, MessageType } from "@/types/chat";
+import { Conversation, Message, MessageType, MessageStatus } from "@/types/chat";
 import { ChatHeader } from "./ChatHeader";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { AttachmentFile } from "./AttachmentMenu";
 import { getConversationMessages } from "@/lib/mock/chat-data";
+import { type WABAMessage } from "@/hooks/use-waba-messages";
 import { Lock, Shield, Eye, RotateCcw, AlertCircle, Loader2, CheckCircle } from "lucide-react";
+
+// Convert WABAMessage to UI Message format
+function convertWABAMessageToMessage(wabaMsg: WABAMessage): Message {
+  // Map WABA message type to UI MessageType
+  const mapMessageType = (type: string): MessageType => {
+    const typeMap: Record<string, MessageType> = {
+      text: "text",
+      image: "image",
+      video: "video",
+      audio: "audio",
+      document: "document",
+      location: "text", // render as text with location info
+      template: "template",
+      sticker: "text",
+      voice: "audio",
+    };
+    return typeMap[type] || "text";
+  };
+
+  // Map WABA message status to UI MessageStatus
+  const mapMessageStatus = (status: string): MessageStatus => {
+    const statusMap: Record<string, MessageStatus> = {
+      pending: "sent",
+      sent: "sent",
+      delivered: "delivered",
+      read: "read",
+      failed: "failed",
+    };
+    return statusMap[status] || "sent";
+  };
+
+  return {
+    id: wabaMsg.id,
+    conversationId: wabaMsg.conversation_id,
+    content: wabaMsg.content,
+    type: mapMessageType(wabaMsg.message_type),
+    status: mapMessageStatus(wabaMsg.status),
+    isFromMe: wabaMsg.direction === "outbound",
+    timestamp: new Date(wabaMsg.created_at),
+    metadata: {
+      url: wabaMsg.media_url || undefined,
+      caption: wabaMsg.media_caption || undefined,
+      fileName: wabaMsg.media_caption || undefined,
+    },
+  };
+}
 
 interface ChatWindowProps {
   conversation: Conversation | null;
@@ -19,6 +66,8 @@ interface ChatWindowProps {
   isReadOnly?: boolean;
   onReopen?: () => void;
   onResolve?: () => void;
+  onOpenConversation?: () => void;
+  onReturnToPending?: () => void;
   onSendMessage?: (content: string) => void;
   onSendAttachments?: (files: AttachmentFile[], caption?: string) => void;
   onSendLocation?: (type: "location" | "address" | "request") => void;
@@ -47,6 +96,8 @@ export function ChatWindow({
   isReadOnly = false,
   onReopen,
   onResolve,
+  onOpenConversation,
+  onReturnToPending,
   onSendMessage,
   onSendAttachments,
   onSendLocation,
@@ -65,29 +116,42 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  // Load messages when conversation changes - use external if provided
+  // Determine if we are using WABA messages
+  const isUsingWABA = wabaMessages !== undefined;
+
+  // Convert WABA messages to UI format when provided
+  const convertedWABAMessages = useMemo(() => {
+    if (!wabaMessages) return [];
+    return wabaMessages.map(convertWABAMessageToMessage);
+  }, [wabaMessages]);
+
+  // Load messages when conversation changes
   useEffect(() => {
     if (externalMessages !== undefined) {
-      // Use external messages from props
-      console.log('[ChatWindow] Atualizando mensagens externas:', externalMessages.length);
-      setMessages(externalMessages);
-    } else if (conversation) {
+      setLocalMessages(externalMessages);
+    } else if (conversation && !isUsingWABA) {
       const msgs = getConversationMessages(conversation.id);
-      setMessages(msgs);
+      setLocalMessages(msgs);
     } else {
-      setMessages([]);
+      setLocalMessages([]);
     }
-  }, [conversation?.id, externalMessages]);
+  }, [conversation?.id, externalMessages, isUsingWABA]);
 
-  // Auto-scroll to bottom apenas na primeira carga ou quando enviar mensagem
+  // Final messages: prefer WABA converted, then local
+  const messages = isUsingWABA ? convertedWABAMessages : localMessages;
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0 && !loadingMore) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
-  }, [messages.length === 0]); // Só scrolla no início
+  }, [messages.length, loadingMore]);
 
   // Handler para scroll e carregar mais mensagens
   const handleScroll = useCallback(() => {
@@ -116,20 +180,19 @@ export function ChatWindow({
     // Call external handler if provided
     onSendMessage?.(content);
 
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      conversationId: conversation.id,
-      content,
-      type: "text",
-      status: "sent",
-      isFromMe: true,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-
-    // Não simula mais o status de mensagem - aguarda confirmação real do WhatsApp
-    // O status será atualizado via webhook/callback do Baileys
+    // Only add local message if not using WABA (which uses Realtime)
+    if (!isUsingWABA) {
+      const newMessage: Message = {
+        id: `msg-${Date.now()}`,
+        conversationId: conversation.id,
+        content,
+        type: "text",
+        status: "sent",
+        isFromMe: true,
+        timestamp: new Date(),
+      };
+      setLocalMessages((prev) => [...prev, newMessage]);
+    }
   };
 
   // Handle sending messages with type and metadata (for modals)
@@ -139,21 +202,20 @@ export function ChatWindow({
     // Call external handler if provided
     onSendMessage?.(content);
 
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      conversationId: conversation.id,
-      content,
-      type: (type as MessageType) || "text",
-      status: "sent",
-      isFromMe: true,
-      timestamp: new Date(),
-      metadata,
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-
-    // Não simula mais o status de mensagem - aguarda confirmação real do WhatsApp
-    // O status será atualizado via webhook/callback do Baileys
+    // Only add local message if not using WABA (which uses Realtime)
+    if (!isUsingWABA) {
+      const newMessage: Message = {
+        id: `msg-${Date.now()}`,
+        conversationId: conversation.id,
+        content,
+        type: (type as MessageType) || "text",
+        status: "sent",
+        isFromMe: true,
+        timestamp: new Date(),
+        metadata,
+      };
+      setLocalMessages((prev) => [...prev, newMessage]);
+    }
   };
 
   // Handle sending attachments with caption
@@ -163,29 +225,27 @@ export function ChatWindow({
     // Call external handler if provided
     onSendAttachments?.(files, caption);
 
-    // Create message for each file
-    files.forEach((file, index) => {
-      const newMessage: Message = {
-        id: `msg-${Date.now()}-${index}`,
-        conversationId: conversation.id,
-        content: index === 0 && caption ? caption : file.file.name,
-        type: file.type,
-        status: "sent",
-        isFromMe: true,
-        timestamp: new Date(Date.now() + index * 100),
-        metadata: {
-          fileName: file.file.name,
-          fileSize: file.size,
-          mimeType: file.file.type,
-          caption: index === 0 ? caption : undefined,
-        },
-      };
-
-      setMessages((prev) => [...prev, newMessage]);
-    });
-
-    // Não simula mais o status de mensagem - aguarda confirmação real do WhatsApp
-    // O status será atualizado via webhook/callback do Baileys
+    // Only add local messages if not using WABA (which uses Realtime)
+    if (!isUsingWABA) {
+      files.forEach((file, index) => {
+        const newMessage: Message = {
+          id: `msg-${Date.now()}-${index}`,
+          conversationId: conversation.id,
+          content: index === 0 && caption ? caption : file.file.name,
+          type: file.type,
+          status: "sent",
+          isFromMe: true,
+          timestamp: new Date(Date.now() + index * 100),
+          metadata: {
+            fileName: file.file.name,
+            fileSize: file.size,
+            mimeType: file.file.type,
+            caption: index === 0 ? caption : undefined,
+          },
+        };
+        setLocalMessages((prev) => [...prev, newMessage]);
+      });
+    }
   };
 
   // Group messages by sender and time
@@ -268,65 +328,90 @@ export function ChatWindow({
         showBackButton={showBackButton}
         isDarkMode={isDarkMode}
         onResolve={conversation?.status === 'open' ? onResolve : undefined}
+        onReturnToPending={conversation?.status === 'open' ? onReturnToPending : undefined}
+        onOpenConversation={conversation?.status === 'pending' ? onOpenConversation : undefined}
       />
 
-      {/* Read-only Overlay */}
+      {/* Read-only Banner - only covers top, messages still visible */}
       {isReadOnly && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={cn(
-              "px-8 py-6 rounded-2xl text-center max-w-md mx-4 shadow-2xl",
-              isDarkMode ? "bg-[#1f2c33] border border-[#2a2a2a]" : "bg-white border border-gray-200"
-            )}
-          >
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn(
+            "relative z-20 flex items-center justify-between gap-3 px-4 py-3 border-b",
+            conversation?.status === 'pending'
+              ? isDarkMode
+                ? "bg-amber-900/30 border-amber-700/50"
+                : "bg-amber-50 border-amber-200"
+              : isDarkMode
+                ? "bg-[#1a2e35] border-[#2a3a42]"
+                : "bg-gray-50 border-gray-200"
+          )}
+        >
+          <div className="flex items-center gap-3">
             <div className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4",
-              isDarkMode ? "bg-[#2a3942]" : "bg-gray-100"
+              "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+              conversation?.status === 'pending'
+                ? isDarkMode ? "bg-amber-500/20" : "bg-amber-100"
+                : isDarkMode ? "bg-[#2a3942]" : "bg-gray-100"
             )}>
               {conversation?.status === 'pending' ? (
-                <AlertCircle className="w-8 h-8 text-yellow-500" />
+                <AlertCircle className="w-5 h-5 text-amber-500" />
               ) : (
-                <Lock className="w-8 h-8 text-[#00a884]" />
+                <CheckCircle className="w-5 h-5 text-[#00a884]" />
               )}
             </div>
-            <h3 className={cn(
-              "text-lg font-semibold mb-2",
-              isDarkMode ? "text-[#e9edef]" : "text-gray-900"
-            )}>
-              Conversa {conversation?.status === 'pending' ? 'Pendente' : 'Resolvida'}
-            </h3>
-            <p className={cn(
-              "text-sm mb-6",
-              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
-            )}>
-              {conversation?.status === 'pending'
-                ? 'Esta conversa está na fila de pendentes. Use o botão "Abrir Conversa" na lista para habilitar a interação.'
-                : 'Esta conversa foi resolvida. Clique em "Reabrir Conversa" para retomar o atendimento.'}
-            </p>
+            <div className="flex flex-col">
+              <span className={cn(
+                "text-sm font-medium",
+                isDarkMode ? "text-[#e9edef]" : "text-gray-900"
+              )}>
+                {conversation?.status === 'pending' ? 'Conversa Pendente' : 'Conversa Resolvida'}
+              </span>
+              <span className={cn(
+                "text-xs",
+                isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+              )}>
+                {conversation?.status === 'pending'
+                  ? 'Clique em "Atender" para habilitar o envio de mensagens'
+                  : 'Clique em "Reabrir" para retomar o atendimento'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {conversation?.status === 'pending' && onOpenConversation && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onOpenConversation}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#00a884] text-white rounded-lg text-sm font-medium hover:bg-[#00a884]/90 transition-colors"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Atender
+              </motion.button>
+            )}
             {conversation?.status === 'resolved' && onReopen && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onReopen}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#00a884] text-white rounded-xl font-medium hover:bg-[#00a884]/90 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#00a884] text-white rounded-lg text-sm font-medium hover:bg-[#00a884]/90 transition-colors"
               >
                 <RotateCcw className="w-4 h-4" />
-                Reabrir Conversa
+                Reabrir
               </motion.button>
             )}
-            {conversation?.status === 'pending' && (
+            {conversation?.status === 'pending' && !onOpenConversation && (
               <div className={cn(
-                "flex items-center justify-center gap-2 text-sm",
+                "flex items-center gap-1.5 text-sm",
                 isDarkMode ? "text-[#8696a0]" : "text-gray-400"
               )}>
                 <Eye className="w-4 h-4" />
-                Modo somente visualização
+                Somente visualização
               </div>
             )}
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       )}
 
       {/* Messages Area */}
@@ -335,7 +420,6 @@ export function ChatWindow({
         onScroll={handleScroll}
         className={cn(
           "flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent relative",
-          isReadOnly ? "pointer-events-none" : "",
           isDarkMode ? "scrollbar-thumb-[#374045]" : "scrollbar-thumb-gray-300"
         )}
         style={{
@@ -391,6 +475,19 @@ export function ChatWindow({
             </span>
           </div>
         </div>
+
+        {/* Loading indicator for WABA messages */}
+        {isLoadingMessages && messages.length === 0 && (
+          <div className="flex justify-center py-8">
+            <div className={cn(
+              "flex flex-col items-center gap-3",
+              isDarkMode ? "text-[#8696a0]" : "text-gray-500"
+            )}>
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="text-sm">Carregando mensagens...</span>
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         <div className="px-4 pb-4 space-y-1">

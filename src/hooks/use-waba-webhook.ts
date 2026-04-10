@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
@@ -43,26 +43,43 @@ export function generateVerifyToken(): string {
   return token;
 }
 
-// Build webhook URL dynamically based on current domain
+// Build webhook URL for Edge Function
 export function buildWebhookUrl(accountId: string): string {
-  if (typeof window === "undefined") {
-    return `/api/webhook/whatsapp/${accountId}`;
+  // Edge Function URL pattern (always uses the cloud Supabase URL):
+  // https://<project-ref>.supabase.co/functions/v1/whatsapp-webhook/<account_uuid>
+  //
+  // IMPORTANT: Even in local development, the webhook URL must be publicly accessible
+  // because Facebook/Meta servers need to reach it. The Supabase Edge Function runs
+  // in the cloud, not locally.
+
+  // Try to get project ref from dedicated env var first
+  let supabaseProjectRef = process.env.NEXT_PUBLIC_SUPABASE_PROJECT_REF || null;
+
+  // Fallback: extract from NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseProjectRef) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      (typeof window !== "undefined" ? window.__NEXT_DATA__?.props?.pageProps?.supabaseUrl : "");
+    if (supabaseUrl) {
+      try {
+        const hostname = new URL(supabaseUrl).hostname;
+        // Extract project ref: e.g. "mnesrdqzowtasvyqsjjn.supabase.co" -> "mnesrdqzowtasvyqsjjn"
+        const match = hostname.match(/^([a-z0-9]+)\.supabase\.co$/);
+        if (match) {
+          supabaseProjectRef = match[1];
+        }
+      } catch {
+        // Invalid URL, ignore
+      }
+    }
   }
-  
-  // Detect production environment
-  const isProduction = process.env.NODE_ENV === "production" || 
-                       window.location.hostname === "lidia20.vercel.app" ||
-                       !window.location.hostname.includes("localhost");
-  
-  if (isProduction) {
-    // Use production domain
-    return `https://lidia20.vercel.app/api/webhook/whatsapp/${accountId}`;
+
+  if (supabaseProjectRef) {
+    return `https://${supabaseProjectRef}.supabase.co/functions/v1/whatsapp-webhook/${accountId}`;
   }
-  
-  // Use current domain for development
-  const protocol = window.location.protocol;
-  const host = window.location.host;
-  return `${protocol}//${host}/api/webhook/whatsapp/${accountId}`;
+
+  // Final fallback (should not happen if NEXT_PUBLIC_SUPABASE_URL is set)
+  console.warn("[buildWebhookUrl] Could not determine Supabase project ref. Using fallback.");
+  return `https://mnesrdqzowtasvyqsjjn.supabase.co/functions/v1/whatsapp-webhook/${accountId}`;
 }
 
 // Get full webhook URL with domain
@@ -107,7 +124,7 @@ export function useWABAWebhook() {
     configId: string, 
     data: {
       webhook_url?: string;
-      webhook_verify_token?: string;
+      verify_token?: string;
       webhook_events?: WABAWebhookEvent[];
     }
   ): Promise<boolean> => {
@@ -304,29 +321,38 @@ export function useWABAConnections() {
     business_account_id: string;
     access_token: string;
     api_version?: string;
-    created_by?: string;
   }): Promise<{ id: string; webhookUrl: string; verifyToken: string } | null> => {
     setIsLoading(true);
     try {
       const accountUuid = crypto.randomUUID();
       const verifyToken = generateVerifyToken();
-      const webhookUrl = typeof window !== "undefined" 
-        ? `${window.location.protocol}//${window.location.host}/api/webhook/whatsapp/${accountUuid}`
-        : `/api/webhook/whatsapp/${accountUuid}`;
+      // Always use the public Supabase Edge Function URL (not localhost)
+      const webhookUrl = buildWebhookUrl(accountUuid);
+
+      console.log("[createConnection] Creating connection with account_uuid:", accountUuid);
+      console.log("[createConnection] Webhook URL:", webhookUrl);
 
       const { data: connection, error } = await supabase
-        .from("waba_connections")
+        .from("waba_configs")
         .insert({
-          ...data,
+          company_id: data.company_id,
+          name: data.name,
+          phone_number_id: data.phone_number_id,
+          business_account_id: data.business_account_id,
+          access_token: data.access_token,
           api_version: data.api_version || "v18.0",
+          account_uuid: accountUuid,
           webhook_url: webhookUrl,
-          webhook_verify_token: verifyToken,
+          verify_token: verifyToken,
           status: "pending"
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[createConnection] Supabase insert error:", error);
+        throw error;
+      }
 
       toast.success("Conexão criada com sucesso!");
       
@@ -337,7 +363,18 @@ export function useWABAConnections() {
       };
     } catch (error) {
       console.error("Error creating connection:", error);
-      toast.error("Erro ao criar conexão");
+      // Supabase errors often serialize as {} - extract useful info
+      const supabaseError = error as { message?: string; code?: string; details?: string; hint?: string };
+      const errorMessage = supabaseError?.message || supabaseError?.code || 
+        (supabaseError?.details ? `${supabaseError.details}` : null) ||
+        (error instanceof Error ? error.message : "Erro ao criar conexão");
+      console.error("[createConnection] Error details:", {
+        message: supabaseError?.message,
+        code: supabaseError?.code,
+        details: supabaseError?.details,
+        hint: supabaseError?.hint
+      });
+      toast.error(errorMessage);
       return null;
     } finally {
       setIsLoading(false);
@@ -348,7 +385,7 @@ export function useWABAConnections() {
   const getConnections = useCallback(async (companyId: string) => {
     try {
       const { data, error } = await supabase
-        .from("waba_connections")
+        .from("waba_configs")
         .select("*")
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
@@ -369,7 +406,7 @@ export function useWABAConnections() {
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
-        .from("waba_connections")
+        .from("waba_configs")
         .update({
           status,
           last_error: errorMessage || null,
@@ -391,7 +428,7 @@ export function useWABAConnections() {
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from("waba_connections")
+        .from("waba_configs")
         .delete()
         .eq("id", connectionId);
 
@@ -415,9 +452,9 @@ export function useWABAConnections() {
       const newToken = generateVerifyToken();
       
       const { error } = await supabase
-        .from("waba_connections")
+        .from("waba_configs")
         .update({ 
-          webhook_verify_token: newToken,
+          verify_token: newToken,
           updated_at: new Date().toISOString()
         })
         .eq("id", connectionId);
@@ -443,4 +480,71 @@ export function useWABAConnections() {
     deleteConnection,
     regenerateConnectionToken
   };
+}
+
+// Hook for listing WABA configs in the connections page
+export function useWABAConfigs() {
+  const [wabaConfigs, setWabaConfigs] = useState<WABAConfigItem[]>([]);
+  const [loading, setIsLoading] = useState(true);
+  const supabase = createClient();
+
+  const fetchConfigs = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("waba_configs")
+        .select("id, company_id, name, phone_number_id, business_account_id, status, account_uuid, verify_token, created_at, updated_at")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setWabaConfigs((data as WABAConfigItem[]) || []);
+    } catch (error) {
+      console.error("Error fetching WABA configs:", error);
+      setWabaConfigs([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [supabase]);
+
+  const deleteConnection = useCallback(async (connectionId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from("waba_configs")
+        .delete()
+        .eq("id", connectionId);
+
+      if (error) throw error;
+      toast.success("Conexão removida com sucesso!");
+      await fetchConfigs();
+      return true;
+    } catch (error) {
+      console.error("Error deleting WABA config:", error);
+      toast.error("Erro ao remover conexão");
+      return false;
+    }
+  }, [supabase, fetchConfigs]);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchConfigs();
+  }, [fetchConfigs]);
+
+  return {
+    wabaConfigs,
+    loading,
+    refetch: fetchConfigs,
+    deleteConnection,
+  };
+}
+
+export interface WABAConfigItem {
+  id: string;
+  company_id: string;
+  name: string;
+  phone_number_id: string;
+  business_account_id: string;
+  status: string;
+  account_uuid: string;
+  verify_token: string;
+  created_at: string;
+  updated_at: string;
 }

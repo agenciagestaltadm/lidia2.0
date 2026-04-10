@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import crypto from "crypto";
 
 // CORS headers for webhook endpoint
 const corsHeaders = {
@@ -333,7 +332,7 @@ async function processMessages(
         .from("waba_conversations")
         .insert({
           company_id: companyId,
-          waba_connection_id: connectionId,
+          waba_connection_id: connectionId, // References waba_configs.id
           contact_id: contactId,
           status: "pending",
           priority: "medium",
@@ -344,8 +343,14 @@ async function processMessages(
 
       if (error) {
         console.error("Error creating conversation:", error);
+        console.error("Conversation data:", {
+          company_id: companyId,
+          waba_connection_id: connectionId,
+          contact_id: contactId
+        });
         continue;
       }
+      console.log("New conversation created:", newConversation.id);
       conversationId = newConversation.id;
     }
 
@@ -406,7 +411,7 @@ async function processMessages(
       .from("waba_messages")
       .insert({
         conversation_id: conversationId,
-        waba_connection_id: connectionId,
+        waba_connection_id: connectionId, // References waba_configs.id
         direction: "inbound",
         message_type: messageType === "voice" ? "audio" : messageType,
         content,
@@ -425,6 +430,15 @@ async function processMessages(
 
     if (messageError) {
       console.error("Error saving message:", messageError);
+      console.error("Message data:", {
+        conversation_id: conversationId,
+        waba_connection_id: connectionId,
+        direction: "inbound",
+        message_type: messageType,
+        external_id: messageId
+      });
+    } else {
+      console.log("Message saved successfully:", messageId);
     }
 
     // Update webhook log status

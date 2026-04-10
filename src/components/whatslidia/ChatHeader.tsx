@@ -44,6 +44,8 @@ interface ChatHeaderProps {
   showBackButton?: boolean;
   isDarkMode?: boolean;
   onResolve?: () => void;
+  onReturnToPending?: () => void;
+  onOpenConversation?: () => void;
 }
 
 interface MenuOption {
@@ -60,6 +62,8 @@ export function ChatHeader({
   showBackButton = false,
   isDarkMode = true,
   onResolve,
+  onReturnToPending,
+  onOpenConversation,
 }: ChatHeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
   
@@ -120,15 +124,11 @@ export function ChatHeader({
 
   const handleReturnToPending = async () => {
     console.log("Returning to pending:", conversation.id);
-    // TODO: Implement API call
-    // await fetch(`/api/tickets/${conversation.id}/return-to-pending`, {
-    //   method: 'POST'
-    // });
+    onReturnToPending?.();
   };
 
   const handleResolveTicket = async (notes?: string) => {
     console.log("Resolving ticket:", conversation.id, notes);
-    // Chamar o handler externo se fornecido
     onResolve?.();
   };
 

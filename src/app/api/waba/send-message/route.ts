@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Get connection details
+    // Get connection details from waba_configs (primary connection table)
+    // The connectionId parameter refers to waba_configs.id
     const { data: connection, error: connectionError } = await supabase
-      .from("waba_connections")
-      .select("*, waba_configs(access_token, api_version)")
+      .from("waba_configs")
+      .select("id, phone_number_id, business_account_id, access_token, api_version, status")
       .eq("id", connectionId)
       .single();
 
@@ -61,14 +62,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const accessToken = connection.waba_configs?.access_token;
-    const apiVersion = connection.waba_configs?.api_version || "v18.0";
+    const accessToken = connection.access_token;
+    const apiVersion = connection.api_version || "v18.0";
     const phoneNumberId = connection.phone_number_id;
 
     if (!accessToken || !phoneNumberId) {
       return NextResponse.json(
         { error: "Invalid connection configuration" },
         { status: 400 }
+      );
+    }
+
+    // Save message to database with pending status BEFORE sending to Meta
+    const { data: savedMessage, error: saveError } = await supabase
+      .from("waba_messages")
+      .insert({
+        conversation_id: conversationId,
+        waba_connection_id: connectionId,
+        direction: "outbound",
+        message_type: messageType,
+        content,
+        media_url: mediaUrl,
+        media_caption: mediaCaption,
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error("Error saving message to database:", saveError);
+      return NextResponse.json(
+        { error: "Failed to save message" },
+        { status: 500 }
       );
     }
 
@@ -106,11 +131,7 @@ export async function POST(request: NextRequest) {
           failed_at: new Date().toISOString(),
           error_message: errorData.error?.message || "Meta API error",
         })
-        .eq("conversation_id", conversationId)
-        .eq("direction", "outbound")
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .eq("id", savedMessage.id);
 
       return NextResponse.json(
         { error: errorData.error?.message || "Failed to send message" },
@@ -121,7 +142,7 @@ export async function POST(request: NextRequest) {
     const metaData: MetaMessageResponse = await metaResponse.json();
     const externalMessageId = metaData.messages?.[0]?.id;
 
-    // Update message with external ID and sent status
+    // Update saved message with external ID and sent status
     const { data: updatedMessage, error: updateError } = await supabase
       .from("waba_messages")
       .update({
@@ -129,11 +150,7 @@ export async function POST(request: NextRequest) {
         status: "sent",
         sent_at: new Date().toISOString(),
       })
-      .eq("conversation_id", conversationId)
-      .eq("direction", "outbound")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .eq("id", savedMessage.id)
       .select()
       .single();
 

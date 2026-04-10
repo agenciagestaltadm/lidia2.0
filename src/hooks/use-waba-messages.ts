@@ -111,7 +111,8 @@ export function useWABAMessages(conversationId?: string) {
     setIsSending(true);
     try {
       const message = await sendMessageAPI(data);
-      setMessages((prev) => [...prev, message]);
+      // Don't add manually - the message will come via Realtime INSERT subscription
+      // This prevents duplication
       toast.success("Mensagem enviada!");
       return message;
     } catch (error) {

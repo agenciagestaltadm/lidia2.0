@@ -152,8 +152,7 @@ export function CreateWABAConnectionModal({
       phone_number_id: formData.phoneNumberId,
       business_account_id: formData.businessAccountId,
       access_token: formData.accessToken,
-      api_version: formData.apiVersion,
-      created_by: user?.id
+      api_version: formData.apiVersion
     });
     
     if (result) {

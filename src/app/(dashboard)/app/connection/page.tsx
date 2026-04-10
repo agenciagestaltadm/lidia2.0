@@ -27,6 +27,7 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useChannels } from "@/hooks/use-channels";
 import { useWhatsAppSessions } from "@/hooks/use-whatsapp-sessions";
+import { useWABAConnections, useWABAConfigs, type WABAConfigItem } from "@/hooks/use-waba-webhook";
 import { ConnectionTypeModal } from "@/components/connection/ConnectionTypeModal";
 import { CreateQRSessionModal } from "@/components/connection/CreateQRSessionModal";
 import { CreateWABAConnectionModal } from "@/components/connection/CreateWABAConnectionModal";
@@ -133,28 +134,32 @@ export default function ConnectionPage() {
   const router = useRouter();
   const { channels, loading: channelsLoading, error: channelsError, refetch: refetchChannels } = useChannels();
   const { sessions, loading: sessionsLoading, error: sessionsError, refetch: refetchSessions, createSession, deleteSession } = useWhatsAppSessions();
+  const { wabaConfigs, loading: wabaLoading, refetch: refetchWABA, deleteConnection: deleteWABAConnection } = useWABAConfigs();
   
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [createdSession, setCreatedSession] = useState<WhatsAppSession | null>(null);
 
-  const loading = channelsLoading || sessionsLoading;
+  const loading = channelsLoading || sessionsLoading || wabaLoading;
   const error = channelsError || sessionsError;
 
   // Calculate statistics
   const stats = useMemo(() => {
     const totalChannels = channels.length;
     const totalSessions = sessions.length;
+    const totalWABA = wabaConfigs.length;
     const activeSessions = sessions.filter(s => s.status === 'active').length;
     const connectedChannels = channels.filter(c => c.status === "CONNECTED").length;
+    const connectedWABA = wabaConfigs.filter(c => c.status === 'connected').length;
     
     return { 
-      total: totalChannels + totalSessions, 
-      connected: connectedChannels + activeSessions,
+      total: totalChannels + totalSessions + totalWABA, 
+      connected: connectedChannels + activeSessions + connectedWABA,
       whatsappSessions: totalSessions,
-      whatsappChannels: totalChannels
+      whatsappChannels: totalChannels,
+      wabaConnections: totalWABA
     };
-  }, [channels, sessions]);
+  }, [channels, sessions, wabaConfigs]);
 
   // Format relative time
   const formatRelativeTime = (dateString: string | null): string => {
@@ -197,6 +202,7 @@ export default function ConnectionPage() {
   const handleCloseWABAModal = () => {
     setShowWABAModal(false);
     refetchChannels();
+    refetchWABA();
   };
 
   const handleCloseQRModal = () => {
@@ -249,7 +255,8 @@ export default function ConnectionPage() {
           { label: "Conexões Ativas", value: stats.connected, icon: Plug, color: "dark:text-emerald-400 text-emerald-600" },
           { label: "WhatsApp QR", value: stats.whatsappSessions, icon: QrCode, color: "dark:text-blue-400 text-blue-600" },
           { label: "WhatsApp API", value: stats.whatsappChannels, icon: MessageCircle, color: "dark:text-green-400 text-green-600" },
-          { label: "Total", value: stats.total, icon: Webhook, color: "dark:text-slate-400 text-slate-500" },
+          { label: "WABA Oficial", value: stats.wabaConnections, icon: MessageCircle, color: "dark:text-violet-400 text-violet-600" },
+          { label: "Total", value: stats.total, icon: Plug, color: "dark:text-slate-400 text-slate-500" },
         ].map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -376,6 +383,104 @@ export default function ConnectionPage() {
         </motion.div>
       )}
 
+      {/* WABA Official Connections Section */}
+      {wabaConfigs.length > 0 && (
+        <motion.div variants={fadeInUp}>
+          <h2 className="text-lg font-semibold dark:text-white text-slate-900 mb-4">
+            WhatsApp Business API Oficial
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {wabaConfigs.map((config) => {
+              const wabaStatus = config.status === 'connected' 
+                ? { label: 'Conectado', color: 'bg-emerald-500', textColor: 'dark:text-emerald-400 text-emerald-600' }
+                : config.status === 'error' 
+                ? { label: 'Erro', color: 'bg-red-500', textColor: 'dark:text-red-400 text-red-500' }
+                : config.status === 'disconnected'
+                ? { label: 'Desconectado', color: 'bg-slate-500', textColor: 'dark:text-slate-400 text-slate-500' }
+                : { label: 'Pendente', color: 'bg-amber-500', textColor: 'dark:text-amber-400 text-amber-600' };
+
+              return (
+                <motion.div
+                  key={config.id}
+                  variants={fadeInUp}
+                >
+                  <GlassCard className="p-5" glow={config.status === 'connected' ? "green" : "none"}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-12 h-12 rounded-xl flex items-center justify-center",
+                          config.status === 'connected' ? "dark:bg-emerald-500/20 bg-emerald-100" : 
+                          config.status === 'error' ? "dark:bg-red-500/20 bg-red-100" : 
+                          "dark:bg-violet-500/20 bg-violet-100"
+                        )}>
+                          <MessageCircle className={cn("w-6 h-6", 
+                            config.status === 'connected' ? "text-emerald-500" :
+                            config.status === 'error' ? "text-red-500" :
+                            "text-violet-500"
+                          )} />
+                        </div>
+                        <div>
+                          <h3 className="font-medium dark:text-white text-slate-900">{config.name}</h3>
+                          <div className="flex items-center gap-1 text-sm">
+                            <div className={cn("w-2 h-2 rounded-full", wabaStatus.color)} />
+                            <span className={wabaStatus.textColor}>{wabaStatus.label}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <GlowBadge variant="blue">Oficial</GlowBadge>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="dark:text-slate-400 text-slate-500">Phone ID</span>
+                        <span className="dark:text-slate-300 text-slate-700 font-mono text-xs">{config.phone_number_id}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="dark:text-slate-400 text-slate-500">Business ID</span>
+                        <span className="dark:text-slate-300 text-slate-700 font-mono text-xs">{config.business_account_id}</span>
+                      </div>
+                      {config.account_uuid && (
+                        <div className="flex items-center justify-between">
+                          <span className="dark:text-slate-400 text-slate-500">WhatsApp API</span>
+                          <span className="dark:text-emerald-400 text-emerald-600 text-xs">Configurado</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="dark:text-slate-400 text-slate-500">Criado em</span>
+                        <span className="dark:text-slate-300 text-slate-700">
+                          {new Date(config.created_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-4 pt-4 border-t dark:border-white/5 border-slate-200">
+                      <button 
+                        onClick={() => router.push("/app/settings")}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg dark:bg-white/5 bg-slate-100 dark:text-slate-300 text-slate-600 hover:dark:bg-white/10 hover:bg-slate-200 transition-colors text-sm"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Configurar
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (confirm("Tem certeza que deseja excluir esta conexão?")) {
+                            deleteWABAConnection(config.id);
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg dark:bg-red-500/10 bg-red-50 dark:text-red-400 text-red-600 hover:dark:bg-red-500/20 hover:bg-red-100 transition-colors text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Excluir
+                      </button>
+                    </div>
+                  </GlassCard>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
       {/* Traditional Channels Section */}
       {channels.length > 0 && (
         <motion.div variants={fadeInUp}>
@@ -480,7 +585,7 @@ export default function ConnectionPage() {
       )}
 
       {/* Empty State */}
-      {!loading && !error && channels.length === 0 && sessions.length === 0 && (
+      {!loading && !error && channels.length === 0 && sessions.length === 0 && wabaConfigs.length === 0 && (
         <EmptyState onCreate={() => setShowTypeModal(true)} />
       )}
 

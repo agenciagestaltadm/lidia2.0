@@ -235,6 +235,14 @@ function WhatsAppBusinessIntegration() {
                   O URL e o token são únicos para esta conta.
                 </p>
 
+                {/* Environment Info */}
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <p className="text-xs text-blue-400">
+                    <strong>Edge Function:</strong> Este webhook é processado via Supabase Edge Function, 
+                    sem necessidade de autenticação JWT. Apenas o token de verificação configurado abaixo é validado.
+                  </p>
+                </div>
+
                 {/* Webhook URL */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium dark:text-slate-300 text-slate-700">
@@ -272,7 +280,7 @@ function WhatsAppBusinessIntegration() {
                   <div className="flex items-center gap-2">
                     <input
                       type={showToken ? "text" : "password"}
-                      value={config.verifyToken}
+                      value={config.verifyToken ?? ""}
                       onChange={(e) => setConfig(prev => prev ? { ...prev, verifyToken: e.target.value } : null)}
                       className="flex-1 px-4 py-3 rounded-lg dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-200 font-mono text-sm dark:text-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Digite o token de verificação"

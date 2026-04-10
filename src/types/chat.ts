@@ -1,6 +1,6 @@
 // Types for WhatsLídia Chat Interface
 
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed';
+export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
 export type MessageType = 'text' | 'image' | 'video' | 'document' | 'audio' | 'template' | 'sticker';
 export type ConversationStatus = 'open' | 'pending' | 'resolved';
 export type ContactSource = 'whatsapp' | 'instagram' | 'facebook' | 'email' | 'whatsapp_official';

@@ -75,8 +75,8 @@ export function WhatsLidiaLayoutOficial({ connectionType }: WhatsLidiaLayoutOfic
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewConversationId, setPreviewConversationId] = useState<string | null>(null);
   
-  // Active tab state
-  const [activeTab, setActiveTab] = useState<'open' | 'pending' | 'resolved'>('open');
+  // Active tab state - default to pending so new messages appear first
+  const [activeTab, setActiveTab] = useState<'open' | 'pending' | 'resolved'>('pending');
 
   // WABA Hooks
   const {
@@ -87,6 +87,7 @@ export function WhatsLidiaLayoutOficial({ connectionType }: WhatsLidiaLayoutOfic
     resetUnreadCount,
     findOrCreateContact,
     findOrCreateConversation,
+    updateStatus,
   } = useWABAConversations(user?.companyId, activeTab);
 
   // Convert WABA conversations to UI format
@@ -139,15 +140,13 @@ export function WhatsLidiaLayoutOficial({ connectionType }: WhatsLidiaLayoutOfic
       setShowChat(true);
     }
 
-    // If conversation is pending, open it
-    const conv = wabaConversations.find((c) => c.id === id);
-    if (conv?.status === "pending") {
-      await openConversation(id);
-    }
-
-    // Reset unread count
+    // Reset unread count for any status
     await resetUnreadCount(id);
-    await markAsRead();
+    // Mark inbound messages as read (only meaningful for open conversations)
+    const conv = wabaConversations.find((c) => c.id === id);
+    if (conv?.status === "open") {
+      await markAsRead();
+    }
   };
 
   const handleBackToList = () => {
@@ -185,6 +184,17 @@ export function WhatsLidiaLayoutOficial({ connectionType }: WhatsLidiaLayoutOfic
     } catch (error) {
       console.error("Error starting conversation:", error);
       toast.error("Erro ao iniciar conversa");
+    }
+  };
+
+  const handleReturnToPending = async (id: string) => {
+    await updateStatus(id, "pending");
+    setActiveTab('pending');
+    if (selectedConversationId === id) {
+      setSelectedConversationId(null);
+      if (isMobile) {
+        setShowChat(false);
+      }
     }
   };
 
@@ -392,6 +402,9 @@ export function WhatsLidiaLayoutOficial({ connectionType }: WhatsLidiaLayoutOfic
                   isDarkMode={isDarkMode}
                   isReadOnly={isChatReadOnly}
                   onReopen={() => selectedConversationId && handleReopenConversation(selectedConversationId)}
+                  onResolve={() => selectedConversationId && handleForceClose(selectedConversationId)}
+                  onOpenConversation={() => selectedConversationId && handleOpenConversation(selectedConversationId)}
+                  onReturnToPending={() => selectedConversationId && handleReturnToPending(selectedConversationId)}
                   onSendMessage={handleSendMessage}
                   onSendAttachments={handleSendAttachments}
                   onSendLocation={handleSendLocation}
@@ -433,6 +446,9 @@ export function WhatsLidiaLayoutOficial({ connectionType }: WhatsLidiaLayoutOfic
             isDarkMode={isDarkMode}
             isReadOnly={isChatReadOnly}
             onReopen={() => selectedConversationId && handleReopenConversation(selectedConversationId)}
+            onResolve={() => selectedConversationId && handleForceClose(selectedConversationId)}
+            onOpenConversation={() => selectedConversationId && handleOpenConversation(selectedConversationId)}
+            onReturnToPending={() => selectedConversationId && handleReturnToPending(selectedConversationId)}
             onSendMessage={handleSendMessage}
             onSendAttachments={handleSendAttachments}
             onSendLocation={handleSendLocation}

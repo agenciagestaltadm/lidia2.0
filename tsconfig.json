@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "Arquivo_atualiza____o", "**/Arquivo_atualiza____o/**"]
+  "exclude": ["node_modules", "Arquivo_atualiza____o", "**/Arquivo_atualiza____o/**", "supabase/functions"]
 }

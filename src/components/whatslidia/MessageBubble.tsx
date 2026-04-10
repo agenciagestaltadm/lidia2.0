@@ -227,8 +227,10 @@ export function MessageBubble({
         return <MessageStatusIcon status="read" isDarkMode={isDarkMode} size="sm" />;
       case "failed":
         return <MessageStatusIcon status="failed" isDarkMode={isDarkMode} size="sm" />;
+      case "pending":
+        return <Clock className={cn("w-3.5 h-3.5", isDarkMode ? "text-[#8696a0]" : "text-gray-400")} />;
       default:
-        return <Clock className="w-3.5 h-3.5 text-[#8696a0]" />;
+        return <MessageStatusIcon status="sent" isDarkMode={isDarkMode} size="sm" />;
     }
   };
 
