@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
@@ -90,18 +90,19 @@ export function getFullWebhookUrl(accountId: string): string {
 // Hook for managing WABA webhooks
 export function useWABAWebhook() {
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
 
   // Generate and save a new verification token
   const regenerateToken = useCallback(async (configId: string): Promise<string | null> => {
     setIsLoading(true);
     try {
+      const supabase = createClient();
       const newToken = generateVerifyToken();
       
       const { error } = await supabase
         .from("waba_configs")
         .update({ 
           verify_token: newToken,
+          webhook_verify_token: newToken,
           updated_at: new Date().toISOString()
         })
         .eq("id", configId);
@@ -117,7 +118,7 @@ export function useWABAWebhook() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Save webhook configuration
   const saveWebhook = useCallback(async (
@@ -130,12 +131,19 @@ export function useWABAWebhook() {
   ): Promise<boolean> => {
     setIsLoading(true);
     try {
+      const supabase = createClient();
+      const updateData: Record<string, unknown> = {
+        ...data,
+        updated_at: new Date().toISOString()
+      };
+      // Also update webhook_verify_token when verify_token is provided
+      if (data.verify_token) {
+        updateData.webhook_verify_token = data.verify_token;
+      }
+
       const { error } = await supabase
         .from("waba_configs")
-        .update({
-          ...data,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq("id", configId);
 
       if (error) throw error;
@@ -149,7 +157,7 @@ export function useWABAWebhook() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Update subscribed events
   const updateWebhookEvents = useCallback(async (
@@ -158,6 +166,7 @@ export function useWABAWebhook() {
   ): Promise<boolean> => {
     setIsLoading(true);
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("waba_configs")
         .update({
@@ -176,7 +185,7 @@ export function useWABAWebhook() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Copy text to clipboard
   const copyToClipboard = useCallback(async (text: string, label: string = "Texto"): Promise<boolean> => {
@@ -198,6 +207,7 @@ export function useWABAWebhook() {
   } | null> => {
     setIsLoading(true);
     try {
+      const supabase = createClient();
       // Generate account UUID if not exists
       const { data: config, error: fetchError } = await supabase
         .from("waba_configs")
@@ -237,6 +247,7 @@ export function useWABAWebhook() {
         .update({
           account_uuid: accountUuid,
           verify_token: verifyToken,
+          webhook_verify_token: verifyToken,
           webhook_url: webhookUrl,
           updated_at: new Date().toISOString()
         })
@@ -260,12 +271,13 @@ export function useWABAWebhook() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Get webhook config by company
   const getWebhookConfig = useCallback(async (companyId: string): Promise<WebhookConfig | null> => {
     console.log("getWebhookConfig called for company:", companyId);
     try {
+      const supabase = createClient();
       console.log("Querying waba_configs table...");
       const { data, error } = await supabase
         .from("waba_configs")
@@ -291,7 +303,7 @@ export function useWABAWebhook() {
       console.error("Error fetching webhook config:", error);
       throw error; // Re-throw to let caller handle it
     }
-  }, [supabase]);
+  }, []);
 
   return {
     isLoading,
@@ -311,7 +323,7 @@ export function useWABAWebhook() {
 // Hook for managing WABA connections (multiple connections per company)
 export function useWABAConnections() {
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
+  const isSubmittingRef = useRef(false);
 
   // Create a new WABA connection
   const createConnection = useCallback(async (data: {
@@ -323,8 +335,17 @@ export function useWABAConnections() {
     api_version?: string;
     created_by?: string;
   }): Promise<{ id: string; webhookUrl: string; verifyToken: string } | null> => {
+    // Prevent double submission
+    if (isSubmittingRef.current) {
+      console.warn("[createConnection] Submission already in progress, ignoring duplicate call");
+      return null;
+    }
+
+    isSubmittingRef.current = true;
     setIsLoading(true);
+
     try {
+      const supabase = createClient();
       const accountUuid = crypto.randomUUID();
       const verifyToken = generateVerifyToken();
       // Always use the public Supabase Edge Function URL (not localhost)
@@ -342,6 +363,7 @@ export function useWABAConnections() {
         api_version: data.api_version || "v18.0",
         account_uuid: accountUuid,
         webhook_url: webhookUrl,
+        webhook_verify_token: verifyToken,
         verify_token: verifyToken,
         status: "pending"
       };
@@ -362,6 +384,13 @@ export function useWABAConnections() {
         throw error;
       }
 
+      if (!connection) {
+        console.error("[createConnection] Insert succeeded but no data returned - possible RLS SELECT issue");
+        throw new Error("Conexão criada mas não foi possível ler os dados de volta. Verifique as políticas RLS.");
+      }
+
+      console.log("[createConnection] Connection created successfully:", connection.id);
+
       toast.success("Conexão criada com sucesso!");
       
       return {
@@ -370,7 +399,7 @@ export function useWABAConnections() {
         verifyToken
       };
     } catch (error) {
-      console.error("Error creating connection:", error);
+      console.error("[createConnection] Error creating connection:", error);
       // Supabase errors often serialize as {} - extract useful info
       const supabaseError = error as { message?: string; code?: string; details?: string; hint?: string };
       const errorMessage = supabaseError?.message || supabaseError?.code || 
@@ -385,13 +414,15 @@ export function useWABAConnections() {
       toast.error(errorMessage);
       return null;
     } finally {
+      isSubmittingRef.current = false;
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Get connections by company
   const getConnections = useCallback(async (companyId: string) => {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("waba_configs")
         .select("*")
@@ -404,7 +435,7 @@ export function useWABAConnections() {
       console.error("Error fetching connections:", error);
       return [];
     }
-  }, [supabase]);
+  }, []);
 
   // Update connection status
   const updateStatus = useCallback(async (
@@ -413,6 +444,7 @@ export function useWABAConnections() {
     errorMessage?: string
   ): Promise<boolean> => {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("waba_configs")
         .update({
@@ -429,12 +461,13 @@ export function useWABAConnections() {
       console.error("Error updating connection status:", error);
       return false;
     }
-  }, [supabase]);
+  }, []);
 
   // Delete connection
   const deleteConnection = useCallback(async (connectionId: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("waba_configs")
         .delete()
@@ -451,18 +484,20 @@ export function useWABAConnections() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   // Regenerate webhook token for connection
   const regenerateConnectionToken = useCallback(async (connectionId: string): Promise<string | null> => {
     setIsLoading(true);
     try {
+      const supabase = createClient();
       const newToken = generateVerifyToken();
       
       const { error } = await supabase
         .from("waba_configs")
         .update({ 
           verify_token: newToken,
+          webhook_verify_token: newToken,
           updated_at: new Date().toISOString()
         })
         .eq("id", connectionId);
@@ -478,7 +513,7 @@ export function useWABAConnections() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   return {
     isLoading,
@@ -494,10 +529,10 @@ export function useWABAConnections() {
 export function useWABAConfigs() {
   const [wabaConfigs, setWabaConfigs] = useState<WABAConfigItem[]>([]);
   const [loading, setIsLoading] = useState(true);
-  const supabase = createClient();
 
   const fetchConfigs = useCallback(async () => {
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("waba_configs")
         .select("id, company_id, name, phone_number_id, business_account_id, status, account_uuid, verify_token, created_at, updated_at")
@@ -511,10 +546,11 @@ export function useWABAConfigs() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   const deleteConnection = useCallback(async (connectionId: string): Promise<boolean> => {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from("waba_configs")
         .delete()
@@ -529,7 +565,7 @@ export function useWABAConfigs() {
       toast.error("Erro ao remover conexão");
       return false;
     }
-  }, [supabase, fetchConfigs]);
+  }, [fetchConfigs]);
 
   // Fetch on mount
   useEffect(() => {

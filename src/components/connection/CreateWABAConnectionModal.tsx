@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
@@ -76,6 +76,8 @@ export function CreateWABAConnectionModal({
     webhookUrl: string;
     verifyToken: string;
   } | null>(null);
+  const [submitError, setSubmitError] = useState<string>("");
+  const isSubmittingRef = useRef(false);
 
   const validateForm = useCallback((): boolean => {
     const newErrors: FormErrors = {};
@@ -149,23 +151,41 @@ export function CreateWABAConnectionModal({
       toast.error("Usuário não autenticado. Faça login novamente.");
       return;
     }
-    
-    const result = await createConnection({
-      company_id: user.companyId,
-      name: formData.name,
-      phone_number_id: formData.phoneNumberId,
-      business_account_id: formData.businessAccountId,
-      access_token: formData.accessToken,
-      api_version: formData.apiVersion,
-      created_by: user.id
-    });
-    
-    if (result) {
-      setCreatedConnection(result);
-      toast.success("Conexão criada com sucesso!");
-    } else {
-      // createConnection already shows toast.error internally
-      console.error("[CreateWABAConnectionModal] createConnection returned null - check RLS policies and user permissions");
+
+    // Prevent double submission using ref
+    if (isSubmittingRef.current) {
+      console.warn("[handleSubmit] Submission already in progress");
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setSubmitError("");
+
+    try {
+      const result = await createConnection({
+        company_id: user.companyId,
+        name: formData.name,
+        phone_number_id: formData.phoneNumberId,
+        business_account_id: formData.businessAccountId,
+        access_token: formData.accessToken,
+        api_version: formData.apiVersion,
+        created_by: user.id
+      });
+      
+      if (result) {
+        setCreatedConnection(result);
+        toast.success("Conexão criada com sucesso!");
+      } else {
+        // createConnection already shows toast.error internally
+        setSubmitError("Não foi possível criar a conexão. Verifique os dados e as permissões do banco de dados.");
+        console.error("[CreateWABAConnectionModal] createConnection returned null - check RLS policies and user permissions");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro inesperado ao criar conexão";
+      setSubmitError(message);
+      toast.error(message);
+    } finally {
+      isSubmittingRef.current = false;
     }
   }, [formData, user?.companyId, user?.id, createConnection, validateForm]);
 
@@ -181,6 +201,8 @@ export function CreateWABAConnectionModal({
     setTestStatus("idle");
     setTestError("");
     setCreatedConnection(null);
+    setSubmitError("");
+    isSubmittingRef.current = false;
     onClose();
     onSuccess?.();
   }, [onClose, onSuccess]);
@@ -397,6 +419,17 @@ export function CreateWABAConnectionModal({
                       <div>
                         <span className="text-sm text-red-400 font-medium">Erro na conexão</span>
                         <p className="text-sm text-red-300 mt-1">{testError}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submit Error */}
+                  {submitError && (
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-sm text-red-400 font-medium">Erro ao criar conexão</span>
+                        <p className="text-sm text-red-300 mt-1">{submitError}</p>
                       </div>
                     </div>
                   )}
