@@ -376,7 +376,7 @@ export function useWABAConversations(
           table: "waba_conversations",
           filter: `company_id=eq.${companyId}`,
         },
-        async (payload) => {
+        async (payload: any) => {
           const newConv = payload.new as Record<string, unknown>;
           
           // Fetch full conversation with contact
@@ -415,7 +415,7 @@ export function useWABAConversations(
           table: "waba_conversations",
           filter: `company_id=eq.${companyId}`,
         },
-        async (payload) => {
+        async (payload: any) => {
           const updatedConv = payload.new as Record<string, unknown>;
           
           // Fetch full conversation with contact and last message

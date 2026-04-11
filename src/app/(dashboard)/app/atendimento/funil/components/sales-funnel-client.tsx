@@ -76,7 +76,7 @@ export function SalesFunnelClient({
   const displayDeals = deals || initialDeals;
   const displayStats = stats || initialStats;
 
-  const filteredDeals = displayDeals.filter((deal) => {
+  const filteredDeals = displayDeals.filter((deal: SalesFunnelDeal) => {
     const matchesSearch = 
       search === "" ||
       deal.contact_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -86,10 +86,10 @@ export function SalesFunnelClient({
 
   const dealsByStage = funnelStages.map((stage) => ({
     ...stage,
-    deals: filteredDeals.filter((d) => d.stage === stage.id),
+    deals: filteredDeals.filter((d: SalesFunnelDeal) => d.stage === stage.id),
     totalValue: filteredDeals
-      .filter((d) => d.stage === stage.id)
-      .reduce((sum, d) => sum + d.estimated_value, 0),
+      .filter((d: SalesFunnelDeal) => d.stage === stage.id)
+      .reduce((sum: number, d: SalesFunnelDeal) => sum + d.estimated_value, 0),
   }));
 
   const stageOptions = [

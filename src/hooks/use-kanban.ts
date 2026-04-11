@@ -1269,7 +1269,7 @@ export function useKanbanRealtime(boardId: string | null) {
           queryClient.invalidateQueries({ queryKey: ["kanban-columns"] });
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         setIsConnected(status === "SUBSCRIBED");
       });
 

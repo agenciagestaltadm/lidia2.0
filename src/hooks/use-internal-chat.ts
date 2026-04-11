@@ -50,7 +50,7 @@ export function useChatChannels() {
 
       if (membershipError) throw membershipError;
 
-      const channelIds = memberships?.map((m) => m.channel_id) || [];
+      const channelIds = memberships?.map((m: { channel_id: string }) => m.channel_id) || [];
 
       if (channelIds.length === 0) return [];
 
@@ -67,8 +67,8 @@ export function useChatChannels() {
 
       // Calcular mensagens não lidas
       const channelsWithUnread = await Promise.all(
-        channels?.map(async (channel) => {
-          const membership = memberships?.find((m) => m.channel_id === channel.id);
+        channels?.map(async (channel: any) => {
+          const membership = memberships?.find((m: { channel_id: string }) => m.channel_id === channel.id);
           
           let unreadCount = 0;
           if (membership?.last_read_at) {
@@ -131,7 +131,7 @@ export function useChannelMessages({ channelId, limit = 50 }: UseMessagesOptions
       if (error) throw error;
 
       // Processar mensagens
-      const processedMessages = messages?.map((msg) => {
+      const processedMessages = messages?.map((msg: any) => {
         const reactionsMap = new Map<string, { count: number; users: string[] }>();
         
         msg.reactions?.forEach((r: { emoji: string; user_id: string }) => {
@@ -191,7 +191,7 @@ export function useDirectMessages(userId: string | null) {
 
       if (error) throw error;
 
-      return messages?.map((msg) => ({
+      return messages?.map((msg: any) => ({
         ...msg,
         sender: msg.sender ? {
           id: msg.sender.user_id,
@@ -407,7 +407,7 @@ export function useCompanyUsers() {
 
       if (error) throw error;
 
-      return users?.map((u) => ({
+      return users?.map((u: any) => ({
         id: u.user_id,
         name: u.full_name,
         email: u.email,
@@ -442,7 +442,7 @@ export function usePinnedMessages(channelId: string | null) {
 
       if (error) throw error;
 
-      return data?.map((p) => ({
+      return data?.map((p: any) => ({
         ...p,
         message: p.message ? {
           ...p.message,
@@ -529,11 +529,11 @@ export function useUserStatus() {
           schema: "public",
           table: "chat_user_status",
         },
-        (payload) => {
+        (payload: { eventType: string; new: Record<string, unknown> }) => {
           if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
             setOnlineUsers((prev) => {
               const filtered = prev.filter((u) => u.userId !== payload.new.user_id);
-              return [...filtered, payload.new as ChatUserStatus];
+              return [...filtered, payload.new as unknown as ChatUserStatus];
             });
           }
         }
@@ -668,7 +668,7 @@ export function useDirectConversations() {
       // Agrupar por conversa
       const conversationsMap = new Map<string, DirectConversation>();
 
-      messages?.forEach((msg) => {
+      messages?.forEach((msg: any) => {
         const otherUserId = msg.sender_id === user.id ? msg.direct_recipient_id : msg.sender_id;
         const otherUser = msg.sender_id === user.id ? msg.recipient : msg.sender;
 
@@ -710,7 +710,7 @@ export function useMessageReadStatus(messageId: string | null) {
 
       if (error) throw error;
 
-      return data?.map((r) => ({ userId: r.user_id, readAt: r.read_at })) || [];
+      return data?.map((r: { user_id: string; read_at: string | null }) => ({ userId: r.user_id, readAt: r.read_at })) || [];
     },
     enabled: !!messageId,
   });
@@ -990,7 +990,7 @@ export function useChatNotifications() {
         .eq("user_id", user.id);
 
       if (!error && data) {
-        const total = data.reduce((sum, item) => sum + (item.notification_count || 0), 0);
+        const total = data.reduce((sum: number, item: { notification_count: number | null }) => sum + (item.notification_count || 0), 0);
         setUnreadCount(total);
       }
     };

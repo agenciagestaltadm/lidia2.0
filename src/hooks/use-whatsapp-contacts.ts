@@ -211,7 +211,7 @@ export function useWhatsAppContacts(sessionId: string | null) {
           table: "whatsapp_contacts",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log("[useWhatsAppContacts] Mudança detectada:", payload);
 
           if (payload.eventType === "INSERT") {

@@ -324,9 +324,9 @@ export function useCompanies() {
         if (ticketsError) throw ticketsError;
 
         const attendances = {
-          open: ticketsData?.filter((t) => t.status === "OPEN").length || 0,
-          closed: ticketsData?.filter((t) => t.status === "CLOSED").length || 0,
-          pending: ticketsData?.filter((t) => t.status === "PENDING").length || 0,
+          open: ticketsData?.filter((t: { status: string }) => t.status === "OPEN").length || 0,
+          closed: ticketsData?.filter((t: { status: string }) => t.status === "CLOSED").length || 0,
+          pending: ticketsData?.filter((t: { status: string }) => t.status === "PENDING").length || 0,
           total: ticketsData?.length || 0,
         };
 

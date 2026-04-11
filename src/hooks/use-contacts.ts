@@ -85,12 +85,12 @@ async function fetchContactStats(): Promise<ContactStats> {
 
   return {
     total: contacts.length,
-    active: contacts.filter((c) => c.status === "active").length,
-    inactive: contacts.filter((c) => c.status === "inactive").length,
-    leads: contacts.filter((c) => c.status === "lead").length,
-    clients: contacts.filter((c) => c.status === "client").length,
-    prospects: contacts.filter((c) => c.status === "prospect").length,
-    newThisMonth: contacts.filter((c) => new Date(c.created_at) >= monthStart).length,
+    active: contacts.filter((c: { status: string }) => c.status === "active").length,
+    inactive: contacts.filter((c: { status: string }) => c.status === "inactive").length,
+    leads: contacts.filter((c: { status: string }) => c.status === "lead").length,
+    clients: contacts.filter((c: { status: string }) => c.status === "client").length,
+    prospects: contacts.filter((c: { status: string }) => c.status === "prospect").length,
+    newThisMonth: contacts.filter((c: { created_at: string }) => new Date(c.created_at) >= monthStart).length,
   };
 }
 
@@ -162,7 +162,7 @@ async function fetchContactTags(): Promise<string[]> {
   if (error) throw error;
 
   const allTags = new Set<string>();
-  (data || []).forEach((contact) => {
+  (data || []).forEach((contact: { tags?: string[] | null }) => {
     (contact.tags || []).forEach((tag: string) => {
       allTags.add(tag);
     });

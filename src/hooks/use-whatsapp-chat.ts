@@ -441,7 +441,7 @@ export function useWhatsAppChat(
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const message = payload.new as WhatsAppMessage;
 
           if (message.contact_phone === phone) {
@@ -463,7 +463,7 @@ export function useWhatsAppChat(
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const message = payload.new as WhatsAppMessage;
 
           if (message.contact_phone === phone) {
@@ -479,7 +479,7 @@ export function useWhatsAppChat(
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const deletedId = payload.old?.id as string;
           if (deletedId) {
             dispatch({ type: "DELETE_MESSAGE", payload: deletedId });
@@ -487,7 +487,7 @@ export function useWhatsAppChat(
         }
       );
 
-    channel.subscribe((status) => {
+    channel.subscribe((status: any) => {
       console.log(`[useWhatsAppChat] Realtime subscription status: ${status}`);
       if (status === 'SUBSCRIBED') {
         console.log('[useWhatsAppChat] Supabase Realtime is active as fallback');

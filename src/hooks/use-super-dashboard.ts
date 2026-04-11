@@ -108,16 +108,16 @@ export function useSuperDashboard() {
 
       let monthlyRecurringRevenue = 0;
       if (companiesWithPlans && companiesWithPlans.length > 0) {
-        const planIds = companiesWithPlans.map((c) => c.plan_id);
+        const planIds = companiesWithPlans.map((c: { plan_id: string | null }) => c.plan_id);
         const { data: plansData } = await supabase
           .from("plans")
           .select("id, price")
           .in("id", planIds);
 
         if (plansData) {
-          const planPrices = new Map(plansData.map((p) => [p.id, p.price || 0]));
-          monthlyRecurringRevenue = companiesWithPlans.reduce((sum, company) => {
-            return sum + (planPrices.get(company.plan_id) || 0);
+          const planPrices = new Map(plansData.map((p: { id: string; price: number | null }) => [p.id, p.price || 0]));
+          monthlyRecurringRevenue = companiesWithPlans.reduce((sum: number, company: { plan_id: string | null }) => {
+            return sum + (Number(planPrices.get(company.plan_id)) || 0);
           }, 0);
         }
       }
@@ -213,16 +213,16 @@ export function useSuperDashboard() {
 
       let revenue = 0;
       if (companiesWithPlans && companiesWithPlans.length > 0) {
-        const planIds = companiesWithPlans.map((c) => c.plan_id);
+        const planIds = companiesWithPlans.map((c: { plan_id: string | null }) => c.plan_id);
         const { data: plansData } = await supabase
           .from("plans")
           .select("id, price")
           .in("id", planIds);
 
         if (plansData) {
-          const planPrices = new Map(plansData.map((p) => [p.id, p.price || 0]));
-          revenue = companiesWithPlans.reduce((sum, company) => {
-            return sum + (planPrices.get(company.plan_id) || 0);
+          const planPrices = new Map(plansData.map((p: { id: string; price: number | null }) => [p.id, p.price || 0]));
+          revenue = companiesWithPlans.reduce((sum: number, company: { plan_id: string | null }) => {
+            return sum + (Number(planPrices.get(company.plan_id)) || 0);
           }, 0);
         }
       }

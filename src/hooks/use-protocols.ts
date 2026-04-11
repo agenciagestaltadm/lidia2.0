@@ -71,7 +71,7 @@ async function fetchProtocols(filters?: {
   
   if (error) throw error;
   
-  const protocols: Protocol[] = (data || []).map((item) => ({
+  const protocols: Protocol[] = (data || []).map((item: any) => ({
     id: item.id,
     code: item.code,
     conversation_id: item.conversation_id,
@@ -115,7 +115,7 @@ async function fetchProtocolStats(): Promise<ProtocolStats> {
   let totalResolutionHours = 0;
   let resolvedCount = 0;
   
-  data?.forEach((protocol) => {
+  data?.forEach((protocol: any) => {
     if (protocol.status === "active") stats.active_count++;
     if (protocol.status === "expired") stats.expired_count++;
     if (protocol.status === "resolved") {

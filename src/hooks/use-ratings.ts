@@ -62,7 +62,7 @@ async function fetchRatings(filters?: {
   
   if (error) throw error;
   
-  const ratings: Rating[] = (data || []).map((item) => ({
+  const ratings: Rating[] = (data || []).map((item: any) => ({
     id: item.id,
     conversation_id: item.conversation_id,
     contact_id: item.contact_id,
@@ -109,7 +109,7 @@ async function fetchRatingStats(): Promise<RatingStats> {
   let npsScores: number[] = [];
   let starScores: number[] = [];
   
-  data?.forEach((rating) => {
+  data?.forEach((rating: any) => {
     if (rating.status === "responded") {
       stats.total_responses++;
       

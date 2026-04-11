@@ -307,7 +307,7 @@ export function useWhatsAppMessages(
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const message = payload.new as WhatsAppMessage;
 
           if (message.contact_phone === phone) {
@@ -341,7 +341,7 @@ export function useWhatsAppMessages(
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const message = payload.new as WhatsAppMessage;
 
           if (message.contact_phone === phone) {
@@ -363,7 +363,7 @@ export function useWhatsAppMessages(
           table: "whatsapp_messages",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const deletedId = payload.old?.id as string;
           if (deletedId) {
             setState((prev) => ({
@@ -375,7 +375,7 @@ export function useWhatsAppMessages(
         }
       );
 
-    channel.subscribe((status) => {
+    channel.subscribe((status: any) => {
       console.log(`[useWhatsAppMessages] Realtime subscription status: ${status}`);
     });
 
@@ -390,7 +390,7 @@ export function useWhatsAppMessages(
 
     const broadcastChannel = supabase.channel(`whatsapp-broadcast-${sessionId}`);
     broadcastChannel
-      .on('broadcast', { event: 'new-message' }, (payload) => {
+      .on('broadcast', { event: 'new-message' }, (payload: any) => {
         const message = payload.payload as WhatsAppMessage;
         if (message.contact_phone === phone) {
           setState((prev) => {

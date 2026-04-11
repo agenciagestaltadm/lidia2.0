@@ -152,7 +152,7 @@ export function useAuditLogs(pageSize: number = 50) {
 
       if (error) throw error;
 
-      const actions = [...new Set(data?.map((d) => d.action))];
+      const actions = [...new Set((data || []).map((d: { action: string }) => d.action))] as string[];
       return actions;
     } catch (err) {
       console.error("Error fetching unique actions:", err);
@@ -170,8 +170,8 @@ export function useAuditLogs(pageSize: number = 50) {
 
       if (error) throw error;
 
-      const types = [...new Set(data?.map((d) => d.target_type).filter(Boolean))];
-      return types as string[];
+      const types = [...new Set(data?.map((d: { target_type: string | null }) => d.target_type).filter(Boolean))] as string[];
+      return types;
     } catch (err) {
       console.error("Error fetching unique target types:", err);
       return [];
@@ -203,7 +203,7 @@ export function useAuditLogs(pageSize: number = 50) {
             log.target_type || "-",
             JSON.stringify(log.metadata),
           ]);
-          const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+          const csv = [headers.join(","), ...rows.map((r: string[]) => r.join(","))].join("\n");
           return { success: true, data: csv };
         }
 

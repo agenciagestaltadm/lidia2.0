@@ -160,7 +160,7 @@ export function useWABAMessages(conversationId?: string) {
           table: "waba_messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const newMessage = payload.new as WABAMessage;
           setMessages((prev) => {
             // Check if message already exists
@@ -177,7 +177,7 @@ export function useWABAMessages(conversationId?: string) {
           table: "waba_messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const updatedMessage = payload.new as WABAMessage;
           setMessages((prev) =>
             prev.map((msg) =>

@@ -90,7 +90,7 @@ export function useAttendanceByStatus(dateRange: DateRange) {
       if (error) throw error;
 
       const counts: Record<string, number> = {};
-      data?.forEach((ticket) => {
+      data?.forEach((ticket: { status?: string }) => {
         const status = ticket.status || "Não informado";
         counts[status] = (counts[status] || 0) + 1;
       });
@@ -283,7 +283,7 @@ export function useAttendanceEvolution(dateRange: DateRange) {
         days.push(dateStr);
       }
 
-      data?.forEach((ticket) => {
+      data?.forEach((ticket: { created_at: string }) => {
         const dateStr = format(new Date(ticket.created_at), "dd/MM/yyyy");
         if (counts[dateStr] !== undefined) {
           counts[dateStr]++;
@@ -345,8 +345,8 @@ export function useSummaryMetrics(dateRange: DateRange) {
       if (contactsError) throw contactsError;
 
       const total = tickets?.length || 0;
-      const open = tickets?.filter((t) => t.status === "OPEN").length || 0;
-      const closed = tickets?.filter((t) => t.status === "CLOSED").length || 0;
+      const open = tickets?.filter((t: { status: string }) => t.status === "OPEN").length || 0;
+      const closed = tickets?.filter((t: { status: string }) => t.status === "CLOSED").length || 0;
 
       return {
         totalAttendances: total,

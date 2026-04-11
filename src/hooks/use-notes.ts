@@ -59,7 +59,7 @@ async function fetchNotes(filters?: {
   
   if (error) throw error;
   
-  const notes: Note[] = (data || []).map((item) => ({
+  const notes: Note[] = (data || []).map((item: any) => ({
     id: item.id,
     contact_id: item.contact_id,
     contact_name: item.contact?.name || "Unknown",
@@ -107,7 +107,7 @@ async function fetchNoteStats(): Promise<NoteStats> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-  data?.forEach((note) => {
+  data?.forEach((note: any) => {
     if (note.category) {
       stats.notes_by_category[note.category as NoteCategory]++;
     }

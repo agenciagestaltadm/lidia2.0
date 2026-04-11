@@ -95,7 +95,7 @@ export function useWhatsAppPresence(
           table: "whatsapp_contacts",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const contact = payload.new as any;
           if (contact.phone === phone) {
             setPresence({

@@ -356,7 +356,7 @@ export function useWhatsAppGroups(sessionId: string | null) {
           table: "whatsapp_groups",
           filter: `session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           if (payload.eventType === "INSERT") {
             setState((prev) => ({
               ...prev,

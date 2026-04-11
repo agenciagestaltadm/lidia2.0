@@ -55,7 +55,7 @@ async function fetchDeals(filters?: {
   if (error) throw error;
   
   // Transform data
-  return (data || []).map((item): SalesFunnelDeal => ({
+  return (data || []).map((item: any): SalesFunnelDeal => ({
     id: item.id,
     contact_id: item.contact_id,
     contact_name: item.contact?.name || "Unknown",
@@ -99,7 +99,7 @@ async function fetchFunnelStats(): Promise<FunnelStats> {
       value_by_stage: { new: 0, qualified: 0, proposal: 0, negotiation: 0, closed_won: 0, closed_lost: 0 },
     };
     
-    deals?.forEach((deal) => {
+    deals?.forEach((deal: any) => {
       stats.total_value += deal.estimated_value;
       stats.weighted_value += deal.estimated_value * (deal.probability / 100);
       stats.deals_by_stage[deal.stage as FunnelStage]++;
