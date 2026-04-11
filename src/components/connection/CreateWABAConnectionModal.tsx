@@ -147,10 +147,6 @@ export function CreateWABAConnectionModal({
       toast.error("Empresa não encontrada");
       return;
     }
-    if (!user?.id) {
-      toast.error("Usuário não autenticado. Faça login novamente.");
-      return;
-    }
 
     // Prevent double submission using ref
     if (isSubmittingRef.current) {
@@ -168,17 +164,16 @@ export function CreateWABAConnectionModal({
         phone_number_id: formData.phoneNumberId,
         business_account_id: formData.businessAccountId,
         access_token: formData.accessToken,
-        api_version: formData.apiVersion,
-        created_by: user.id
+        api_version: formData.apiVersion
+        // NOTE: created_by is obtained internally via supabase.auth.getUser()
+        // to ensure we use auth.users(id), not profiles.id
       });
       
       if (result) {
         setCreatedConnection(result);
         toast.success("Conexão criada com sucesso!");
       } else {
-        // createConnection already shows toast.error internally
-        setSubmitError("Não foi possível criar a conexão. Verifique os dados e as permissões do banco de dados.");
-        console.error("[CreateWABAConnectionModal] createConnection returned null - check RLS policies and user permissions");
+        setSubmitError("Não foi possível criar a conexão. Verifique os dados e tente novamente.");
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro inesperado ao criar conexão";
@@ -187,7 +182,7 @@ export function CreateWABAConnectionModal({
     } finally {
       isSubmittingRef.current = false;
     }
-  }, [formData, user?.companyId, user?.id, createConnection, validateForm]);
+  }, [formData, user?.companyId, createConnection, validateForm]);
 
   const handleClose = useCallback(() => {
     setFormData({

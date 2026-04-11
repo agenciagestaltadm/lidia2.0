@@ -333,7 +333,6 @@ export function useWABAConnections() {
     business_account_id: string;
     access_token: string;
     api_version?: string;
-    created_by?: string;
   }): Promise<{ id: string; webhookUrl: string; verifyToken: string } | null> => {
     // Prevent double submission
     if (isSubmittingRef.current) {
@@ -344,15 +343,35 @@ export function useWABAConnections() {
     isSubmittingRef.current = true;
     setIsLoading(true);
 
+    // Safety timeout - force reset after 30s to prevent infinite loading
+    const safetyTimeoutId = setTimeout(() => {
+      if (isSubmittingRef.current) {
+        console.error("[createConnection] Timeout after 30s - forcing reset");
+        isSubmittingRef.current = false;
+        setIsLoading(false);
+        toast.error("A operação demorou demais. Tente novamente.");
+      }
+    }, 30000);
+
     try {
       const supabase = createClient();
+
+      // Get the REAL auth user ID (not profiles.id which is a different UUID)
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError || !authUser) {
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
+
       const accountUuid = crypto.randomUUID();
       const verifyToken = generateVerifyToken();
-      // Always use the public Supabase Edge Function URL (not localhost)
       const webhookUrl = buildWebhookUrl(accountUuid);
 
-      console.log("[createConnection] Creating connection with account_uuid:", accountUuid);
-      console.log("[createConnection] Webhook URL:", webhookUrl);
+      console.log("[createConnection] Creating connection with:", {
+        accountUuid,
+        webhookUrl,
+        authUserId: authUser.id,
+        companyId: data.company_id
+      });
 
       const insertData: Record<string, unknown> = {
         company_id: data.company_id,
@@ -365,13 +384,11 @@ export function useWABAConnections() {
         webhook_url: webhookUrl,
         webhook_verify_token: verifyToken,
         verify_token: verifyToken,
+        created_by: authUser.id, // Use auth.users(id), NOT profiles.id
         status: "pending"
       };
 
-      // Add created_by if provided (required for RLS policies)
-      if (data.created_by) {
-        insertData.created_by = data.created_by;
-      }
+      console.log("[createConnection] Inserting into waba_configs...");
 
       const { data: connection, error } = await supabase
         .from("waba_configs")
@@ -380,7 +397,12 @@ export function useWABAConnections() {
         .single();
 
       if (error) {
-        console.error("[createConnection] Supabase insert error:", error);
+        console.error("[createConnection] Supabase insert error:", JSON.stringify({
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        }, null, 2));
         throw error;
       }
 
@@ -400,20 +422,24 @@ export function useWABAConnections() {
       };
     } catch (error) {
       console.error("[createConnection] Error creating connection:", error);
-      // Supabase errors often serialize as {} - extract useful info
       const supabaseError = error as { message?: string; code?: string; details?: string; hint?: string };
-      const errorMessage = supabaseError?.message || supabaseError?.code || 
-        (supabaseError?.details ? `${supabaseError.details}` : null) ||
-        (error instanceof Error ? error.message : "Erro ao criar conexão");
-      console.error("[createConnection] Error details:", {
-        message: supabaseError?.message,
-        code: supabaseError?.code,
-        details: supabaseError?.details,
-        hint: supabaseError?.hint
-      });
+      let errorMessage = "Erro ao criar conexão";
+      
+      if (supabaseError?.code === "23503") {
+        errorMessage = "Erro de referência no banco de dados. Contate o suporte.";
+      } else if (supabaseError?.code === "42501" || supabaseError?.message?.includes("policy")) {
+        errorMessage = "Sem permissão para criar conexão. Verifique se seu usuário tem acesso.";
+      } else if (supabaseError?.message) {
+        errorMessage = supabaseError.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      console.error("[createConnection] Final error message:", errorMessage);
       toast.error(errorMessage);
       return null;
     } finally {
+      clearTimeout(safetyTimeoutId);
       isSubmittingRef.current = false;
       setIsLoading(false);
     }

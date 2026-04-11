@@ -16,24 +16,7 @@ export function createClient() {
     return cachedClient;
   }
 
-  cachedClient = createBrowserClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      isSingleton: true,
-      global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) => {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-
-          return fetch(url, {
-            ...options,
-            signal: controller.signal,
-          }).finally(() => clearTimeout(timeoutId));
-        },
-      },
-    }
-  );
+  cachedClient = createBrowserClient(supabaseUrl, supabaseKey);
 
   return cachedClient;
 }
