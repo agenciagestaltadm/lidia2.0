@@ -325,7 +325,7 @@ export function useWABAConnections() {
   const [isLoading, setIsLoading] = useState(false);
   const isSubmittingRef = useRef(false);
 
-  // Create a new WABA connection
+  // Create a new WABA connection via server-side API route
   const createConnection = useCallback(async (data: {
     company_id: string;
     name: string;
@@ -354,88 +354,29 @@ export function useWABAConnections() {
     }, 30000);
 
     try {
-      const supabase = createClient();
+      console.log("[createConnection] Calling API route /api/waba/create-connection");
 
-      // Get the REAL auth user ID (not profiles.id which is a different UUID)
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      if (authError || !authUser) {
-        throw new Error("Usuário não autenticado. Faça login novamente.");
-      }
-
-      const accountUuid = crypto.randomUUID();
-      const verifyToken = generateVerifyToken();
-      const webhookUrl = buildWebhookUrl(accountUuid);
-
-      console.log("[createConnection] Creating connection with:", {
-        accountUuid,
-        webhookUrl,
-        authUserId: authUser.id,
-        companyId: data.company_id
+      const response = await fetch("/api/waba/create-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
       });
 
-      const insertData: Record<string, unknown> = {
-        company_id: data.company_id,
-        name: data.name,
-        phone_number_id: data.phone_number_id,
-        business_account_id: data.business_account_id,
-        access_token: data.access_token,
-        api_version: data.api_version || "v18.0",
-        account_uuid: accountUuid,
-        webhook_url: webhookUrl,
-        webhook_verify_token: verifyToken,
-        verify_token: verifyToken,
-        created_by: authUser.id, // Use auth.users(id), NOT profiles.id
-        status: "pending"
-      };
+      const result = await response.json();
 
-      console.log("[createConnection] Inserting into waba_configs...");
-
-      const { data: connection, error } = await supabase
-        .from("waba_configs")
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("[createConnection] Supabase insert error:", JSON.stringify({
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        }, null, 2));
-        throw error;
+      if (!response.ok || !result.success) {
+        const errorMessage = result.error || `Erro HTTP ${response.status}`;
+        console.error("[createConnection] API error:", errorMessage);
+        throw new Error(errorMessage);
       }
 
-      if (!connection) {
-        console.error("[createConnection] Insert succeeded but no data returned - possible RLS SELECT issue");
-        throw new Error("Conexão criada mas não foi possível ler os dados de volta. Verifique as políticas RLS.");
-      }
-
-      console.log("[createConnection] Connection created successfully:", connection.id);
-
+      console.log("[createConnection] Connection created successfully:", result.connection.id);
       toast.success("Conexão criada com sucesso!");
-      
-      return {
-        id: connection.id,
-        webhookUrl,
-        verifyToken
-      };
+
+      return result.connection;
     } catch (error) {
-      console.error("[createConnection] Error creating connection:", error);
-      const supabaseError = error as { message?: string; code?: string; details?: string; hint?: string };
-      let errorMessage = "Erro ao criar conexão";
-      
-      if (supabaseError?.code === "23503") {
-        errorMessage = "Erro de referência no banco de dados. Contate o suporte.";
-      } else if (supabaseError?.code === "42501" || supabaseError?.message?.includes("policy")) {
-        errorMessage = "Sem permissão para criar conexão. Verifique se seu usuário tem acesso.";
-      } else if (supabaseError?.message) {
-        errorMessage = supabaseError.message;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      console.error("[createConnection] Final error message:", errorMessage);
+      console.error("[createConnection] Error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao criar conexão";
       toast.error(errorMessage);
       return null;
     } finally {
